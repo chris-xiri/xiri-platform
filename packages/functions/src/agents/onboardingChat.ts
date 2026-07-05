@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Vendor } from '../utils/types';
 import { getPrompt } from '../utils/promptUtils';
+import { resolveGeminiModel } from '../utils/gemini';
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -11,7 +12,7 @@ const db = admin.firestore();
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
 
 /**
  * Main entry point for the Web Chat Agent.

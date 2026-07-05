@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FileCheck2, FlaskConical, ArrowRight } from 'lucide-react';
+import { FileCheck2, FlaskConical, ClipboardList, ArrowRight } from 'lucide-react';
 
 export const metadata = {
   title: 'Facility Operations Tools for Owners & Managers | XIRI',
@@ -23,7 +23,14 @@ export default function ToolsIndexPage() {
       </section>
 
       <section className="py-14">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-3 gap-6">
+          <Link href="/tools/janitorial-rfp" className="group bg-white rounded-2xl border border-slate-200 p-7 hover:border-sky-300 hover:shadow-md transition-all">
+            <ClipboardList className="w-8 h-8 text-indigo-600 mb-4" />
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Janitorial RFP Builder</h2>
+            <p className="text-slate-600 mb-4">Create a professional janitorial RFP from a scope brief, then share it with vendors in PDF or DOCX.</p>
+            <span className="inline-flex items-center gap-2 text-sky-700 font-semibold">Open tool <ArrowRight className="w-4 h-4" /></span>
+          </Link>
+
           <Link href="/tools/compliance-checker" className="group bg-white rounded-2xl border border-slate-200 p-7 hover:border-sky-300 hover:shadow-md transition-all">
             <FileCheck2 className="w-8 h-8 text-sky-600 mb-4" />
             <h2 className="text-xl font-bold text-slate-900 mb-2">Compliance Readiness Checker</h2>

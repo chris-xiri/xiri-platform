@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { ArrowRight, X, Loader2 } from 'lucide-react';
-import { isValidZip } from '@/data/validZips';
+
 import { trackEvent } from '@/lib/tracking';
 import { CTA } from '@/lib/constants';
 
@@ -88,11 +88,7 @@ export function StickyMobileCTA() {
             });
         }
 
-        if (!isValidZip(zip)) {
-            trackEvent('lead_zip_rejected', { zip });
-            router.push(`/waitlist?zip=${zip}`);
-            return;
-        }
+
 
         router.push(`/audit/start?zip=${zip}&service=general&source=sticky_mobile`);
     };

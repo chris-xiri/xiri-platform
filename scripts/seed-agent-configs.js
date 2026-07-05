@@ -18,7 +18,7 @@ async function seedAgentConfigs() {
             name: "Recruiter Agent",
             description: "Analyzes vendor leads from web scraping and assigns fit scores based on relevance, contact quality, and business type.",
             promptTemplateId: "recruiter_analysis_prompt",
-            model: "gemini-2.0-flash",
+            model: "gemini-3.5-flash",
             enabled: true,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -28,7 +28,7 @@ async function seedAgentConfigs() {
             name: "Outreach Agent",
             description: "Generates personalized SMS and email content for vendor outreach campaigns, adapting tone based on urgency.",
             promptTemplateId: "outreach_generation_prompt",
-            model: "gemini-2.0-flash",
+            model: "gemini-3.5-flash",
             enabled: true,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -38,7 +38,7 @@ async function seedAgentConfigs() {
             name: "Message Analyzer Agent",
             description: "Classifies incoming vendor replies (interested, not interested, question) and generates appropriate responses.",
             promptTemplateId: "message_analysis_prompt",
-            model: "gemini-2.0-flash",
+            model: "gemini-3.5-flash",
             enabled: true,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -48,7 +48,7 @@ async function seedAgentConfigs() {
             name: "Document Verifier Agent",
             description: "Analyzes COI and W9 documents using OCR, verifies compliance requirements, and extracts key data.",
             promptTemplateId: "document_verifier_prompt",
-            model: "gemini-2.0-flash",
+            model: "gemini-3.5-flash",
             enabled: true,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp()

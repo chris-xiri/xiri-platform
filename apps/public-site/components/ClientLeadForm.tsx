@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight } from "lucide-react";
-import { isValidZip } from "@/data/validZips";
+
 import { trackEvent } from "@/lib/tracking";
 import { CTA } from '@/lib/constants';
 
@@ -52,12 +52,7 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
             });
         }
 
-        // Alpha Geo-Fence: Only Great Neck & New Hyde Park zips proceed
-        if (!isValidZip(zip)) {
-            trackEvent('lead_zip_rejected', { zip });
-            router.push(`/waitlist?zip=${zip}`);
-            return;
-        }
+
 
         // Valid -> Start Audit Flow
         const params = new URLSearchParams({

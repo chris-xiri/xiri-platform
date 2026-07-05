@@ -18,6 +18,7 @@ import { classifyFacilityType } from '../utils/facilityClassifier';
 import type { EnrichedProspect, EmailSource, ProspectContact } from '@xiri/shared';
 import { inferFacilityType, type FacilityType } from '@xiri/shared';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { resolveGeminiModel } from '../utils/gemini';
 
 const GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|manager)@/i;
 
@@ -154,7 +155,7 @@ Search evidence:
     try {
         const genAI = new GoogleGenerativeAI(params.geminiApiKey);
         const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash',
+            model: resolveGeminiModel('gemini-2.5-flash'),
             generationConfig: { temperature: 0, maxOutputTokens: 180 },
         });
         const result = await model.generateContent(prompt);

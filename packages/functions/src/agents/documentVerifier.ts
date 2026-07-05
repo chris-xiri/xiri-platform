@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as logger from "firebase-functions/logger";
 import * as https from "https";
 import { getPrompt } from "../utils/promptUtils";
+import { resolveGeminiModel } from "../utils/gemini";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -60,7 +61,7 @@ export interface Acord25VerificationResult {
 
 // ─── Legacy: Simulated Document Verification ───
 export async function verifyDocument(docType: 'COI' | 'W9', vendorName: string, specialty: string): Promise<VerificationResult> {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
 
     let simulatedOcrText = "";
 
@@ -256,7 +257,7 @@ export async function verifyAcord25(
         hasEntity: boolean;
     }
 ): Promise<Acord25VerificationResult> {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
 
     try {
         // 1. Download the PDF/image from Firebase Storage

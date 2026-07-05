@@ -36,4 +36,8 @@ Total time: 5-7 minutes per room.
 
 Urgent care facilities handle minor injuries, blood draws, and wound care. Your cleaning crew must be trained in bloodborne pathogen handling per OSHA 29 CFR 1910.1030.
 
-[**Get Urgent Care Cleaning →**](/services/urgent-care-cleaning)
+## See What Compliant Urgent Care Cleaning Costs
+
+High patient volume shouldn't mean compromising on infection control. Whether you run a single clinic in New York or a multi-state network, get a transparent, flat-rate pricing scope tailored to your exact traffic and compliance needs.
+
+[**Start Your Free Urgent Care Cleaning Audit →**](/calculator)

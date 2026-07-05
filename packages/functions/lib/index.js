@@ -70,6 +70,49 @@ var init_promptUtils = __esm({
   }
 });
 
+// src/utils/gemini.ts
+function resolveGeminiModel(requestedModel) {
+  if (process.env.GEMINI_MODEL) {
+    return process.env.GEMINI_MODEL;
+  }
+  const cleanedName = requestedModel.toLowerCase().trim();
+  if (MODEL_MAPPING[cleanedName]) {
+    const targetModel = MODEL_MAPPING[cleanedName];
+    logger2.debug(`[resolveGeminiModel] Dynamic upgrade: "${requestedModel}" mapped to "${targetModel}"`);
+    return targetModel;
+  }
+  if (cleanedName.includes("flash")) {
+    return "gemini-3.5-flash";
+  }
+  if (cleanedName.includes("pro") || cleanedName.includes("ultra") || cleanedName.includes("preview")) {
+    return "gemini-3.5-pro";
+  }
+  return "gemini-3.5-flash";
+}
+var logger2, MODEL_MAPPING;
+var init_gemini = __esm({
+  "src/utils/gemini.ts"() {
+    "use strict";
+    logger2 = __toESM(require("firebase-functions/logger"));
+    MODEL_MAPPING = {
+      // Flash models map to gemini-3.5-flash
+      "gemini-1.0-flash": "gemini-3.5-flash",
+      "gemini-1.5-flash": "gemini-3.5-flash",
+      "gemini-2.0-flash": "gemini-3.5-flash",
+      "gemini-2.5-flash": "gemini-3.5-flash",
+      "gemini-3.0-flash": "gemini-3.5-flash",
+      // Pro/Ultra/Preview models map to gemini-3.5-pro
+      "gemini-1.0-pro": "gemini-3.5-pro",
+      "gemini-1.5-pro": "gemini-3.5-pro",
+      "gemini-2.0-pro": "gemini-3.5-pro",
+      "gemini-2.5-pro": "gemini-3.5-pro",
+      "gemini-3.0-pro": "gemini-3.5-pro",
+      "gemini-3.1-pro-preview": "gemini-3.5-pro",
+      "gemini-pro": "gemini-3.5-pro"
+    };
+  }
+});
+
 // src/utils/queueUtils.ts
 var queueUtils_exports = {};
 __export(queueUtils_exports, {
@@ -23003,9 +23046,9 @@ var require_es_number_constructor = __commonJS({
     var charCodeAt = uncurryThis("".charCodeAt);
     var toNumeric = function(value) {
       var primValue = toPrimitive(value, "number");
-      return typeof primValue == "bigint" ? primValue : toNumber(primValue);
+      return typeof primValue == "bigint" ? primValue : toNumber2(primValue);
     };
-    var toNumber = function(argument) {
+    var toNumber2 = function(argument) {
       var it = toPrimitive(argument, "number");
       var first, third, radix, maxCode, digits, length, index, code;
       if (isSymbol(it)) throw new TypeError2("Cannot convert a Symbol value to a number");
@@ -39339,6 +39382,13 @@ var init_pseo_types = __esm({
   }
 });
 
+// ../shared/src/rfp-bid-analyzer.ts
+var init_rfp_bid_analyzer = __esm({
+  "../shared/src/rfp-bid-analyzer.ts"() {
+    "use strict";
+  }
+});
+
 // ../shared/src/index.ts
 function getFacilityPhrases(facilityType) {
   if (!facilityType) return FACILITY_PHRASE_MAP.other;
@@ -39380,6 +39430,7 @@ var init_src = __esm({
     init_proposalDefaults();
     init_taxRates();
     init_pseo_types();
+    init_rfp_bid_analyzer();
     init_taxRates();
     FACILITY_TYPE_LABELS = {
       medical_urgent_care: "Urgent Care",
@@ -39566,7 +39617,7 @@ async function getAudienceId() {
     const doc = await db3.collection("config").doc("resend").get();
     _cachedAudienceId = doc.data()?.audienceId || null;
   } catch (err2) {
-    logger3.warn("[Suppression] Could not read config/resend.audienceId:", err2);
+    logger4.warn("[Suppression] Could not read config/resend.audienceId:", err2);
   }
   return _cachedAudienceId;
 }
@@ -39576,7 +39627,7 @@ function getResend() {
 async function addToResendSuppression(email, reason, metadata) {
   const audienceId = await getAudienceId();
   if (!audienceId) {
-    logger3.warn(`[Suppression] No audienceId configured \u2014 skipping Resend suppression for ${email}`);
+    logger4.warn(`[Suppression] No audienceId configured \u2014 skipping Resend suppression for ${email}`);
     return false;
   }
   const resend2 = getResend();
@@ -39600,19 +39651,19 @@ async function addToResendSuppression(email, reason, metadata) {
             unsubscribed: true,
             lastName: reason
           });
-          logger3.info(`[Suppression] Updated existing Resend contact ${email} \u2192 unsubscribed (${reason})`);
+          logger4.info(`[Suppression] Updated existing Resend contact ${email} \u2192 unsubscribed (${reason})`);
           return true;
         }
       } catch (updateErr) {
-        logger3.warn(`[Suppression] Could not update contact ${email}:`, updateErr);
+        logger4.warn(`[Suppression] Could not update contact ${email}:`, updateErr);
       }
-      logger3.warn(`[Suppression] Resend contacts.create error for ${email}:`, error19);
+      logger4.warn(`[Suppression] Resend contacts.create error for ${email}:`, error19);
       return false;
     }
-    logger3.info(`[Suppression] Added ${email} to Resend suppression audience (${reason})`);
+    logger4.info(`[Suppression] Added ${email} to Resend suppression audience (${reason})`);
     return true;
   } catch (err2) {
-    logger3.error(`[Suppression] Failed to sync ${email} to Resend audience:`, err2);
+    logger4.error(`[Suppression] Failed to sync ${email} to Resend audience:`, err2);
     return false;
   }
 }
@@ -39620,7 +39671,7 @@ async function isEmailSuppressed(email) {
   try {
     const contactSnap = await db3.collection("contacts").where("email", "==", email).where("unsubscribed", "==", true).limit(1).get();
     if (!contactSnap.empty) {
-      logger3.info(`[Suppression] ${email} suppressed via Firestore contact`);
+      logger4.info(`[Suppression] ${email} suppressed via Firestore contact`);
       return true;
     }
   } catch {
@@ -39632,21 +39683,21 @@ async function isEmailSuppressed(email) {
     const { data: listData } = await resend2.contacts.list({ audienceId });
     const contact = listData?.data?.find((c) => c.email === email);
     if (contact?.unsubscribed) {
-      logger3.info(`[Suppression] ${email} suppressed via Resend audience`);
+      logger4.info(`[Suppression] ${email} suppressed via Resend audience`);
       return true;
     }
   } catch (err2) {
-    logger3.warn(`[Suppression] Resend audience check failed for ${email}:`, err2);
+    logger4.warn(`[Suppression] Resend audience check failed for ${email}:`, err2);
   }
   return false;
 }
-var admin5, import_resend, logger3, db3, _cachedAudienceId;
+var admin5, import_resend, logger4, db3, _cachedAudienceId;
 var init_suppressionUtils = __esm({
   "src/utils/suppressionUtils.ts"() {
     "use strict";
     admin5 = __toESM(require("firebase-admin"));
     import_resend = require("resend");
-    logger3 = __toESM(require("firebase-functions/logger"));
+    logger4 = __toESM(require("firebase-functions/logger"));
     db3 = admin5.firestore();
     _cachedAudienceId = null;
   }
@@ -39702,7 +39753,7 @@ async function generatePersonalizedEmail(templateId, variables) {
   try {
     const template = await getTemplate(templateId);
     if (!template) return null;
-    const model2 = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model2 = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
     const FALLBACK = `You are a professional email writer for XIRI Facility Solutions.
 
 Take this email template and personalize it while maintaining the core message:
@@ -39999,6 +40050,7 @@ var init_emailUtils = __esm({
     import_generative_ai2 = require("@google/generative-ai");
     import_resend2 = require("resend");
     init_promptUtils();
+    init_gemini();
     init_src();
     init_suppressionUtils();
     db4 = admin6.firestore();
@@ -47634,11 +47686,11 @@ var require_common2 = __commonJS({
         let enableOverride = null;
         let namespacesCache;
         let enabledCache;
-        function debug(...args) {
-          if (!debug.enabled) {
+        function debug2(...args) {
+          if (!debug2.enabled) {
             return;
           }
-          const self2 = debug;
+          const self2 = debug2;
           const curr = Number(/* @__PURE__ */ new Date());
           const ms = curr - (prevTime || curr);
           self2.diff = ms;
@@ -47668,12 +47720,12 @@ var require_common2 = __commonJS({
           const logFn = self2.log || createDebug.log;
           logFn.apply(self2, args);
         }
-        debug.namespace = namespace;
-        debug.useColors = createDebug.useColors();
-        debug.color = createDebug.selectColor(namespace);
-        debug.extend = extend;
-        debug.destroy = createDebug.destroy;
-        Object.defineProperty(debug, "enabled", {
+        debug2.namespace = namespace;
+        debug2.useColors = createDebug.useColors();
+        debug2.color = createDebug.selectColor(namespace);
+        debug2.extend = extend;
+        debug2.destroy = createDebug.destroy;
+        Object.defineProperty(debug2, "enabled", {
           enumerable: true,
           configurable: false,
           get: () => {
@@ -47691,9 +47743,9 @@ var require_common2 = __commonJS({
           }
         });
         if (typeof createDebug.init === "function") {
-          createDebug.init(debug);
+          createDebug.init(debug2);
         }
-        return debug;
+        return debug2;
       }
       function extend(namespace, delimiter) {
         const newDebug = createDebug(this.namespace + (typeof delimiter === "undefined" ? ":" : delimiter) + namespace);
@@ -48220,11 +48272,11 @@ var require_node2 = __commonJS({
     function load3() {
       return process.env.DEBUG;
     }
-    function init(debug) {
-      debug.inspectOpts = {};
+    function init(debug2) {
+      debug2.inspectOpts = {};
       const keys = Object.keys(exports2.inspectOpts);
       for (let i = 0; i < keys.length; i++) {
-        debug.inspectOpts[keys[i]] = exports2.inspectOpts[keys[i]];
+        debug2.inspectOpts[keys[i]] = exports2.inspectOpts[keys[i]];
       }
     }
     module2.exports = require_common2()(exports2);
@@ -48488,7 +48540,7 @@ var require_parse_proxy_response = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.parseProxyResponse = void 0;
     var debug_1 = __importDefault(require_src());
-    var debug = (0, debug_1.default)("https-proxy-agent:parse-proxy-response");
+    var debug2 = (0, debug_1.default)("https-proxy-agent:parse-proxy-response");
     function parseProxyResponse(socket) {
       return new Promise((resolve2, reject) => {
         let buffersLength = 0;
@@ -48507,12 +48559,12 @@ var require_parse_proxy_response = __commonJS({
         }
         function onend() {
           cleanup();
-          debug("onend");
+          debug2("onend");
           reject(new Error("Proxy connection ended before receiving CONNECT response"));
         }
         function onerror(err2) {
           cleanup();
-          debug("onerror %o", err2);
+          debug2("onerror %o", err2);
           reject(err2);
         }
         function ondata(b) {
@@ -48521,7 +48573,7 @@ var require_parse_proxy_response = __commonJS({
           const buffered = Buffer.concat(buffers, buffersLength);
           const endOfHeaders = buffered.indexOf("\r\n\r\n");
           if (endOfHeaders === -1) {
-            debug("have not received end of HTTP headers yet...");
+            debug2("have not received end of HTTP headers yet...");
             read();
             return;
           }
@@ -48554,7 +48606,7 @@ var require_parse_proxy_response = __commonJS({
               headers2[key] = value;
             }
           }
-          debug("got proxy server response: %o %o", firstLine, headers2);
+          debug2("got proxy server response: %o %o", firstLine, headers2);
           cleanup();
           resolve2({
             connect: {
@@ -48617,7 +48669,7 @@ var require_dist2 = __commonJS({
     var agent_base_1 = require_dist();
     var url_1 = require("url");
     var parse_proxy_response_1 = require_parse_proxy_response();
-    var debug = (0, debug_1.default)("https-proxy-agent");
+    var debug2 = (0, debug_1.default)("https-proxy-agent");
     var setServernameFromNonIpHost = (options) => {
       if (options.servername === void 0 && options.host && !net.isIP(options.host)) {
         return {
@@ -48633,7 +48685,7 @@ var require_dist2 = __commonJS({
         this.options = { path: void 0 };
         this.proxy = typeof proxy === "string" ? new url_1.URL(proxy) : proxy;
         this.proxyHeaders = opts?.headers ?? {};
-        debug("Creating new HttpsProxyAgent instance: %o", this.proxy.href);
+        debug2("Creating new HttpsProxyAgent instance: %o", this.proxy.href);
         const host = (this.proxy.hostname || this.proxy.host).replace(/^\[|\]$/g, "");
         const port = this.proxy.port ? parseInt(this.proxy.port, 10) : this.proxy.protocol === "https:" ? 443 : 80;
         this.connectOpts = {
@@ -48655,10 +48707,10 @@ var require_dist2 = __commonJS({
         }
         let socket;
         if (proxy.protocol === "https:") {
-          debug("Creating `tls.Socket`: %o", this.connectOpts);
+          debug2("Creating `tls.Socket`: %o", this.connectOpts);
           socket = tls.connect(setServernameFromNonIpHost(this.connectOpts));
         } else {
-          debug("Creating `net.Socket`: %o", this.connectOpts);
+          debug2("Creating `net.Socket`: %o", this.connectOpts);
           socket = net.connect(this.connectOpts);
         }
         const headers2 = typeof this.proxyHeaders === "function" ? this.proxyHeaders() : { ...this.proxyHeaders };
@@ -48686,7 +48738,7 @@ var require_dist2 = __commonJS({
         if (connect.statusCode === 200) {
           req.once("socket", resume);
           if (opts.secureEndpoint) {
-            debug("Upgrading socket connection to TLS");
+            debug2("Upgrading socket connection to TLS");
             return tls.connect({
               ...omit(setServernameFromNonIpHost(opts), "host", "path", "port"),
               socket
@@ -48698,7 +48750,7 @@ var require_dist2 = __commonJS({
         const fakeSocket = new net.Socket({ writable: false });
         fakeSocket.readable = true;
         req.once("socket", (s) => {
-          debug("Replaying proxy buffer for failed request");
+          debug2("Replaying proxy buffer for failed request");
           (0, assert_1.default)(s.listenerCount("data") > 0);
           s.push(buffered);
           s.push(null);
@@ -51169,12 +51221,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger41 = this.cached.get(namespace);
-          if (!logger41) {
-            logger41 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger41);
+          let logger42 = this.cached.get(namespace);
+          if (!logger42) {
+            logger42 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger42);
           }
-          logger41(fields, ...args);
+          logger42(fields, ...args);
         } catch (e2) {
           console.error(e2);
         }
@@ -51311,7 +51363,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger41 = (() => {
+      const logger42 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -51326,8 +51378,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger41);
-      return logger41.func;
+      loggerCache.set(namespace, logger42);
+      return logger42.func;
     }
   }
 });
@@ -51391,14 +51443,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger41 = require_src3();
+    var logger42 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger41.log("gcp metadata");
+    var log = logger42.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -53820,7 +53872,7 @@ var require_verify_stream = __commonJS({
     function isObject(thing) {
       return Object.prototype.toString.call(thing) === "[object Object]";
     }
-    function safeJsonParse2(thing) {
+    function safeJsonParse3(thing) {
       if (isObject(thing))
         return thing;
       try {
@@ -53831,7 +53883,7 @@ var require_verify_stream = __commonJS({
     }
     function headerFromJWS(jwsSig) {
       var encodedHeader = jwsSig.split(".", 1)[0];
-      return safeJsonParse2(Buffer2.from(encodedHeader, "base64").toString("binary"));
+      return safeJsonParse3(Buffer2.from(encodedHeader, "base64").toString("binary"));
     }
     function securedInputFromJWS(jwsSig) {
       return jwsSig.split(".", 2).join(".");
@@ -58406,10 +58458,12 @@ __export(index_exports, {
   enrichFromWebsite: () => enrichFromWebsite,
   exchangeGscToken: () => exchangeGscToken,
   expandLocation: () => expandLocation,
+  extractBidData: () => extractBidData,
   generateAISequence: () => generateAISequence,
   generateLeads: () => generateLeads,
   generateMonthlyInvoices: () => generateMonthlyInvoices,
   generateMorningReports: () => generateMorningReports,
+  generateRfp: () => generateRfp,
   getComplianceLog: () => getComplianceLog,
   getDashboardTimeslots: () => getDashboardTimeslots,
   getFacebookPosts: () => getFacebookPosts,
@@ -58450,6 +58504,7 @@ __export(index_exports, {
   onWorkOrderHandoff: () => onWorkOrderHandoff,
   optimizeTemplate: () => optimizeTemplate,
   parseCalculatorPrompt: () => parseCalculatorPrompt,
+  parseRfpBrief: () => parseRfpBrief,
   processCommissionPayouts: () => processCommissionPayouts,
   processMailQueue: () => processMailQueue,
   processOutreachQueue: () => processOutreachQueue,
@@ -58469,6 +58524,7 @@ __export(index_exports, {
   runSocialContentGenerator: () => runSocialContentGenerator,
   runSocialPublisher: () => runSocialPublisher,
   runVendorProspector: () => runVendorProspector,
+  scoreBidRows: () => scoreBidRows,
   searchPlaces: () => searchPlaces,
   seedInHouseSequence: () => seedInHouseSequence,
   sendBookingConfirmation: () => sendBookingConfirmation,
@@ -58480,6 +58536,7 @@ __export(index_exports, {
   sendVendorBookingConfirmation: () => sendVendorBookingConfirmation,
   sourceProperties: () => sourceProperties,
   startLeadSequence: () => startLeadSequence,
+  submitRfpLead: () => submitRfpLead,
   testGscConnection: () => testGscConnection,
   testSendEmail: () => testSendEmail,
   triggerClarityReport: () => triggerClarityReport,
@@ -58504,7 +58561,7 @@ var import_firestore = require("firebase-functions/v2/firestore");
 var import_firestore2 = require("firebase-functions/v2/firestore");
 var import_params = require("firebase-functions/params");
 var admin4 = __toESM(require("firebase-admin"));
-var logger2 = __toESM(require("firebase-functions/logger"));
+var logger3 = __toESM(require("firebase-functions/logger"));
 
 // src/utils/firebase.ts
 var admin = __toESM(require("firebase-admin"));
@@ -58526,6 +58583,7 @@ try {
 var cheerio = __toESM(require("cheerio"));
 var import_generative_ai = require("@google/generative-ai");
 init_promptUtils();
+init_gemini();
 var TIMEOUT_MS = 15e3;
 var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 async function fetchPage(url) {
@@ -58801,7 +58859,7 @@ function mergeContactPages(pages) {
 async function extractWithAI(html, geminiApiKey) {
   try {
     const genAI4 = new import_generative_ai.GoogleGenerativeAI(geminiApiKey);
-    const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
     const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 15e3);
     const FALLBACK = `Extract business contact information AND the BEST local decision-maker for commercial cleaning / facilities vendor outreach from this website content.
 
@@ -59232,7 +59290,7 @@ var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
   const vendorId = event.params.vendorId;
   if (!newData || !oldData) return;
   if (newData.status !== "qualified" || oldData.status === "qualified") return;
-  logger2.info(`[UPDATE] Vendor ${vendorId} status changed to qualified.`);
+  logger3.info(`[UPDATE] Vendor ${vendorId} status changed to qualified.`);
   await runEnrichPipeline(vendorId, newData, oldData.status);
 });
 var onVendorCreated = (0, import_firestore2.onDocumentCreated)({
@@ -59244,7 +59302,7 @@ var onVendorCreated = (0, import_firestore2.onDocumentCreated)({
   const vendorId = event.params.vendorId;
   if (!data) return;
   if (data.status !== "qualified") return;
-  logger2.info(`[CREATE] Vendor ${vendorId} created with status qualified.`);
+  logger3.info(`[CREATE] Vendor ${vendorId} created with status qualified.`);
   await runEnrichPipeline(vendorId, data, "new");
 });
 async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
@@ -59263,12 +59321,12 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
     const vendorEmail = vendorData.email?.trim();
     const vendorWebsite = vendorData.website?.trim();
     if (vendorEmail) {
-      logger2.info(`Vendor ${vendorId} has email (${vendorEmail}). Proceeding to outreach.`);
+      logger3.info(`Vendor ${vendorId} has email (${vendorEmail}). Proceeding to outreach.`);
       await setOutreachPending(vendorId, vendorData);
       return;
     }
     if (vendorWebsite) {
-      logger2.info(`Vendor ${vendorId} has no email but has website. Enriching...`);
+      logger3.info(`Vendor ${vendorId} has no email but has website. Enriching...`);
       await db.collection("vendors").doc(vendorId).update({
         outreachStatus: "ENRICHING",
         enrichmentStartedAt: /* @__PURE__ */ new Date(),
@@ -59283,7 +59341,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
       try {
         const scrapedResult = await scrapeWebsite(vendorWebsite, GEMINI_API_KEY.value());
         if (!scrapedResult.success || !scrapedResult.data) {
-          logger2.warn(`Enrichment failed for ${vendorId}: ${scrapedResult.error}`);
+          logger3.warn(`Enrichment failed for ${vendorId}: ${scrapedResult.error}`);
           await markNeedsContact(vendorId, "Website scrape failed");
           return;
         }
@@ -59298,7 +59356,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
             updateData.email = foundEmail;
             enrichedFields.push("email");
           } else {
-            logger2.info(`Scraped email ${scrapedData.email} failed verification.`);
+            logger3.info(`Scraped email ${scrapedData.email} failed verification.`);
           }
         }
         if (scrapedData.phone && !vendorData.phone) {
@@ -59350,12 +59408,12 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           metadata: { enrichedFields, confidence: scrapedData.confidence }
         });
         if (foundEmail) {
-          logger2.info(`Found email ${foundEmail} for vendor ${vendorId} via website scrape. Proceeding to outreach.`);
+          logger3.info(`Found email ${foundEmail} for vendor ${vendorId} via website scrape. Proceeding to outreach.`);
           const updatedDoc = await db.collection("vendors").doc(vendorId).get();
           await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
           return;
         }
-        logger2.info(`No email from scrape for ${vendorId}. Trying deep mailto scan...`);
+        logger3.info(`No email from scrape for ${vendorId}. Trying deep mailto scan...`);
         const mailtoResult = await deepMailtoScan(vendorWebsite);
         if (mailtoResult.email) {
           const mailtoVerification = await verifyEmail(mailtoResult.email);
@@ -59373,7 +59431,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
               createdAt: /* @__PURE__ */ new Date(),
               metadata: { email: mailtoResult.email, pagesScanned: mailtoResult.pagesScanned }
             });
-            logger2.info(`Found email ${mailtoResult.email} via deep mailto for ${vendorId}.`);
+            logger3.info(`Found email ${mailtoResult.email} via deep mailto for ${vendorId}.`);
             const updatedDoc = await db.collection("vendors").doc(vendorId).get();
             await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
             return;
@@ -59386,7 +59444,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           domain = new URL(vendorWebsite).hostname;
         } catch {
         }
-        logger2.info(`No email from mailto scan for ${vendorId}. Trying Serper web search...`);
+        logger3.info(`No email from mailto scan for ${vendorId}. Trying Serper web search...`);
         const webResult = await searchWebForEmail(vendorName2, vendorLocation2, domain, SERPER_API_KEY.value());
         if (webResult.email) {
           const webVerification = await verifyEmail(webResult.email);
@@ -59404,14 +59462,14 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
               createdAt: /* @__PURE__ */ new Date(),
               metadata: { email: webResult.email, source: webResult.source }
             });
-            logger2.info(`Found email ${webResult.email} via ${webResult.source} for ${vendorId}.`);
+            logger3.info(`Found email ${webResult.email} via ${webResult.source} for ${vendorId}.`);
             const updatedDoc = await db.collection("vendors").doc(vendorId).get();
             await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
             return;
           }
         }
         if (scrapedData.contactFormUrl) {
-          logger2.info(`All enrichment failed for ${vendorId}, but found contact form: ${scrapedData.contactFormUrl}`);
+          logger3.info(`All enrichment failed for ${vendorId}, but found contact form: ${scrapedData.contactFormUrl}`);
           await db.collection("vendors").doc(vendorId).update({
             outreachStatus: "NEEDS_MANUAL_OUTREACH",
             statusUpdatedAt: /* @__PURE__ */ new Date(),
@@ -59433,12 +59491,12 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           await markNeedsContact(vendorId, "No email found after 3-layer enrichment (scrape \u2192 mailto \u2192 web search)");
         }
       } catch (enrichError) {
-        logger2.error(`Enrichment error for ${vendorId}:`, enrichError);
+        logger3.error(`Enrichment error for ${vendorId}:`, enrichError);
         await markNeedsContact(vendorId, `Enrichment error: ${enrichError.message}`);
       }
       return;
     }
-    logger2.info(`Vendor ${vendorId} has no email and no website. Trying Serper web search...`);
+    logger3.info(`Vendor ${vendorId} has no email and no website. Trying Serper web search...`);
     const vendorName = vendorData.businessName || vendorData.name || "";
     const vendorLocation = vendorData.address || vendorData.location || "";
     if (vendorName) {
@@ -59462,7 +59520,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
             createdAt: /* @__PURE__ */ new Date(),
             metadata: { email: webResult.email, source: webResult.source }
           });
-          logger2.info(`Found email ${webResult.email} via web search for ${vendorId} (no website).`);
+          logger3.info(`Found email ${webResult.email} via web search for ${vendorId} (no website).`);
           const updatedDoc = await db.collection("vendors").doc(vendorId).get();
           await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
           return;
@@ -59478,7 +59536,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
       vendorName ? "No email found \u2014 web search exhausted, no website on file" : "No email, no website, no business name \u2014 cannot enrich"
     );
   } catch (error19) {
-    logger2.error("Error in enrich pipeline:", error19);
+    logger3.error("Error in enrich pipeline:", error19);
   }
 }
 async function checkProfileCompleteness(vendorId, vendorData) {
@@ -59493,7 +59551,7 @@ async function checkProfileCompleteness(vendorId, vendorData) {
 async function setOutreachPending(vendorId, vendorData) {
   const missingFields = await checkProfileCompleteness(vendorId, vendorData);
   if (missingFields.length > 0) {
-    logger2.warn(`Vendor ${vendorId} profile incomplete. Missing: ${missingFields.join(", ")}. Blocking outreach.`);
+    logger3.warn(`Vendor ${vendorId} profile incomplete. Missing: ${missingFields.join(", ")}. Blocking outreach.`);
     await db.collection("vendors").doc(vendorId).update({
       outreachStatus: "PROFILE_INCOMPLETE",
       statusUpdatedAt: /* @__PURE__ */ new Date()
@@ -59529,7 +59587,7 @@ async function setOutreachPending(vendorId, vendorData) {
       status: vendorData.status
     }
   });
-  logger2.info(`Outreach GENERATE task enqueued for vendor ${vendorId}`);
+  logger3.info(`Outreach GENERATE task enqueued for vendor ${vendorId}`);
 }
 async function markNeedsContact(vendorId, reason) {
   await db.collection("vendors").doc(vendorId).update({
@@ -59542,13 +59600,13 @@ async function markNeedsContact(vendorId, reason) {
     description: `Manual outreach required: ${reason}`,
     createdAt: /* @__PURE__ */ new Date()
   });
-  logger2.info(`Vendor ${vendorId} marked NEEDS_CONTACT: ${reason}`);
+  logger3.info(`Vendor ${vendorId} marked NEEDS_CONTACT: ${reason}`);
 }
 
 // src/triggers/outreachWorker.ts
 var import_scheduler = require("firebase-functions/v2/scheduler");
 var admin7 = __toESM(require("firebase-admin"));
-var logger4 = __toESM(require("firebase-functions/logger"));
+var logger5 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 
 // src/utils/scheduleUtils.ts
@@ -59626,7 +59684,7 @@ async function getSenderFrom(senderId) {
       return `${profile.name} <${profile.email}>`;
     }
   } catch (err2) {
-    logger4.warn(`Failed to read email_senders/${senderId}, using default`, err2);
+    logger5.warn(`Failed to read email_senders/${senderId}, using default`, err2);
   }
   const fallback = SENDER_DEFAULTS[senderId] || SENDER_DEFAULTS.onboarding;
   senderCache[senderId] = fallback;
@@ -59641,24 +59699,24 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
   schedule: "every 1 minutes",
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"]
 }, async (event) => {
-  logger4.info("Processing outreach queue...");
+  logger5.info("Processing outreach queue...");
   const nowDay = (/* @__PURE__ */ new Date()).getUTCDay();
   if (nowDay === 0 || nowDay === 6) {
-    logger4.info(`Weekend detected (day=${nowDay}) \u2014 skipping outreach queue processing.`);
+    logger5.info(`Weekend detected (day=${nowDay}) \u2014 skipping outreach queue processing.`);
     return;
   }
   try {
     const tasks = await fetchPendingTasks(db5);
     if (tasks.length === 0) {
-      logger4.info("No pending tasks found.");
+      logger5.info("No pending tasks found.");
       return;
     }
-    logger4.info(`Found ${tasks.length} tasks to process.`);
+    logger5.info(`Found ${tasks.length} tasks to process.`);
     for (const task of tasks) {
       try {
         const claimed = await claimTask(db5, task.id);
         if (!claimed) {
-          logger4.info(`Task ${task.id} already claimed by another worker \u2014 skipping.`);
+          logger5.info(`Task ${task.id} already claimed by another worker \u2014 skipping.`);
           continue;
         }
         if (task.leadId) {
@@ -59673,7 +59731,7 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
           }
         }
       } catch (err2) {
-        logger4.error(`Error processing task ${task.id}:`, err2);
+        logger5.error(`Error processing task ${task.id}:`, err2);
         const newRetryCount = (task.retryCount || 0) + 1;
         const status = newRetryCount > 5 ? "FAILED" : "RETRY";
         let nextAttempt = /* @__PURE__ */ new Date();
@@ -59700,11 +59758,11 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
       }
     }
   } catch (error19) {
-    logger4.error("Fatal error in queue processor:", error19);
+    logger5.error("Fatal error in queue processor:", error19);
   }
 });
 async function handleGenerate(task) {
-  logger4.info(`Generating content for task ${task.id}`);
+  logger5.info(`Generating content for task ${task.id}`);
   const vendorDoc = await db5.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : task.metadata;
   const sequence = task.metadata?.sequence || 1;
@@ -59760,14 +59818,14 @@ async function handleGenerate(task) {
     }
   });
   await updateTaskStatus(db5, task.id, "COMPLETED");
-  logger4.info(`Task ${task.id} completed (template: ${templateId}). Send scheduled.`);
+  logger5.info(`Task ${task.id} completed (template: ${templateId}). Send scheduled.`);
 }
 async function handleSend(task) {
-  logger4.info(`Executing SEND for task ${task.id}`);
+  logger5.info(`Executing SEND for task ${task.id}`);
   const vendorDoc = await db5.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
   if (vendor?.status === "dismissed") {
-    logger4.info(`[Suppression] Vendor ${task.vendorId} is dismissed \u2014 skipping send and cancelling task.`);
+    logger5.info(`[Suppression] Vendor ${task.vendorId} is dismissed \u2014 skipping send and cancelling task.`);
     await updateTaskStatus(db5, task.id, "CANCELLED");
     return;
   }
@@ -59797,11 +59855,11 @@ async function handleSend(task) {
     sendSuccess = result.success;
     resendId = result.resendId;
     if (!sendSuccess) {
-      logger4.error(`Failed to send email to ${vendorEmail} for task ${task.id}`);
+      logger5.error(`Failed to send email to ${vendorEmail} for task ${task.id}`);
       throw new Error(`Resend email failed for vendor ${task.vendorId}`);
     }
   } else {
-    logger4.warn(`No email for task ${task.id}. Channel: ${task.metadata.channel}`);
+    logger5.warn(`No email for task ${task.id}. Channel: ${task.metadata.channel}`);
     sendSuccess = false;
   }
   await db5.collection("vendor_activities").add({
@@ -59837,9 +59895,9 @@ async function handleSend(task) {
           "stats.sent": admin7.firestore.FieldValue.increment(1),
           "stats.lastUpdated": /* @__PURE__ */ new Date()
         });
-        logger4.info(`Template ${task.metadata.templateId}: stats.sent incremented`);
+        logger5.info(`Template ${task.metadata.templateId}: stats.sent incremented`);
       } catch (statsErr) {
-        logger4.warn("Template stats.sent update failed:", statsErr);
+        logger5.warn("Template stats.sent update failed:", statsErr);
       }
     }
     await db5.collection("vendor_activities").add({
@@ -59858,22 +59916,22 @@ async function handleSend(task) {
   }
 }
 async function handleFollowUp(task) {
-  logger4.info(`Processing FOLLOW_UP task ${task.id} (sequence ${task.metadata?.sequence})`);
+  logger5.info(`Processing FOLLOW_UP task ${task.id} (sequence ${task.metadata?.sequence})`);
   const vendorDoc = await db5.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
   if (!vendor) {
-    logger4.warn(`Vendor ${task.vendorId} not found, marking task completed.`);
+    logger5.warn(`Vendor ${task.vendorId} not found, marking task completed.`);
     await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
   if (vendor.status !== "awaiting_onboarding") {
-    logger4.info(`Vendor ${task.vendorId} is now '${vendor.status}', skipping follow-up.`);
+    logger5.info(`Vendor ${task.vendorId} is now '${vendor.status}', skipping follow-up.`);
     await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
   const vendorEmail = vendor.email || task.metadata?.email;
   if (!vendorEmail) {
-    logger4.warn(`No email for vendor ${task.vendorId}, skipping follow-up.`);
+    logger5.warn(`No email for vendor ${task.vendorId}, skipping follow-up.`);
     await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
@@ -59882,7 +59940,7 @@ async function handleFollowUp(task) {
   let variantSuffix = "";
   let variantId = "standard";
   if (engagement === "bounced") {
-    logger4.info(`Vendor ${task.vendorId} email bounced, flagging for manual outreach.`);
+    logger5.info(`Vendor ${task.vendorId} email bounced, flagging for manual outreach.`);
     await db5.collection("vendors").doc(task.vendorId).update({
       outreachStatus: "NEEDS_MANUAL",
       statusUpdatedAt: /* @__PURE__ */ new Date()
@@ -59915,7 +59973,7 @@ async function handleFollowUp(task) {
     const lastEngagement = vendor.emailEngagement?.lastEvent;
     const hasEngaged = lastEngagement === "opened" || lastEngagement === "clicked";
     if (hasEngaged) {
-      logger4.info(`Vendor ${task.vendorId} engaged (${lastEngagement}) but didn't onboard. Flagging for manual outreach.`);
+      logger5.info(`Vendor ${task.vendorId} engaged (${lastEngagement}) but didn't onboard. Flagging for manual outreach.`);
       await db5.collection("vendors").doc(task.vendorId).update({
         outreachStatus: "NEEDS_MANUAL",
         statusUpdatedAt: /* @__PURE__ */ new Date()
@@ -59928,7 +59986,7 @@ async function handleFollowUp(task) {
         metadata: { sequence, lastEngagement, reason: "sequence_complete_engaged" }
       });
     } else {
-      logger4.info(`Vendor ${task.vendorId} completed full sequence with no engagement. Auto-dismissing.`);
+      logger5.info(`Vendor ${task.vendorId} completed full sequence with no engagement. Auto-dismissing.`);
       await db5.collection("vendors").doc(task.vendorId).update({
         status: "dismissed",
         dismissReason: "sequence_exhausted",
@@ -59976,7 +60034,7 @@ async function handleFollowUp(task) {
   const subjectSanitized = sanitizeUnresolvedVars(subject);
   const bodySanitized = sanitizeUnresolvedVars(body);
   if (subjectSanitized.replaced.length || bodySanitized.replaced.length) {
-    logger4.warn(`[VendorOutreach] Unresolved merge vars in template ${templateId}: subject=[${subjectSanitized.replaced.join(", ")}], body=[${bodySanitized.replaced.join(", ")}]`);
+    logger5.warn(`[VendorOutreach] Unresolved merge vars in template ${templateId}: subject=[${subjectSanitized.replaced.join(", ")}], body=[${bodySanitized.replaced.join(", ")}]`);
   }
   subject = subjectSanitized.cleaned;
   body = bodySanitized.cleaned;
@@ -60013,22 +60071,22 @@ async function handleFollowUp(task) {
   });
   if (sendSuccess) {
     await updateTaskStatus(db5, task.id, "COMPLETED");
-    logger4.info(`Follow-up #${sequence} sent to ${vendorEmail} (template: ${templateId})`);
+    logger5.info(`Follow-up #${sequence} sent to ${vendorEmail} (template: ${templateId})`);
     try {
       await db5.collection("templates").doc(templateId).update({
         "stats.sent": admin7.firestore.FieldValue.increment(1),
         "stats.lastUpdated": /* @__PURE__ */ new Date()
       });
-      logger4.info(`Template ${templateId}: stats.sent incremented`);
+      logger5.info(`Template ${templateId}: stats.sent incremented`);
     } catch (statsErr) {
-      logger4.warn("Template stats.sent update failed:", statsErr);
+      logger5.warn("Template stats.sent update failed:", statsErr);
     }
   } else {
     throw new Error(`Failed to send follow-up #${sequence} to ${vendorEmail}`);
   }
 }
 async function handleLeadSend(task) {
-  logger4.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
+  logger5.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
   let leadDoc = await db5.collection("companies").doc(task.leadId).get();
   let leadCollection = "companies";
   if (!leadDoc.exists) {
@@ -60036,14 +60094,14 @@ async function handleLeadSend(task) {
     leadCollection = "leads";
   }
   if (!leadDoc.exists) {
-    logger4.info(`[Suppression] Lead ${task.leadId} not found in companies or leads \u2014 cancelling task.`);
+    logger5.info(`[Suppression] Lead ${task.leadId} not found in companies or leads \u2014 cancelling task.`);
     await updateTaskStatus(db5, task.id, "CANCELLED");
     return;
   }
-  logger4.info(`[LeadOutreach] Resolved lead ${task.leadId} from '${leadCollection}' collection.`);
+  logger5.info(`[LeadOutreach] Resolved lead ${task.leadId} from '${leadCollection}' collection.`);
   const leadData = leadDoc.data();
   if (leadData.status === "lost" || leadData.unsubscribedAt) {
-    logger4.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed \u2014 skipping send.`);
+    logger5.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed \u2014 skipping send.`);
     await updateTaskStatus(db5, task.id, "CANCELLED");
     return;
   }
@@ -60055,7 +60113,7 @@ async function handleLeadSend(task) {
     if (contactDoc.exists) {
       const cData = contactDoc.data();
       if (cData.unsubscribed) {
-        logger4.info(`[Suppression] Contact ${contactId} is unsubscribed \u2014 skipping send.`);
+        logger5.info(`[Suppression] Contact ${contactId} is unsubscribed \u2014 skipping send.`);
         await updateTaskStatus(db5, task.id, "CANCELLED");
         return;
       }
@@ -60064,19 +60122,19 @@ async function handleLeadSend(task) {
     }
   }
   if (!toEmail) {
-    logger4.warn(`[LeadOutreach] No email for lead ${task.leadId}, skipping.`);
+    logger5.warn(`[LeadOutreach] No email for lead ${task.leadId}, skipping.`);
     await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
   const templateId = task.metadata?.templateId;
   if (!templateId) {
-    logger4.error(`[LeadOutreach] No templateId for lead ${task.leadId} task ${task.id}.`);
+    logger5.error(`[LeadOutreach] No templateId for lead ${task.leadId} task ${task.id}.`);
     await updateTaskStatus(db5, task.id, "FAILED");
     return;
   }
   const templateDoc = await db5.collection("templates").doc(templateId).get();
   if (!templateDoc.exists) {
-    logger4.error(`[LeadOutreach] Template ${templateId} not found. Run the seed script.`);
+    logger5.error(`[LeadOutreach] Template ${templateId} not found. Run the seed script.`);
     await updateTaskStatus(db5, task.id, "FAILED");
     return;
   }
@@ -60114,7 +60172,7 @@ async function handleLeadSend(task) {
   const subjectSanitized = sanitizeUnresolvedVars(subject);
   const bodySanitized = sanitizeUnresolvedVars(body);
   if (subjectSanitized.replaced.length || bodySanitized.replaced.length) {
-    logger4.warn(`[LeadOutreach] Unresolved merge vars in template ${templateId}: subject=[${subjectSanitized.replaced.join(", ")}], body=[${bodySanitized.replaced.join(", ")}]`);
+    logger5.warn(`[LeadOutreach] Unresolved merge vars in template ${templateId}: subject=[${subjectSanitized.replaced.join(", ")}], body=[${bodySanitized.replaced.join(", ")}]`);
   }
   subject = subjectSanitized.cleaned;
   body = bodySanitized.cleaned;
@@ -60163,7 +60221,7 @@ async function handleLeadSend(task) {
         "stats.lastUpdated": /* @__PURE__ */ new Date()
       });
     } catch (statsErr) {
-      logger4.warn("Template stats.sent update failed:", statsErr);
+      logger5.warn("Template stats.sent update failed:", statsErr);
     }
   }
 }
@@ -60171,13 +60229,14 @@ async function handleLeadSend(task) {
 // src/triggers/onDocumentUploaded.ts
 var import_firestore3 = require("firebase-functions/v2/firestore");
 var admin8 = __toESM(require("firebase-admin"));
-var logger6 = __toESM(require("firebase-functions/logger"));
+var logger7 = __toESM(require("firebase-functions/logger"));
 
 // src/agents/documentVerifier.ts
 var import_generative_ai3 = require("@google/generative-ai");
-var logger5 = __toESM(require("firebase-functions/logger"));
+var logger6 = __toESM(require("firebase-functions/logger"));
 var https = __toESM(require("https"));
 init_promptUtils();
+init_gemini();
 var genAI2 = new import_generative_ai3.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 function downloadFileAsBuffer(url) {
   return new Promise((resolve2, reject) => {
@@ -60196,7 +60255,7 @@ function downloadFileAsBuffer(url) {
   });
 }
 async function verifyDocument(docType, vendorName, specialty) {
-  const model2 = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model2 = genAI2.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
   let simulatedOcrText = "";
   if (docType === "COI") {
     const today = /* @__PURE__ */ new Date();
@@ -60342,9 +60401,9 @@ function validateExtracted(extracted, vendorName, attestations, today) {
   return { valid, reasoning, flags };
 }
 async function verifyAcord25(fileUrl, vendorName, attestations) {
-  const model2 = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model2 = genAI2.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
   try {
-    logger5.info(`Downloading ACORD 25 from: ${fileUrl}`);
+    logger6.info(`Downloading ACORD 25 from: ${fileUrl}`);
     const buffer = await downloadFileAsBuffer(fileUrl);
     const isPdf = fileUrl.toLowerCase().includes(".pdf");
     const isJpg = fileUrl.toLowerCase().includes(".jpg") || fileUrl.toLowerCase().includes(".jpeg");
@@ -60381,7 +60440,7 @@ Return ONLY the extracted JSON \u2014 do NOT make pass/fail judgments.`;
       }]
     });
     const responseText = result.response.text();
-    logger5.info(`Gemini ACORD 25 response length: ${responseText.length}`);
+    logger6.info(`Gemini ACORD 25 response length: ${responseText.length}`);
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("No JSON found in Gemini response");
@@ -60390,7 +60449,7 @@ Return ONLY the extracted JSON \u2014 do NOT make pass/fail judgments.`;
     const extracted = aiResult.extracted || aiResult;
     const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
     const validation = validateExtracted(extracted, vendorName, attestations, today);
-    logger5.info(`ACORD 25 verification: valid=${validation.valid}, flags=${validation.flags.length} (deterministic)`);
+    logger6.info(`ACORD 25 verification: valid=${validation.valid}, flags=${validation.flags.length} (deterministic)`);
     return {
       valid: validation.valid,
       reasoning: validation.reasoning,
@@ -60398,7 +60457,7 @@ Return ONLY the extracted JSON \u2014 do NOT make pass/fail judgments.`;
       flags: validation.flags
     };
   } catch (error19) {
-    logger5.error("ACORD 25 verification failed:", error19);
+    logger6.error("ACORD 25 verification failed:", error19);
     return {
       valid: false,
       reasoning: `AI verification failed: ${error19}`,
@@ -60422,10 +60481,10 @@ var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
   const acord25Before = before.compliance?.acord25?.status;
   const acord25After = after.compliance?.acord25?.status;
   if (acord25After === "PENDING" && acord25Before !== "PENDING") {
-    logger6.info(`Processing ACORD 25 for vendor ${vendorId}`);
+    logger7.info(`Processing ACORD 25 for vendor ${vendorId}`);
     const fileUrl = after.compliance?.acord25?.url;
     if (!fileUrl) {
-      logger6.error(`No ACORD 25 URL found for vendor ${vendorId}`);
+      logger7.error(`No ACORD 25 URL found for vendor ${vendorId}`);
       return;
     }
     const vendorName = after.businessName || after.companyName || "Vendor";
@@ -60472,12 +60531,12 @@ var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
           extracted: result.extracted
         }
       });
-      logger6.info(`ACORD 25 verification complete for ${vendorId}: ${status}`);
+      logger7.info(`ACORD 25 verification complete for ${vendorId}: ${status}`);
       if (status === "FLAGGED") {
         await sendFlagNotification(vendorId, vendorName, result.flags, result.reasoning);
       }
     } catch (error19) {
-      logger6.error(`ACORD 25 verification failed for ${vendorId}:`, error19);
+      logger7.error(`ACORD 25 verification failed for ${vendorId}:`, error19);
       await db6.doc(`vendors/${vendorId}`).update({
         "compliance.acord25.status": "FLAGGED",
         "compliance.acord25.aiAnalysis": {
@@ -60491,11 +60550,11 @@ var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
     return;
   }
   if (after.compliance?.coi?.status === "PENDING" && before.compliance?.coi?.status !== "PENDING") {
-    logger6.info(`Processing COI for ${vendorId}`);
+    logger7.info(`Processing COI for ${vendorId}`);
     await runLegacyVerification(vendorId, "COI", after);
   }
   if (after.compliance?.w9?.status === "PENDING" && before.compliance?.w9?.status !== "PENDING") {
-    logger6.info(`Processing W9 for ${vendorId}`);
+    logger7.info(`Processing W9 for ${vendorId}`);
     await runLegacyVerification(vendorId, "W9", after);
   }
 });
@@ -60530,7 +60589,7 @@ async function runLegacyVerification(vendorId, docType, vendorData) {
       });
     }
   } catch (error19) {
-    logger6.error(`Verification failed for ${docType}:`, error19);
+    logger7.error(`Verification failed for ${docType}:`, error19);
   }
 }
 async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
@@ -60568,9 +60627,9 @@ async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
                 ${buildSimpleFooter()}
             </div>`
     });
-    logger6.info(`Flag notification sent for vendor ${vendorId}`);
+    logger7.info(`Flag notification sent for vendor ${vendorId}`);
   } catch (error19) {
-    logger6.error("Failed to send flag notification:", error19);
+    logger7.error("Failed to send flag notification:", error19);
   }
 }
 
@@ -60680,7 +60739,7 @@ var import_firestore5 = require("firebase-functions/v2/firestore");
 init_emailUtils();
 var import_date_fns2 = require("date-fns");
 var import_date_fns_tz = require("date-fns-tz");
-var logger7 = __toESM(require("firebase-functions/logger"));
+var logger8 = __toESM(require("firebase-functions/logger"));
 var sendVendorBookingConfirmation = (0, import_firestore5.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: ["RESEND_API_KEY"]
@@ -60697,7 +60756,7 @@ var sendVendorBookingConfirmation = (0, import_firestore5.onDocumentUpdated)({
   const phone = after.phone || "N/A";
   const callTimeStr = after.onboardingCallTime;
   const EASTERN_TZ2 = "America/New_York";
-  logger7.info(`Vendor ${vendorId} (${businessName}) booked onboarding call at ${callTimeStr}`);
+  logger8.info(`Vendor ${vendorId} (${businessName}) booked onboarding call at ${callTimeStr}`);
   const startTime = new Date(callTimeStr);
   const duration2 = 30;
   const endTime = (0, import_date_fns2.addMinutes)(startTime, duration2);
@@ -60739,9 +60798,9 @@ Power to the Facilities!`,
       { filename: "xiri-onboarding-call.ics", content: icsContent }
     ]);
     if (vendorSent) {
-      logger7.info(`Calendar invite sent to vendor ${email}`);
+      logger8.info(`Calendar invite sent to vendor ${email}`);
     } else {
-      logger7.error(`Failed to send calendar invite to vendor ${email}`);
+      logger8.error(`Failed to send calendar invite to vendor ${email}`);
     }
   }
   const adminHtml = `
@@ -60759,9 +60818,9 @@ Power to the Facilities!`,
     { filename: "xiri-onboarding-call.ics", content: icsContent }
   ]);
   if (adminSent) {
-    logger7.info("Calendar invite sent to chris@xiri.ai");
+    logger8.info("Calendar invite sent to chris@xiri.ai");
   } else {
-    logger7.error("Failed to send calendar invite to chris@xiri.ai");
+    logger8.error("Failed to send calendar invite to chris@xiri.ai");
   }
 });
 function generateICS2(event) {
@@ -60949,7 +61008,7 @@ var enrichFromWebsite = (0, import_https.onCall)({
 // src/triggers/onOnboardingComplete.ts
 var import_firestore7 = require("firebase-functions/v2/firestore");
 var admin10 = __toESM(require("firebase-admin"));
-var logger8 = __toESM(require("firebase-functions/logger"));
+var logger9 = __toESM(require("firebase-functions/logger"));
 var import_resend3 = require("resend");
 init_emailUtils();
 if (!admin10.apps.length) {
@@ -60975,7 +61034,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   const vendorCity = after.city || "";
   const vendorState = after.state || "";
   const locationDisplay = [vendorCity, vendorState].filter(Boolean).join(", ") || "Not specified";
-  logger8.info(`Vendor ${vendorId} (${businessName}) completed onboarding. Sending notification.`);
+  logger9.info(`Vendor ${vendorId} (${businessName}) completed onboarding. Sending notification.`);
   const compliance = after.compliance || {};
   const complianceLines = [
     `Business Entity: ${compliance.hasBusinessEntity ? "\u2705 Yes" : "\u274C No"}`,
@@ -61100,12 +61159,12 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       })
     });
     if (!chatResp.ok) {
-      logger8.error(`Google Chat webhook failed (${chatResp.status}):`, await chatResp.text());
+      logger9.error(`Google Chat webhook failed (${chatResp.status}):`, await chatResp.text());
     } else {
-      logger8.info(`Google Chat notification sent for vendor ${vendorId}`);
+      logger9.info(`Google Chat notification sent for vendor ${vendorId}`);
     }
   } catch (chatErr) {
-    logger8.error("Google Chat notification error:", chatErr);
+    logger9.error("Google Chat notification error:", chatErr);
   }
   const resend2 = new import_resend3.Resend(process.env.RESEND_API_KEY);
   if (email && email !== "N/A") {
@@ -61179,12 +61238,12 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
         html: vendorHtml
       });
       if (vendorError) {
-        logger8.error("Failed to send vendor confirmation:", vendorError);
+        logger9.error("Failed to send vendor confirmation:", vendorError);
       } else {
-        logger8.info(`Vendor confirmation sent to ${email}`);
+        logger9.info(`Vendor confirmation sent to ${email}`);
       }
     } catch (err2) {
-      logger8.error("Error sending vendor confirmation:", err2);
+      logger9.error("Error sending vendor confirmation:", err2);
     }
   }
   const db29 = admin10.firestore();
@@ -61215,7 +61274,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
     complianceUpdate.status = "onboarding_scheduled";
   }
   await db29.collection("vendors").doc(vendorId).update(complianceUpdate);
-  logger8.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
+  logger9.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
   await db29.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
@@ -61227,7 +61286,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
 
 // src/triggers/onCalculatorLeadCaptured.ts
 var import_firestore8 = require("firebase-functions/v2/firestore");
-var logger9 = __toESM(require("firebase-functions/logger"));
+var logger10 = __toESM(require("firebase-functions/logger"));
 var onCalculatorLeadCaptured = (0, import_firestore8.onDocumentCreated)(
   { document: "vendors/{vendorId}" },
   async (event) => {
@@ -61344,12 +61403,12 @@ var onCalculatorLeadCaptured = (0, import_firestore8.onDocumentCreated)(
         })
       });
       if (!chatResp.ok) {
-        logger9.error(`Calculator chat webhook failed (${chatResp.status}):`, await chatResp.text());
+        logger10.error(`Calculator chat webhook failed (${chatResp.status}):`, await chatResp.text());
         return;
       }
-      logger9.info(`Calculator lead chat notification sent for vendor ${vendorId}`);
+      logger10.info(`Calculator lead chat notification sent for vendor ${vendorId}`);
     } catch (error19) {
-      logger9.error("Calculator chat webhook error:", error19);
+      logger10.error("Calculator chat webhook error:", error19);
     }
   }
 );
@@ -61357,7 +61416,7 @@ var onCalculatorLeadCaptured = (0, import_firestore8.onDocumentCreated)(
 // src/triggers/dripScheduler.ts
 var import_firestore9 = require("firebase-functions/v2/firestore");
 var admin11 = __toESM(require("firebase-admin"));
-var logger10 = __toESM(require("firebase-functions/logger"));
+var logger11 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 if (!admin11.apps.length) {
   admin11.initializeApp();
@@ -61366,7 +61425,7 @@ var db8 = admin11.firestore();
 var onAwaitingOnboarding = (0, import_firestore9.onDocumentUpdated)({
   document: "vendors/{vendorId}"
 }, async (event) => {
-  logger10.info("[DripScheduler] Vendor auto-enrollment disabled \u2014 vendors must be manually enrolled in sequences.");
+  logger11.info("[DripScheduler] Vendor auto-enrollment disabled \u2014 vendors must be manually enrolled in sequences.");
   return;
 });
 var STAGES_PAST_OUTREACH = /* @__PURE__ */ new Set([
@@ -61388,7 +61447,7 @@ var onVendorAdvancedPastOutreach = (0, import_firestore9.onDocumentUpdated)({
   if (!wasInOutreach || !nowPastOutreach) return;
   const vendorId = event.params.vendorId;
   const businessName = after.businessName || "Unknown";
-  logger10.info(`Vendor ${vendorId} (${businessName}) advanced to '${after.status}' \u2014 cancelling scheduled outreach emails.`);
+  logger11.info(`Vendor ${vendorId} (${businessName}) advanced to '${after.status}' \u2014 cancelling scheduled outreach emails.`);
   const cancelledCount = await cancelVendorTasks(db8, vendorId);
   if (cancelledCount > 0) {
     await db8.collection("vendor_activities").add({
@@ -61402,14 +61461,14 @@ var onVendorAdvancedPastOutreach = (0, import_firestore9.onDocumentUpdated)({
         cancelledCount
       }
     });
-    logger10.info(`Cancelled ${cancelledCount} pending outreach tasks for vendor ${vendorId}.`);
+    logger11.info(`Cancelled ${cancelledCount} pending outreach tasks for vendor ${vendorId}.`);
   }
 });
 
 // src/triggers/handleUnsubscribe.ts
 var import_https2 = require("firebase-functions/v2/https");
 var admin12 = __toESM(require("firebase-admin"));
-var logger11 = __toESM(require("firebase-functions/logger"));
+var logger12 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 init_suppressionUtils();
 init_emailUtils();
@@ -61463,7 +61522,7 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
       await handleVendorUnsubscribe(entityId, res);
     }
   } catch (err2) {
-    logger11.error(`Error processing unsubscribe for ${entityType} ${entityId}:`, err2);
+    logger12.error(`Error processing unsubscribe for ${entityType} ${entityId}:`, err2);
     res.status(500).send(renderPage(
       "Something Went Wrong",
       'We encountered an error processing your request. Please try again or contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.',
@@ -61517,7 +61576,7 @@ async function handleVendorUnsubscribe(vendorId, res) {
       cancelledTasks: cancelledCount
     }
   });
-  logger11.info(`Vendor ${vendorId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
+  logger12.info(`Vendor ${vendorId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
   res.status(200).send(renderPage(
     "Unsubscribed Successfully",
     `${businessName} has been removed from our outreach list. You won't receive any more emails from XIRI Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
@@ -61613,7 +61672,7 @@ async function handleLeadUnsubscribe(leadId, res, contactId) {
       contactId: resolvedContactId || null
     }
   });
-  logger11.info(`Lead ${leadId} (${businessName}) unsubscribed. Contact: ${resolvedContactId || "none"}. ${cancelledCount} queue tasks + ${resendCancelled} scheduled emails cancelled.`);
+  logger12.info(`Lead ${leadId} (${businessName}) unsubscribed. Contact: ${resolvedContactId || "none"}. ${cancelledCount} queue tasks + ${resendCancelled} scheduled emails cancelled.`);
   res.status(200).send(renderPage(
     "Unsubscribed Successfully",
     `${businessName} has been removed from our outreach list. You won't receive any more emails from XIRI Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
@@ -61652,7 +61711,7 @@ function renderPage(title, message, success) {
 // src/triggers/sendOnboardingInvite.ts
 var import_firestore10 = require("firebase-functions/v2/firestore");
 var admin13 = __toESM(require("firebase-admin"));
-var logger12 = __toESM(require("firebase-functions/logger"));
+var logger13 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
 var import_date_fns3 = require("date-fns");
 var import_date_fns_tz2 = require("date-fns-tz");
@@ -61677,14 +61736,14 @@ var sendOnboardingInvite = (0, import_firestore10.onDocumentUpdated)({
   const contactName = after.contactName || businessName;
   const vendorId = event.params.vendorId;
   if (!callTime) {
-    logger12.warn(`Vendor ${vendorId} moved to onboarding_scheduled but no onboardingCallTime set.`);
+    logger13.warn(`Vendor ${vendorId} moved to onboarding_scheduled but no onboardingCallTime set.`);
     return;
   }
   if (!vendorEmail) {
-    logger12.warn(`Vendor ${vendorId} has no email. Skipping invite.`);
+    logger13.warn(`Vendor ${vendorId} has no email. Skipping invite.`);
     return;
   }
-  logger12.info(`Sending onboarding invite for vendor ${vendorId} (${businessName}) at ${callTime}`);
+  logger13.info(`Sending onboarding invite for vendor ${vendorId} (${businessName}) at ${callTime}`);
   const startTime = new Date(callTime);
   const duration2 = 30;
   const endTime = (0, import_date_fns3.addMinutes)(startTime, duration2);
@@ -61759,7 +61818,7 @@ Power to the Facilities!`,
       emailSent: vendorSent
     }
   });
-  logger12.info(`Onboarding invite sent for vendor ${vendorId}. Vendor: ${vendorSent ? "\u2705" : "\u274C"}`);
+  logger13.info(`Onboarding invite sent for vendor ${vendorId}. Vendor: ${vendorSent ? "\u2705" : "\u274C"}`);
 });
 function generateICS3(event) {
   const formatDate2 = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
@@ -62309,7 +62368,7 @@ function buildVendorRemittanceEmail(data) {
 // src/triggers/onVendorReady.ts
 var import_firestore12 = require("firebase-functions/v2/firestore");
 var admin16 = __toESM(require("firebase-admin"));
-var logger13 = __toESM(require("firebase-functions/logger"));
+var logger14 = __toESM(require("firebase-functions/logger"));
 
 // ../shared/src/TaxCertificateService.ts
 var import_pdf_lib = require("pdf-lib");
@@ -62425,18 +62484,18 @@ var onWorkOrderAssigned = (0, import_firestore12.onDocumentUpdated)({
   const newVendorId = after.vendorId || null;
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
-  logger13.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
+  logger14.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
   const db29 = admin16.firestore();
   let vendorData;
   try {
     const vendorSnap = await db29.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
-      logger13.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
+      logger14.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
     }
     vendorData = vendorSnap.data();
   } catch (err2) {
-    logger13.error(`[ST-120.1] Error loading vendor ${newVendorId}:`, err2);
+    logger14.error(`[ST-120.1] Error loading vendor ${newVendorId}:`, err2);
     return;
   }
   const vendorSalesTaxId = vendorData.compliance?.salesTaxId?.trim() || "";
@@ -62448,7 +62507,7 @@ var onWorkOrderAssigned = (0, import_firestore12.onDocumentUpdated)({
         leadData = leadSnap.data();
       }
     } catch (err2) {
-      logger13.warn(`[ST-120.1] Could not load lead ${after.leadId}:`, err2);
+      logger14.warn(`[ST-120.1] Could not load lead ${after.leadId}:`, err2);
     }
   }
   let xiriData;
@@ -62456,7 +62515,7 @@ var onWorkOrderAssigned = (0, import_firestore12.onDocumentUpdated)({
     const settingsSnap = await db29.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
-      logger13.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
+      logger14.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
       return;
     }
     xiriData = {
@@ -62471,7 +62530,7 @@ var onWorkOrderAssigned = (0, import_firestore12.onDocumentUpdated)({
       signerTitle: settings.signerTitle || ""
     };
   } catch (err2) {
-    logger13.error("[ST-120.1] Error loading corporate settings:", err2);
+    logger14.error("[ST-120.1] Error loading corporate settings:", err2);
     return;
   }
   const vendorCertData = {
@@ -62486,7 +62545,7 @@ var onWorkOrderAssigned = (0, import_firestore12.onDocumentUpdated)({
   };
   const result = await generateST1201(vendorCertData, xiriData, void 0);
   if (!result.success || !result.pdfBytes) {
-    logger13.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
+    logger14.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
     await db29.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
@@ -62513,9 +62572,9 @@ var onWorkOrderAssigned = (0, import_firestore12.onDocumentUpdated)({
       }
     });
     storagePath = `gs://${bucket.name}/${fileName}`;
-    logger13.info(`[ST-120.1] PDF uploaded to ${storagePath}`);
+    logger14.info(`[ST-120.1] PDF uploaded to ${storagePath}`);
   } catch (err2) {
-    logger13.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err2);
+    logger14.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err2);
     return;
   }
   await db29.collection("work_orders").doc(workOrderId).update({
@@ -62562,13 +62621,13 @@ var onWorkOrderAssigned = (0, import_firestore12.onDocumentUpdated)({
       storagePath
     }
   });
-  logger13.info(`[ST-120.1] Certificate generated and emailed for WO ${workOrderId}, vendor ${newVendorId}.`);
+  logger14.info(`[ST-120.1] Certificate generated and emailed for WO ${workOrderId}, vendor ${newVendorId}.`);
 });
 
 // src/triggers/onLeadQualified.ts
 var import_firestore13 = require("firebase-functions/v2/firestore");
 var admin17 = __toESM(require("firebase-admin"));
-var logger14 = __toESM(require("firebase-functions/logger"));
+var logger15 = __toESM(require("firebase-functions/logger"));
 if (!admin17.apps.length) {
   admin17.initializeApp();
 }
@@ -62576,14 +62635,14 @@ var db13 = admin17.firestore();
 var onLeadQualified = (0, import_firestore13.onDocumentUpdated)({
   document: "leads/{leadId}"
 }, async (event) => {
-  logger14.info("[SalesOutreach] Auto-enrollment disabled \u2014 leads must be manually enrolled in sequences.");
+  logger15.info("[SalesOutreach] Auto-enrollment disabled \u2014 leads must be manually enrolled in sequences.");
   return;
 });
 
 // src/triggers/commissionTriggers.ts
 var import_firestore14 = require("firebase-functions/v2/firestore");
 var admin18 = __toESM(require("firebase-admin"));
-var logger15 = __toESM(require("firebase-functions/logger"));
+var logger16 = __toESM(require("firebase-functions/logger"));
 if (!admin18.apps.length) {
   admin18.initializeApp();
 }
@@ -62622,7 +62681,7 @@ var onQuoteAccepted = (0, import_firestore14.onDocumentUpdated)({
   const quoteId = event.params.quoteId;
   const existingComm = await db14.collection("commissions").where("quoteId", "==", quoteId).limit(1).get();
   if (!existingComm.empty) {
-    logger15.info(`[Commission] Commission already exists for quote ${quoteId} \u2014 skipping duplicate`);
+    logger16.info(`[Commission] Commission already exists for quote ${quoteId} \u2014 skipping duplicate`);
     return;
   }
   const cfg = await getCommissionConfig();
@@ -62699,7 +62758,7 @@ var onQuoteAccepted = (0, import_firestore14.onDocumentUpdated)({
     commissionType: type,
     createdAt: admin18.firestore.FieldValue.serverTimestamp()
   });
-  logger15.info(`[Commission] Created ${type} commission for staff ${assignedTo}: $${totalCommission} (${(rate * 100).toFixed(0)}% of $${acv} ACV) \u2014 quote ${quoteId}`);
+  logger16.info(`[Commission] Created ${type} commission for staff ${assignedTo}: $${totalCommission} (${(rate * 100).toFixed(0)}% of $${acv} ACV) \u2014 quote ${quoteId}`);
 });
 var onInvoicePaid = (0, import_firestore14.onDocumentUpdated)({
   document: "invoices/{invoiceId}"
@@ -62720,7 +62779,7 @@ var onInvoicePaid = (0, import_firestore14.onDocumentUpdated)({
         const freshDoc = await txn.get(commDoc.ref);
         const freshData = freshDoc.data();
         if (!freshData || freshData.status !== "PENDING") {
-          logger15.info(`[Commission] Commission ${commDoc.id} already activated (status: ${freshData?.status}) \u2014 skipping`);
+          logger16.info(`[Commission] Commission ${commDoc.id} already activated (status: ${freshData?.status}) \u2014 skipping`);
           return;
         }
         const schedule2 = [...freshData.payoutSchedule];
@@ -62747,9 +62806,9 @@ var onInvoicePaid = (0, import_firestore14.onDocumentUpdated)({
         description: `Payout 1 of ${schedule.length}: $${schedule[0].amount.toFixed(2)} (${schedule[0].percentage}%) \u2014 triggered by invoice payment`,
         createdAt: now
       });
-      logger15.info(`[Commission] Activated commission ${commDoc.id}: Payout 1 of $${schedule[0].amount} paid`);
+      logger16.info(`[Commission] Activated commission ${commDoc.id}: Payout 1 of $${schedule[0].amount} paid`);
     } catch (txnErr) {
-      logger15.error(`[Commission] Transaction failed for commission ${commDoc.id}:`, txnErr.message);
+      logger16.error(`[Commission] Transaction failed for commission ${commDoc.id}:`, txnErr.message);
     }
   }
 });
@@ -62781,7 +62840,7 @@ var onWorkOrderHandoff = (0, import_firestore14.onDocumentUpdated)({
     description: `Account handed off from Sales to FSM (first work order assigned)`,
     createdAt: admin18.firestore.FieldValue.serverTimestamp()
   });
-  logger15.info(`[Handoff] Lead ${leadId} handed off to FSM ${fsmId} via work order ${event.params.workOrderId}`);
+  logger16.info(`[Handoff] Lead ${leadId} handed off to FSM ${fsmId} via work order ${event.params.workOrderId}`);
   try {
     const fsmDoc = await db14.collection("users").doc(fsmId).get();
     const fsmEmail = fsmDoc.data()?.email || "chris@xiri.ai";
@@ -62830,9 +62889,9 @@ var onWorkOrderHandoff = (0, import_firestore14.onDocumentUpdated)({
       status: "pending",
       createdAt: admin18.firestore.FieldValue.serverTimestamp()
     });
-    logger15.info(`[Handoff] FSM notification email queued to ${fsmEmail} for client ${clientName}`);
+    logger16.info(`[Handoff] FSM notification email queued to ${fsmEmail} for client ${clientName}`);
   } catch (emailErr) {
-    logger15.error(`[Handoff] Failed to send FSM email:`, emailErr.message);
+    logger16.error(`[Handoff] Failed to send FSM email:`, emailErr.message);
   }
 });
 var onClientCancelled = (0, import_firestore14.onDocumentUpdated)({
@@ -62851,7 +62910,7 @@ var onClientCancelled = (0, import_firestore14.onDocumentUpdated)({
     const commission = commDoc.data();
     const clawbackEnd = commission.clawbackWindowEnd?.toDate?.() || commission.clawbackWindowEnd;
     if (!clawbackEnd || now > new Date(clawbackEnd)) {
-      logger15.info(`[Clawback] Commission ${commDoc.id} past clawback window \u2014 no action`);
+      logger16.info(`[Clawback] Commission ${commDoc.id} past clawback window \u2014 no action`);
       continue;
     }
     const schedule = [...commission.payoutSchedule];
@@ -62876,14 +62935,14 @@ var onClientCancelled = (0, import_firestore14.onDocumentUpdated)({
       description: `Client churned within clawback window. $${cancelledAmount.toFixed(2)} in unpaid payouts cancelled.`,
       createdAt: now
     });
-    logger15.info(`[Clawback] Commission ${commDoc.id}: $${cancelledAmount} in unpaid payouts cancelled (client churn)`);
+    logger16.info(`[Clawback] Commission ${commDoc.id}: $${cancelledAmount} in unpaid payouts cancelled (client churn)`);
   }
 });
 
 // src/triggers/commissionScheduled.ts
 var import_scheduler2 = require("firebase-functions/v2/scheduler");
 var admin19 = __toESM(require("firebase-admin"));
-var logger16 = __toESM(require("firebase-functions/logger"));
+var logger17 = __toESM(require("firebase-functions/logger"));
 if (!admin19.apps.length) {
   admin19.initializeApp();
 }
@@ -62904,7 +62963,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
   timeZone: "America/New_York"
 }, async () => {
   const now = /* @__PURE__ */ new Date();
-  logger16.info(`[CommissionPayouts] Processing scheduled payouts for ${now.toISOString()}`);
+  logger17.info(`[CommissionPayouts] Processing scheduled payouts for ${now.toISOString()}`);
   const commSnap = await db15.collection("commissions").where("status", "==", "ACTIVE").get();
   let processed = 0;
   let paid = 0;
@@ -62921,7 +62980,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
       if (leadData?.status === "churned" || leadData?.status === "lost") {
         entry.status = "CANCELLED";
         changed2 = true;
-        logger16.info(`[CommissionPayouts] Skipping payout \u2014 client ${commission.leadId} is ${leadData?.status}`);
+        logger17.info(`[CommissionPayouts] Skipping payout \u2014 client ${commission.leadId} is ${leadData?.status}`);
         continue;
       }
       entry.status = "PAID";
@@ -62936,7 +62995,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
         description: `Scheduled payout: $${entry.amount.toFixed(2)} (${entry.percentage}%)`,
         createdAt: now
       });
-      logger16.info(`[CommissionPayouts] Paid $${entry.amount} to ${commission.staffId} (commission ${commDoc.id})`);
+      logger17.info(`[CommissionPayouts] Paid $${entry.amount} to ${commission.staffId} (commission ${commDoc.id})`);
     }
     if (changed2) {
       const allDone = schedule.every((e2) => e2.status === "PAID" || e2.status === "CANCELLED");
@@ -62956,7 +63015,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
       processed++;
     }
   }
-  logger16.info(`[CommissionPayouts] Done: ${processed} commissions processed, ${paid} payouts made`);
+  logger17.info(`[CommissionPayouts] Done: ${processed} commissions processed, ${paid} payouts made`);
 });
 var calculateNrr = (0, import_scheduler2.onSchedule)({
   schedule: "0 0 1 1,4,7,10 *",
@@ -62977,7 +63036,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
     // Oct → calc Q3
   };
   const quarter = quarterMap[currentMonth] || `${currentYear}-Q${Math.ceil((currentMonth + 1) / 3)}`;
-  logger16.info(`[NRR] Calculating Net Revenue Retention for ${quarter}`);
+  logger17.info(`[NRR] Calculating Net Revenue Retention for ${quarter}`);
   const leadsSnap = await db15.collection("leads").where("handedOffToFsm", "!=", null).get();
   const fsmPortfolios = /* @__PURE__ */ new Map();
   for (const leadDoc of leadsSnap.docs) {
@@ -63074,15 +63133,15 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
         createdAt: now
       });
     }
-    logger16.info(`[NRR] FSM ${fsmId}: NRR=${(nrr * 100).toFixed(1)}%, portfolio=$${portfolio.currentMrr}/mo, bonus=$${bonusAmount}`);
+    logger17.info(`[NRR] FSM ${fsmId}: NRR=${(nrr * 100).toFixed(1)}%, portfolio=$${portfolio.currentMrr}/mo, bonus=$${bonusAmount}`);
   }
-  logger16.info(`[NRR] Completed NRR calculation for ${quarter}: ${fsmPortfolios.size} FSMs processed`);
+  logger17.info(`[NRR] Completed NRR calculation for ${quarter}: ${fsmPortfolios.size} FSMs processed`);
 });
 
 // src/triggers/onAuditSubmitted.ts
 var import_firestore15 = require("firebase-functions/v2/firestore");
 var admin20 = __toESM(require("firebase-admin"));
-var logger17 = __toESM(require("firebase-functions/logger"));
+var logger18 = __toESM(require("firebase-functions/logger"));
 if (!admin20.apps.length) {
   admin20.initializeApp();
 }
@@ -63101,7 +63160,7 @@ var onAuditSubmitted = (0, import_firestore15.onDocumentCreated)({
   const contactEmail = data.email || data.contactEmail;
   const address = data.address || data.location || "";
   if (!contactEmail) {
-    logger17.warn(`[AuditSubmitted] Lead ${leadId} has no email \u2014 skipping confirmation`);
+    logger18.warn(`[AuditSubmitted] Lead ${leadId} has no email \u2014 skipping confirmation`);
     return;
   }
   await db16.collection("mail_queue").add({
@@ -63132,7 +63191,7 @@ var onAuditSubmitted = (0, import_firestore15.onDocumentCreated)({
     description: `New audit lead from ${businessName} (${contactEmail})`,
     createdAt: admin20.firestore.FieldValue.serverTimestamp()
   });
-  logger17.info(`[AuditSubmitted] Confirmation + internal alert sent for lead ${leadId} (${businessName})`);
+  logger18.info(`[AuditSubmitted] Confirmation + internal alert sent for lead ${leadId} (${businessName})`);
 });
 function buildAuditConfirmationEmail(contactName, businessName) {
   const greeting = contactName ? `Hi ${contactName}` : "Hello";
@@ -63408,7 +63467,7 @@ async function logActivity(referralId, type, subject, to, success) {
 // src/triggers/onAuditFailed.ts
 var import_firestore17 = require("firebase-functions/v2/firestore");
 var admin22 = __toESM(require("firebase-admin"));
-var logger19 = __toESM(require("firebase-functions/logger"));
+var logger20 = __toESM(require("firebase-functions/logger"));
 if (!admin22.apps.length) {
   admin22.initializeApp();
 }
@@ -63429,7 +63488,7 @@ var onAuditFailed = (0, import_firestore17.onDocumentCreated)({
   const vendorId = data.vendorId;
   const locationName = data.locationName || data.location || "Unknown Location";
   const clientName = data.clientName || data.businessName || "";
-  logger19.info(`[AuditFailed] Audit ${auditId} scored ${overallScore}% (threshold: ${FAIL_THRESHOLD}%)`);
+  logger20.info(`[AuditFailed] Audit ${auditId} scored ${overallScore}% (threshold: ${FAIL_THRESHOLD}%)`);
   if (workOrderId) {
     await db18.collection("work_orders").doc(workOrderId).update({
       status: "needs_remediation",
@@ -63539,7 +63598,7 @@ var onAuditFailed = (0, import_firestore17.onDocumentCreated)({
     description: `Audit failed at ${locationName} (${overallScore}%). Vendor: ${vendorName}. ${vendorSuspended ? "VENDOR AUTO-SUSPENDED." : ""}`,
     createdAt: admin22.firestore.FieldValue.serverTimestamp()
   });
-  logger19.info(`[AuditFailed] Escalation complete: audit ${auditId}, score ${overallScore}%, vendor ${vendorName} (failures: ${vendorFailCount})${vendorSuspended ? " \u2014 SUSPENDED" : ""}`);
+  logger20.info(`[AuditFailed] Escalation complete: audit ${auditId}, score ${overallScore}%, vendor ${vendorName} (failures: ${vendorFailCount})${vendorSuspended ? " \u2014 SUSPENDED" : ""}`);
 });
 function buildAuditFailedEmail(data) {
   return `
@@ -63588,7 +63647,7 @@ function buildAuditFailedEmail(data) {
 // src/triggers/generateMonthlyInvoices.ts
 var import_scheduler3 = require("firebase-functions/v2/scheduler");
 var admin23 = __toESM(require("firebase-admin"));
-var logger20 = __toESM(require("firebase-functions/logger"));
+var logger21 = __toESM(require("firebase-functions/logger"));
 if (!admin23.apps.length) {
   admin23.initializeApp();
 }
@@ -63598,14 +63657,14 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
   // 6 AM on 1st of every month
   timeZone: "America/New_York"
 }, async () => {
-  logger20.info("[MonthlyInvoices] Starting monthly invoice generation...");
+  logger21.info("[MonthlyInvoices] Starting monthly invoice generation...");
   const now = /* @__PURE__ */ new Date();
   const periodEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const periodStart = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), 1);
   const periodLabel = periodStart.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const contractsSnap = await db19.collection("contracts").where("status", "==", "active").get();
   if (contractsSnap.empty) {
-    logger20.info("[MonthlyInvoices] No active contracts found. Done.");
+    logger21.info("[MonthlyInvoices] No active contracts found. Done.");
     return;
   }
   let invoicesCreated = 0;
@@ -63707,9 +63766,9 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
       createdAt: admin23.firestore.FieldValue.serverTimestamp()
     });
     invoicesCreated++;
-    logger20.info(`[MonthlyInvoices] Created invoice ${invoiceRef.id} for ${clientName}: $${totalAmount} (${invoiceLineItems.length} items: ${invoiceLineItems.filter((i) => i.billingType === "recurring").length} recurring, ${invoiceLineItems.filter((i) => i.billingType === "one_time").length} one-time)`);
+    logger21.info(`[MonthlyInvoices] Created invoice ${invoiceRef.id} for ${clientName}: $${totalAmount} (${invoiceLineItems.length} items: ${invoiceLineItems.filter((i) => i.billingType === "recurring").length} recurring, ${invoiceLineItems.filter((i) => i.billingType === "one_time").length} one-time)`);
   }
-  logger20.info(`[MonthlyInvoices] Complete: ${invoicesCreated} invoices created, ${invoicesSkipped} contracts skipped`);
+  logger21.info(`[MonthlyInvoices] Complete: ${invoicesCreated} invoices created, ${invoicesSkipped} contracts skipped`);
 });
 
 // src/triggers/resendWebhook.ts
@@ -64355,7 +64414,7 @@ var backfillEngagement = (0, import_https5.onRequest)({
 // src/scripts/seed-in-house-sequence.ts
 var import_https6 = require("firebase-functions/v2/https");
 var admin26 = __toESM(require("firebase-admin"));
-var logger23 = __toESM(require("firebase-functions/logger"));
+var logger24 = __toESM(require("firebase-functions/logger"));
 
 // src/utils/cors.ts
 var DASHBOARD_CORS = [
@@ -64537,7 +64596,7 @@ var seedInHouseSequence = (0, import_https6.onCall)({
     createdAt: admin26.firestore.FieldValue.serverTimestamp()
   });
   await batch.commit();
-  logger23.info(`[SeedInHouse] Created ${TEMPLATES.length} templates + 1 sequence.`);
+  logger24.info(`[SeedInHouse] Created ${TEMPLATES.length} templates + 1 sequence.`);
   return { message: `Seeded ${TEMPLATES.length} templates + sequence "${SEQUENCE.name}"` };
 });
 
@@ -64697,7 +64756,7 @@ var onStaffUpdated = (0, import_firestore18.onDocumentUpdated)("users/{userId}",
 var import_scheduler4 = require("firebase-functions/v2/scheduler");
 var import_https7 = require("firebase-functions/v2/https");
 var admin27 = __toESM(require("firebase-admin"));
-var logger25 = __toESM(require("firebase-functions/logger"));
+var logger26 = __toESM(require("firebase-functions/logger"));
 init_promptUtils();
 if (!admin27.apps.length) {
   admin27.initializeApp();
@@ -64709,7 +64768,7 @@ var weeklyTemplateOptimizer = (0, import_scheduler4.onSchedule)({
   secrets: ["GEMINI_API_KEY"],
   memory: "512MiB"
 }, async () => {
-  logger25.info("Running weekly template optimization check...");
+  logger26.info("Running weekly template optimization check...");
   await optimizeUnderperformingTemplates();
 });
 var optimizeTemplate = (0, import_https7.onCall)({
@@ -64741,7 +64800,7 @@ async function optimizeUnderperformingTemplates() {
       if (!stats || stats.sent < MIN_SENDS_FOR_ANALYSIS) continue;
       const openRate = stats.sent > 0 ? stats.opened / stats.sent : 0;
       if (openRate < LOW_OPEN_RATE_THRESHOLD) {
-        logger25.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
+        logger26.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
         await optimizeSingleTemplate(doc.id);
         optimized.push(doc.id);
       }
@@ -64756,9 +64815,9 @@ async function optimizeUnderperformingTemplates() {
       read: false,
       createdAt: /* @__PURE__ */ new Date()
     });
-    logger25.info(`Notification created for ${optimized.length} optimized templates.`);
+    logger26.info(`Notification created for ${optimized.length} optimized templates.`);
   } else {
-    logger25.info("No underperforming templates found.");
+    logger26.info("No underperforming templates found.");
   }
   return optimized;
 }
@@ -64859,7 +64918,7 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
     const result = await response.json();
     const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-      logger25.error("No response from Gemini for template optimization");
+      logger26.error("No response from Gemini for template optimization");
       throw new import_https7.HttpsError("internal", "Gemini returned empty response");
     }
     const cleanText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
@@ -64872,7 +64931,7 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
       }),
       lastOptimizedAt: /* @__PURE__ */ new Date()
     });
-    logger25.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
+    logger26.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
     return {
       templateId,
       analysis: suggestions.analysis,
@@ -64880,7 +64939,7 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
       shortUrlTest: suggestions.shortUrlTest
     };
   } catch (err2) {
-    logger25.error(`AI optimization failed for ${templateId}:`, err2);
+    logger26.error(`AI optimization failed for ${templateId}:`, err2);
     throw new import_https7.HttpsError("internal", `AI optimization failed: ${err2}`);
   }
 }
@@ -64888,7 +64947,7 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
 // src/triggers/startLeadSequence.ts
 var import_https8 = require("firebase-functions/v2/https");
 var admin28 = __toESM(require("firebase-admin"));
-var logger26 = __toESM(require("firebase-functions/logger"));
+var logger27 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
 if (!admin28.apps.length) {
   admin28.initializeApp();
@@ -65027,9 +65086,9 @@ var startLeadSequence = (0, import_https8.onCall)(async (request) => {
   const { cancelLeadTasks: cancelLeadTasks2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
   const cancelledCount = await cancelLeadTasks2(db24, leadId);
   if (cancelledCount > 0) {
-    logger26.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
+    logger27.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
   }
-  logger26.info(
+  logger27.info(
     `[StartSequence] Starting "${sequence.name}" (${sequenceId}) for lead ${leadId} (${businessName}), contact ${contactId || "lead-level"}`
   );
   let senderFrom = "Chris Leung \u2014 XIRI <chris@xiri.ai>";
@@ -65048,12 +65107,12 @@ var startLeadSequence = (0, import_https8.onCall)(async (request) => {
     const sendAt = buildScheduledDate(now, step.dayOffset);
     const templateId = step.templateId;
     if (!templateId) {
-      logger26.warn(`[StartSequence] Step ${i} has no templateId \u2014 skipping.`);
+      logger27.warn(`[StartSequence] Step ${i} has no templateId \u2014 skipping.`);
       continue;
     }
     const templateDoc = await db24.collection("templates").doc(templateId).get();
     if (!templateDoc.exists) {
-      logger26.warn(`[StartSequence] Template ${templateId} not found \u2014 skipping step ${i}.`);
+      logger27.warn(`[StartSequence] Template ${templateId} not found \u2014 skipping step ${i}.`);
       continue;
     }
     const template = templateDoc.data();
@@ -65117,7 +65176,7 @@ var startLeadSequence = (0, import_https8.onCall)(async (request) => {
     if (result.resendId) {
       scheduledResendIds.push(result.resendId);
     }
-    logger26.info(`[StartSequence] Step ${i} (${step.label}) scheduled for ${sendAt.toISOString()} \u2014 Resend ID: ${result.resendId || "none"}`);
+    logger27.info(`[StartSequence] Step ${i} (${step.label}) scheduled for ${sendAt.toISOString()} \u2014 Resend ID: ${result.resendId || "none"}`);
     try {
       await db24.collection("templates").doc(templateId).update({
         "stats.sent": admin28.firestore.FieldValue.increment(1),
@@ -65164,7 +65223,7 @@ var startLeadSequence = (0, import_https8.onCall)(async (request) => {
       scheduledResendIds
     }
   });
-  logger26.info(
+  logger27.info(
     `[StartSequence] "${sequence.name}" started for ${leadId}: ${steps.length} emails (${dayList})`
   );
   return {
@@ -65179,7 +65238,7 @@ var startLeadSequence = (0, import_https8.onCall)(async (request) => {
 // src/triggers/sendSingleLeadEmail.ts
 var import_https9 = require("firebase-functions/v2/https");
 var admin29 = __toESM(require("firebase-admin"));
-var logger27 = __toESM(require("firebase-functions/logger"));
+var logger28 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
 if (!admin29.apps.length) {
   admin29.initializeApp();
@@ -65283,13 +65342,13 @@ var sendSingleLeadEmail = (0, import_https9.onCall)(
       email: contactEmail
     };
     injectFacilityPhrases(variables);
-    logger27.info(`[SendSingle] Variables for merge:`, variables);
+    logger28.info(`[SendSingle] Variables for merge:`, variables);
     const mergedSubject = replaceVariables(template.subject, variables);
     const templateBody = template.content || template.body || "";
-    logger27.info(`[SendSingle] Template body field found: ${templateBody ? "yes" : "no"}, length: ${templateBody.length}`);
+    logger28.info(`[SendSingle] Template body field found: ${templateBody ? "yes" : "no"}, length: ${templateBody.length}`);
     const mergedBody = replaceVariables(templateBody, variables);
     const htmlBody = mergedBody.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
-    logger27.info(`[SendSingle] Sending "${templateId}" to ${contactEmail} for lead ${leadId}`);
+    logger28.info(`[SendSingle] Sending "${templateId}" to ${contactEmail} for lead ${leadId}`);
     const result = await sendEmail(
       contactEmail,
       mergedSubject,
@@ -65333,7 +65392,7 @@ var sendSingleLeadEmail = (0, import_https9.onCall)(
         status: "contacted"
       });
     }
-    logger27.info(`[SendSingle] \u2705 Sent "${mergedSubject}" to ${contactEmail} (Resend: ${result.resendId})`);
+    logger28.info(`[SendSingle] \u2705 Sent "${mergedSubject}" to ${contactEmail} (Resend: ${result.resendId})`);
     return {
       success: true,
       message: `Email sent to ${contactEmail}`,
@@ -65346,7 +65405,7 @@ var sendSingleLeadEmail = (0, import_https9.onCall)(
 // src/triggers/sendPreviewEmail.ts
 var import_https10 = require("firebase-functions/v2/https");
 var admin30 = __toESM(require("firebase-admin"));
-var logger28 = __toESM(require("firebase-functions/logger"));
+var logger29 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
 if (!admin30.apps.length) {
   admin30.initializeApp();
@@ -65371,7 +65430,7 @@ var sendPreviewEmail = (0, import_https10.onCall)(
     if (!mergedBody.includes("<p>") && !mergedBody.includes("<br")) {
       mergedBody = mergedBody.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
     }
-    logger28.info(`[SendPreview] Sending test email to ${to}: "${mergedSubject}"`);
+    logger29.info(`[SendPreview] Sending test email to ${to}: "${mergedSubject}"`);
     const result = await sendEmail(
       to,
       mergedSubject,
@@ -65389,7 +65448,7 @@ var sendPreviewEmail = (0, import_https10.onCall)(
     if (!result.success) {
       throw new import_https10.HttpsError("internal", "Failed to send preview email");
     }
-    logger28.info(`[SendPreview] \u2705 Preview sent to ${to} (Resend: ${result.resendId})`);
+    logger29.info(`[SendPreview] \u2705 Preview sent to ${to} (Resend: ${result.resendId})`);
     return {
       success: true,
       message: `Preview sent to ${to}`,
@@ -65401,7 +65460,7 @@ var sendPreviewEmail = (0, import_https10.onCall)(
 // src/triggers/onContactDeleted.ts
 var import_firestore19 = require("firebase-functions/v2/firestore");
 var admin31 = __toESM(require("firebase-admin"));
-var logger29 = __toESM(require("firebase-functions/logger"));
+var logger30 = __toESM(require("firebase-functions/logger"));
 if (!admin31.apps.length) {
   admin31.initializeApp();
 }
@@ -65411,7 +65470,7 @@ var onContactDeleted = (0, import_firestore19.onDocumentDeleted)("contacts/{cont
   const deletedData = event.data?.data();
   const email = deletedData?.email || "unknown";
   const companyId = deletedData?.companyId || null;
-  logger29.info(`[ContactCleanup] Contact ${contactId} (${email}) deleted. Cancelling pending tasks.`);
+  logger30.info(`[ContactCleanup] Contact ${contactId} (${email}) deleted. Cancelling pending tasks.`);
   const contactTasks = await db27.collection("outreach_queue").where("contactId", "==", contactId).where("status", "in", ["PENDING", "RETRY"]).get();
   let leadTasks = null;
   if (companyId) {
@@ -65439,7 +65498,7 @@ var onContactDeleted = (0, import_firestore19.onDocumentDeleted)("contacts/{cont
   if (count > 0) {
     await batch.commit();
   }
-  logger29.info(`[ContactCleanup] Cancelled ${count} pending task(s) for deleted contact ${contactId} (${email}).`);
+  logger30.info(`[ContactCleanup] Cancelled ${count} pending task(s) for deleted contact ${contactId} (${email}).`);
 });
 
 // src/triggers/onExperienceUpdated.ts
@@ -65447,6 +65506,7 @@ var import_firestore20 = require("firebase-functions/v2/firestore");
 var import_v25 = require("firebase-functions/v2");
 var import_params3 = require("firebase-functions/params");
 var import_generative_ai4 = require("@google/generative-ai");
+init_gemini();
 var GEMINI_API_KEY3 = (0, import_params3.defineSecret)("GEMINI_API_KEY");
 var SUMMARY_PROMPT = `You are an internal CRM assistant for a facility management company.
 Summarize the following vendor experience notes into 2-3 concise bullet points.
@@ -65477,7 +65537,7 @@ var onExperienceUpdated = (0, import_firestore20.onDocumentUpdated)({
   import_v25.logger.info(`[ExperienceSummary] ${vendorId} \u2014 generating AI summary (${newRaw.length} chars)`);
   try {
     const genAI4 = new import_generative_ai4.GoogleGenerativeAI(GEMINI_API_KEY3.value());
-    const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
     const prompt = SUMMARY_PROMPT.replace("{RAW_TEXT}", newRaw);
     const result = await model2.generateContent(prompt);
     const summary = result.response.text().trim();
@@ -65496,7 +65556,7 @@ var onExperienceUpdated = (0, import_firestore20.onDocumentUpdated)({
 
 // src/triggers/crmProjection.ts
 var import_firestore21 = require("firebase-functions/v2/firestore");
-var logger31 = __toESM(require("firebase-functions/logger"));
+var logger32 = __toESM(require("firebase-functions/logger"));
 
 // src/utils/crmProjection.ts
 var admin32 = __toESM(require("firebase-admin"));
@@ -65841,7 +65901,7 @@ var onCompanyProjected = (0, import_firestore21.onDocumentWritten)("companies/{c
   }
   const contactCount = await reprojectContactsForCompany(companyId);
   await projectCrmCompanyRow(companyId);
-  logger31.info(`[CrmProjection] Reprojected company ${companyId} and ${contactCount} contact rows`);
+  logger32.info(`[CrmProjection] Reprojected company ${companyId} and ${contactCount} contact rows`);
 });
 var onLegacyLeadProjected = (0, import_firestore21.onDocumentWritten)("leads/{leadId}", async (event) => {
   const leadId = event.params.leadId;
@@ -65857,6 +65917,7 @@ var onLegacyLeadProjected = (0, import_firestore21.onDocumentWritten)("leads/{le
 // src/triggers/socialContentGenerator.ts
 var import_scheduler5 = require("firebase-functions/v2/scheduler");
 var import_generative_ai5 = require("@google/generative-ai");
+init_gemini();
 init_facebookApi();
 init_imagenApi();
 
@@ -66242,7 +66303,7 @@ async function generateSocialContent(channel = "facebook_posts") {
   const activeCampaignsSnap = await db.collection("social_campaigns").where("channel", "==", channel).where("status", "==", "active").get();
   const activeCampaigns = activeCampaignsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const genAI4 = new import_generative_ai5.GoogleGenerativeAI(API_KEY);
-  const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
   const isReels = channel === "facebook_reels";
   let slotIndex = 0;
   for (const scheduledFor of toGenerate) {
@@ -66863,7 +66924,7 @@ var refreshContactReviewQueue = (0, import_https13.onCall)({
 
 // src/functions/crmProjection.ts
 var import_https14 = require("firebase-functions/v2/https");
-var logger32 = __toESM(require("firebase-functions/logger"));
+var logger33 = __toESM(require("firebase-functions/logger"));
 async function requireAdmin(uid) {
   if (!uid) {
     throw new import_https14.HttpsError("unauthenticated", "Authentication required.");
@@ -66897,7 +66958,7 @@ var rebuildCrmContactRows = (0, import_https14.onCall)(async (request) => {
       await projectCrmContactRow(docSnap.id);
     }
   }
-  logger32.info(`[CrmProjection] rebuildCrmContactRows scanned=${docs.length} dryRun=${dryRun}`);
+  logger33.info(`[CrmProjection] rebuildCrmContactRows scanned=${docs.length} dryRun=${dryRun}`);
   return { success: true, scanned: docs.length, updated: dryRun ? 0 : docs.length, dryRun };
 });
 var rebuildCrmCompanyRows = (0, import_https14.onCall)(async (request) => {
@@ -66925,7 +66986,7 @@ var rebuildCrmCompanyRows = (0, import_https14.onCall)(async (request) => {
       await projectCrmCompanyRow(id);
     }
   }
-  logger32.info(`[CrmProjection] rebuildCrmCompanyRows scanned=${ids.size} dryRun=${dryRun}`);
+  logger33.info(`[CrmProjection] rebuildCrmCompanyRows scanned=${ids.size} dryRun=${dryRun}`);
   return { success: true, scanned: ids.size, updated: dryRun ? 0 : ids.size, dryRun };
 });
 
@@ -66934,6 +66995,7 @@ var import_https15 = require("firebase-functions/v2/https");
 
 // src/agents/recruiter.ts
 var import_generative_ai6 = require("@google/generative-ai");
+init_gemini();
 init_emailUtils();
 
 // src/utils/googlePlacesEnrichment.ts
@@ -67040,7 +67102,7 @@ function normalizeUrl(url) {
 }
 var API_KEY2 = process.env.GEMINI_API_KEY || "";
 var genAI3 = new import_generative_ai6.GoogleGenerativeAI(API_KEY2);
-var model = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
+var model = genAI3.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
 var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false, previewOnly = false) => {
   console.log("!!! RECRUITER AGENT UPDATED - V4 (Robust Dedup + Blacklist) !!!");
   let analyzed = 0;
@@ -68139,6 +68201,7 @@ var sourceProperties = (0, import_https15.onCall)({
 // src/functions/social.ts
 var import_https16 = require("firebase-functions/v2/https");
 init_promptUtils();
+init_gemini();
 init_facebookApi();
 var publishFacebookPost = (0, import_https16.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
@@ -68459,10 +68522,10 @@ var regeneratePostCaption = (0, import_https16.onCall)({
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
-  const { GoogleGenerativeAI: GoogleGenerativeAI16 } = await import("@google/generative-ai");
+  const { GoogleGenerativeAI: GoogleGenerativeAI17 } = await import("@google/generative-ai");
   const API_KEY3 = process.env.GEMINI_API_KEY || "";
-  const genAI4 = new GoogleGenerativeAI16(API_KEY3);
-  const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const genAI4 = new GoogleGenerativeAI17(API_KEY3);
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
   const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 
 --- CURRENT POST ---
@@ -70121,6 +70184,7 @@ function buildClarityChatCard(metrics) {
 // src/utils/clarityAIAgent.ts
 var import_generative_ai7 = require("@google/generative-ai");
 var import_v26 = require("firebase-functions/v2");
+init_gemini();
 
 // src/data/page-component-map.json
 var page_component_map_default = {
@@ -70255,7 +70319,7 @@ Respond in JSON format:
 }`;
 async function analyzeWithAI(spikes, currentMetrics, geminiApiKey) {
   const genAI4 = new import_generative_ai7.GoogleGenerativeAI(geminiApiKey);
-  const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
   const pageContext = currentMetrics.topPages.slice(0, 8).map((p) => {
     const components = getComponentsForPage(p.url);
     return `  - ${p.url} (${p.sessions} sessions) \u2192 Components: [${components.join(", ") || "unknown"}]`;
@@ -71122,6 +71186,7 @@ function scoreEnrichedEmail(email, preferredTitles, avoidTitles) {
 // src/utils/facilityClassifier.ts
 var import_generative_ai8 = require("@google/generative-ai");
 init_src();
+init_gemini();
 var USER_AGENT2 = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 var FACILITY_KEYWORDS = [
   { facilityType: "medical_dental", keywords: ["dentist", "dental", "orthodont", "endodont", "oral surgery", "periodont"] },
@@ -71168,7 +71233,7 @@ function shouldEscalateToLlm(scores, heuristic) {
 }
 async function classifyWithGemini(text, businessName, searchQuery, geminiApiKey) {
   const genAI4 = new import_generative_ai8.GoogleGenerativeAI(geminiApiKey);
-  const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
   const prompt = `Classify this business into one canonical facility type for commercial cleaning outreach.
 
 Allowed facility types only:
@@ -71230,6 +71295,7 @@ async function classifyFacilityType(url, businessName, searchQuery, geminiApiKey
 // src/agents/prospector.ts
 init_src();
 var import_generative_ai9 = require("@google/generative-ai");
+init_gemini();
 var GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|manager)@/i;
 var JUNK_EMAIL_DOMAINS = /* @__PURE__ */ new Set([
   "example.com",
@@ -71379,7 +71445,7 @@ Search evidence:
   try {
     const genAI4 = new import_generative_ai9.GoogleGenerativeAI(params.geminiApiKey);
     const model2 = genAI4.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: resolveGeminiModel("gemini-2.5-flash"),
       generationConfig: { temperature: 0, maxOutputTokens: 180 }
     });
     const result = await model2.generateContent(prompt);
@@ -72317,7 +72383,7 @@ var autoCategorizeProspects = (0, import_https21.onCall)({
 // src/triggers/dailyProspector.ts
 var import_scheduler10 = require("firebase-functions/v2/scheduler");
 var import_https22 = require("firebase-functions/v2/https");
-var logger35 = __toESM(require("firebase-functions/logger"));
+var logger36 = __toESM(require("firebase-functions/logger"));
 var crypto5 = __toESM(require("crypto"));
 function normalizeName2(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
@@ -72544,14 +72610,14 @@ async function loadSeenSet() {
     const d = doc.data();
     if (d.email) seen.add(`email:${d.email.toLowerCase()}`);
   }
-  logger35.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
+  logger36.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
   return seen;
 }
 async function runDailyPipeline() {
   const configDoc = await db.collection("prospecting_config").doc("default").get();
   const config2 = configDoc.exists ? { ...DEFAULT_CONFIG, ...configDoc.data() } : DEFAULT_CONFIG;
   if (!config2.enabled) {
-    logger35.info("[DailyProspector] Disabled via config. Skipping.");
+    logger36.info("[DailyProspector] Disabled via config. Skipping.");
     return;
   }
   const secrets = {
@@ -72597,12 +72663,12 @@ async function runDailyPipeline() {
       }
     }
     const shuffled = shuffle(combos);
-    logger35.info(`[DailyProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
+    logger36.info(`[DailyProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
     for (const { query: queryTerm, location } of shuffled) {
       if (newProspects.length >= config2.dailyTarget) break;
       const remaining = config2.dailyTarget - newProspects.length;
       const batchSize = Math.min(remaining + 10, 20);
-      logger35.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
+      logger36.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
       await updateProgress(`${queryTerm} in ${location}`);
       try {
         const result = await prospectAndEnrich(
@@ -72626,7 +72692,7 @@ async function runDailyPipeline() {
           const websiteDomain = prospect.website ? prospect.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase() : void 0;
           const matchedKey = seen.has(normalized) ? `name:${normalized}` : phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`) ? `phone:${phoneCleaned}` : emailLower && seen.has(`email:${emailLower}`) ? `email:${emailLower}` : genericLower && seen.has(`email:${genericLower}`) ? `email:${genericLower}` : websiteDomain && seen.has(`domain:${websiteDomain}`) ? `domain:${websiteDomain}` : addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`) ? `addr:${addressNorm}` : null;
           if (matchedKey) {
-            logger35.info(`[DailyProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
+            logger36.info(`[DailyProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
             duplicatesSkipped++;
             continue;
           }
@@ -72683,16 +72749,16 @@ async function runDailyPipeline() {
         }
         if (batchCount > 0) {
           await batch.commit();
-          logger35.info(`[DailyProspector] Wrote incremental batch of ${batchCount} prospects.`);
+          logger36.info(`[DailyProspector] Wrote incremental batch of ${batchCount} prospects.`);
         }
         await updateProgress(`${queryTerm} in ${location}`);
         const elapsedSecs = (Date.now() - startedAt.getTime()) / 1e3;
         if (elapsedSecs > 480) {
-          logger35.warn("[DailyProspector] Approaching 9-minute execution limit. Stopping early to save state.");
+          logger36.warn("[DailyProspector] Approaching 9-minute execution limit. Stopping early to save state.");
           break;
         }
       } catch (err2) {
-        logger35.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
+        logger36.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
       }
     }
     const stats = {
@@ -72718,9 +72784,9 @@ async function runDailyPipeline() {
       completedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     });
-    logger35.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
+    logger36.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
   } catch (err2) {
-    logger35.error(`[DailyProspector] Pipeline crashed:`, err2.message || err2);
+    logger36.error(`[DailyProspector] Pipeline crashed:`, err2.message || err2);
     await statusRef.set({
       running: false,
       discovered: totalDiscovered,
@@ -72731,7 +72797,7 @@ async function runDailyPipeline() {
       error: err2.message || "Unknown error",
       failedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
-    }).catch((e2) => logger35.error("[DailyProspector] Failed to write error status:", e2.message));
+    }).catch((e2) => logger36.error("[DailyProspector] Failed to write error status:", e2.message));
     throw err2;
   }
 }
@@ -72743,7 +72809,7 @@ var dailyProspector = (0, import_scheduler10.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger35.info("[DailyProspector] Starting scheduled run...");
+  logger36.info("[DailyProspector] Starting scheduled run...");
   await runDailyPipeline();
 });
 var triggerDailyProspector = (0, import_https22.onCall)({
@@ -72752,7 +72818,7 @@ var triggerDailyProspector = (0, import_https22.onCall)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger35.info("[DailyProspector] Manual trigger invoked.");
+  logger36.info("[DailyProspector] Manual trigger invoked.");
   await runDailyPipeline();
   return { message: "Daily prospector pipeline completed." };
 });
@@ -72770,7 +72836,7 @@ var updateProspectingConfig = (0, import_https22.onCall)({
     throw new import_https22.HttpsError("invalid-argument", "No valid fields to update.");
   }
   await db.collection("prospecting_config").doc("default").set(update, { merge: true });
-  logger35.info("[updateProspectingConfig] Config updated:", update);
+  logger36.info("[updateProspectingConfig] Config updated:", update);
   return { message: "Prospecting config updated.", updated: update };
 });
 var getProspectingConfig = (0, import_https22.onCall)({
@@ -72800,7 +72866,7 @@ var regenerateProspectingConfig = (0, import_https22.onCall)({
   };
   await db.collection("prospecting_config").doc("default").set(config2, { merge: true });
   const summary = getConfigSummary(generated);
-  logger35.info(`[regenerateProspectingConfig] ${summary}`);
+  logger36.info(`[regenerateProspectingConfig] ${summary}`);
   return {
     message: "Prospecting config regenerated from ICP engine.",
     queries: generated.queries.length,
@@ -72813,13 +72879,13 @@ var regenerateProspectingConfig = (0, import_https22.onCall)({
 // src/triggers/dailyClientTrigger.ts
 var import_scheduler11 = require("firebase-functions/v2/scheduler");
 var import_https23 = require("firebase-functions/v2/https");
-var logger37 = __toESM(require("firebase-functions/logger"));
+var logger38 = __toESM(require("firebase-functions/logger"));
 var crypto7 = __toESM(require("crypto"));
 
 // src/agents/clientTriggerSourcer.ts
 var import_axios3 = __toESM(require("axios"));
 var crypto6 = __toESM(require("crypto"));
-var logger36 = __toESM(require("firebase-functions/logger"));
+var logger37 = __toESM(require("firebase-functions/logger"));
 var JOB_TRIGGER_QUERIES = [
   "hiring night custodian",
   "hiring janitor",
@@ -72854,13 +72920,13 @@ async function getCachedResults(query, location) {
     const cachedAt = data.cachedAt?.toDate?.() || new Date(data.cachedAt);
     const age = Date.now() - cachedAt.getTime();
     if (age > CACHE_TTL_MS2) {
-      logger36.info(`[JobCache] Expired for "${query}" in "${location}" (age: ${Math.round(age / 36e5)}h)`);
+      logger37.info(`[JobCache] Expired for "${query}" in "${location}" (age: ${Math.round(age / 36e5)}h)`);
       return null;
     }
-    logger36.info(`[JobCache] HIT for "${query}" in "${location}" (${data.results?.length || 0} results)`);
+    logger37.info(`[JobCache] HIT for "${query}" in "${location}" (${data.results?.length || 0} results)`);
     return data.results;
   } catch (err2) {
-    logger36.warn(`[JobCache] Read error: ${err2.message}`);
+    logger37.warn(`[JobCache] Read error: ${err2.message}`);
     return null;
   }
 }
@@ -72875,7 +72941,7 @@ async function setCachedResults(query, location, results) {
       cachedAt: /* @__PURE__ */ new Date()
     });
   } catch (err2) {
-    logger36.warn(`[JobCache] Write error: ${err2.message}`);
+    logger37.warn(`[JobCache] Write error: ${err2.message}`);
   }
 }
 function extractEmployerName(title, snippet) {
@@ -72966,14 +73032,14 @@ function isExcludedEmployer(name, patterns) {
 async function searchJobPostings(query, location, maxResults = 20, excludePatterns = DEFAULT_EXCLUDED_EMPLOYERS) {
   const apiKey = process.env.SERPER_API_KEY;
   if (!apiKey) {
-    logger36.error("[ClientTriggerSourcer] SERPER_API_KEY not set");
+    logger37.error("[ClientTriggerSourcer] SERPER_API_KEY not set");
     return [];
   }
   const cached = await getCachedResults(query, location);
   if (cached !== null) return cached.slice(0, maxResults);
   const siteFilter = JOB_BOARD_SITES.map((s) => `site:${s}`).join(" OR ");
   const fullQuery = `${query} ${location} (${siteFilter})`;
-  logger36.info(`[ClientTriggerSourcer] Searching: "${fullQuery}"`);
+  logger37.info(`[ClientTriggerSourcer] Searching: "${fullQuery}"`);
   try {
     const response = await import_axios3.default.post(
       "https://google.serper.dev/search",
@@ -72991,7 +73057,7 @@ async function searchJobPostings(query, location, maxResults = 20, excludePatter
       }
     );
     const organic = response.data.organic || [];
-    logger36.info(`[ClientTriggerSourcer] Serper returned ${organic.length} organic results`);
+    logger37.info(`[ClientTriggerSourcer] Serper returned ${organic.length} organic results`);
     const results = [];
     const seenEmployers = /* @__PURE__ */ new Set();
     for (const item of organic) {
@@ -73004,7 +73070,7 @@ async function searchJobPostings(query, location, maxResults = 20, excludePatter
       const employerName = extractEmployerName(title, snippet);
       if (!employerName || employerName.length < 3) continue;
       if (isExcludedEmployer(employerName, excludePatterns)) {
-        logger36.info(`[ClientTriggerSourcer] Skipping excluded employer: "${employerName}"`);
+        logger37.info(`[ClientTriggerSourcer] Skipping excluded employer: "${employerName}"`);
         continue;
       }
       const normalizedEmployer = employerName.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -73021,11 +73087,11 @@ async function searchJobPostings(query, location, maxResults = 20, excludePatter
       });
       if (results.length >= maxResults) break;
     }
-    logger36.info(`[ClientTriggerSourcer] Extracted ${results.length} unique employer job postings`);
+    logger37.info(`[ClientTriggerSourcer] Extracted ${results.length} unique employer job postings`);
     await setCachedResults(query, location, results);
     return results;
   } catch (err2) {
-    logger36.error(`[ClientTriggerSourcer] Search failed: ${err2.message}`);
+    logger37.error(`[ClientTriggerSourcer] Search failed: ${err2.message}`);
     return [];
   }
 }
@@ -73100,7 +73166,7 @@ async function loadSeenSet2() {
     const d = doc.data();
     if (d.email) seen.add(`email:${d.email.toLowerCase()}`);
   }
-  logger37.info(`[ClientTrigger] Seen set loaded: ${seen.size} entries`);
+  logger38.info(`[ClientTrigger] Seen set loaded: ${seen.size} entries`);
   return seen;
 }
 var DEFAULT_CONFIG2 = {
@@ -73136,7 +73202,7 @@ async function runClientTriggerPipeline() {
   const configDoc = await db.collection("client_trigger_config").doc("default").get();
   const config2 = configDoc.exists ? { ...DEFAULT_CONFIG2, ...configDoc.data() } : DEFAULT_CONFIG2;
   if (!config2.enabled) {
-    logger37.info("[ClientTrigger] Disabled via config. Skipping.");
+    logger38.info("[ClientTrigger] Disabled via config. Skipping.");
     return;
   }
   const seen = await loadSeenSet2();
@@ -73164,10 +73230,10 @@ async function runClientTriggerPipeline() {
       }
     }
     const shuffled = shuffle2(combos);
-    logger37.info(`[ClientTrigger] ${shuffled.length} combos. Target: ${config2.dailyTarget}`);
+    logger38.info(`[ClientTrigger] ${shuffled.length} combos. Target: ${config2.dailyTarget}`);
     for (const { query: queryTerm, location } of shuffled) {
       if (newProspectsCount >= config2.dailyTarget) break;
-      logger37.info(`[ClientTrigger] Searching: "${queryTerm}" in "${location}"`);
+      logger38.info(`[ClientTrigger] Searching: "${queryTerm}" in "${location}"`);
       await statusRef.set({
         currentQuery: `${queryTerm} in ${location}`,
         updatedAt: /* @__PURE__ */ new Date()
@@ -73195,7 +73261,7 @@ async function runClientTriggerPipeline() {
             );
             enrichedData = enrichResult;
           } catch (err2) {
-            logger37.warn(`[ClientTrigger] Enrichment failed for "${job.employerName}": ${err2.message}`);
+            logger38.warn(`[ClientTrigger] Enrichment failed for "${job.employerName}": ${err2.message}`);
           }
           const hasEmail = enrichedData.contactEmail || enrichedData.genericEmail;
           if (!hasEmail) continue;
@@ -73250,15 +73316,15 @@ async function runClientTriggerPipeline() {
         }
         if (batchCount > 0) {
           await batch.commit();
-          logger37.info(`[ClientTrigger] Wrote ${batchCount} prospects for "${queryTerm}" in "${location}"`);
+          logger38.info(`[ClientTrigger] Wrote ${batchCount} prospects for "${queryTerm}" in "${location}"`);
         }
         const elapsedSecs = (Date.now() - startedAt.getTime()) / 1e3;
         if (elapsedSecs > 420) {
-          logger37.warn("[ClientTrigger] Approaching timeout. Stopping early.");
+          logger38.warn("[ClientTrigger] Approaching timeout. Stopping early.");
           break;
         }
       } catch (err2) {
-        logger37.error(`[ClientTrigger] Error for "${queryTerm}" in "${location}":`, err2.message);
+        logger38.error(`[ClientTrigger] Error for "${queryTerm}" in "${location}":`, err2.message);
       }
     }
     await db.collection("client_trigger_config").doc("default").set({
@@ -73280,9 +73346,9 @@ async function runClientTriggerPipeline() {
       completedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     });
-    logger37.info(`[ClientTrigger] Done. Added ${newProspectsCount} (${duplicatesSkipped} dupes, ${totalDiscovered} discovered).`);
+    logger38.info(`[ClientTrigger] Done. Added ${newProspectsCount} (${duplicatesSkipped} dupes, ${totalDiscovered} discovered).`);
   } catch (err2) {
-    logger37.error(`[ClientTrigger] Pipeline crashed:`, err2.message || err2);
+    logger38.error(`[ClientTrigger] Pipeline crashed:`, err2.message || err2);
     await statusRef.set({
       running: false,
       error: err2.message || "Unknown error",
@@ -73301,7 +73367,7 @@ var dailyClientTrigger = (0, import_scheduler11.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger37.info("[ClientTrigger] Starting scheduled job board scan...");
+  logger38.info("[ClientTrigger] Starting scheduled job board scan...");
   await runClientTriggerPipeline();
 });
 var triggerDailyClientTrigger = (0, import_https23.onCall)({
@@ -73310,7 +73376,7 @@ var triggerDailyClientTrigger = (0, import_https23.onCall)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger37.info("[ClientTrigger] Manual trigger invoked.");
+  logger38.info("[ClientTrigger] Manual trigger invoked.");
   await runClientTriggerPipeline();
   return { message: "Client trigger pipeline completed." };
 });
@@ -73322,6 +73388,7 @@ var import_https24 = require("firebase-functions/v2/https");
 var cheerio2 = __toESM(require("cheerio"));
 var import_generative_ai10 = require("@google/generative-ai");
 init_promptUtils();
+init_gemini();
 var TIMEOUT_MS2 = 12e3;
 var USER_AGENT3 = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 var MOBILE_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1";
@@ -73525,7 +73592,7 @@ function extractFromPatterns2($, html) {
 async function extractWithAI2(pageText, geminiApiKey) {
   try {
     const genAI4 = new import_generative_ai10.GoogleGenerativeAI(geminiApiKey);
-    const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
     const truncated = pageText.substring(0, 12e3);
     const FALLBACK = `You are extracting business information from a Facebook business page.
 This is a contractor/service business. Extract all available contact and qualification information.
@@ -73636,6 +73703,7 @@ function mergeResults(patterns, ai) {
 
 // src/agents/vendorProspector.ts
 var import_generative_ai11 = require("@google/generative-ai");
+init_gemini();
 var GENERIC_PREFIXES2 = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|manager)@/i;
 var JUNK_EMAIL_DOMAINS2 = /* @__PURE__ */ new Set([
   "example.com",
@@ -73783,7 +73851,7 @@ Search evidence:
   try {
     const genAI4 = new import_generative_ai11.GoogleGenerativeAI(params.geminiApiKey);
     const model2 = genAI4.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: resolveGeminiModel("gemini-2.5-flash"),
       generationConfig: { temperature: 0, maxOutputTokens: 180 }
     });
     const result = await model2.generateContent(prompt);
@@ -74346,7 +74414,7 @@ var addVendorProspectsToCrm = (0, import_https24.onCall)({
 // src/triggers/dailyVendorProspector.ts
 var import_scheduler12 = require("firebase-functions/v2/scheduler");
 var import_https25 = require("firebase-functions/v2/https");
-var logger38 = __toESM(require("firebase-functions/logger"));
+var logger39 = __toESM(require("firebase-functions/logger"));
 var crypto8 = __toESM(require("crypto"));
 function normalizeName4(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
@@ -74447,14 +74515,14 @@ async function loadVendorSeenSet() {
       if (addrNorm.length >= 10) seen.add(`addr:${addrNorm}`);
     }
   }
-  logger38.info(`[DailyVendorProspector] Seen set loaded: ${seen.size} entries (queue + vendors)`);
+  logger39.info(`[DailyVendorProspector] Seen set loaded: ${seen.size} entries (queue + vendors)`);
   return seen;
 }
 async function runDailyVendorPipeline() {
   const configDoc = await db.collection("vendor_prospecting_config").doc("default").get();
   const config2 = configDoc.exists ? { ...DEFAULT_CONFIG3, ...configDoc.data() } : DEFAULT_CONFIG3;
   if (!config2.enabled) {
-    logger38.info("[DailyVendorProspector] Disabled via config. Skipping.");
+    logger39.info("[DailyVendorProspector] Disabled via config. Skipping.");
     return;
   }
   const secrets = {
@@ -74495,12 +74563,12 @@ async function runDailyVendorPipeline() {
       }
     }
     const shuffled = shuffle3(combos);
-    logger38.info(`[DailyVendorProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
+    logger39.info(`[DailyVendorProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
     for (const { query: queryTerm, location, capability } of shuffled) {
       if (newProspects.length >= config2.dailyTarget) break;
       const remaining = config2.dailyTarget - newProspects.length;
       const batchSize = Math.min(remaining + 10, 20);
-      logger38.info(`[DailyVendorProspector] Searching: "${queryTerm}" in "${location}" (capability: ${capability.value}, need ${remaining} more)`);
+      logger39.info(`[DailyVendorProspector] Searching: "${queryTerm}" in "${location}" (capability: ${capability.value}, need ${remaining} more)`);
       await updateProgress(`${capability.label} in ${location}`);
       try {
         const result = await vendorProspectAndEnrich(
@@ -74531,7 +74599,7 @@ async function runDailyVendorPipeline() {
           const fbPath = prospect.facebookUrl ? prospect.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//, "").split("?")[0].toLowerCase() : void 0;
           const matchedKey = seen.has(normalized) ? `name:${normalized}` : phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`) ? `phone:${phoneCleaned}` : emailLower && seen.has(`email:${emailLower}`) ? `email:${emailLower}` : genericLower && seen.has(`email:${genericLower}`) ? `email:${genericLower}` : websiteDomain && seen.has(`domain:${websiteDomain}`) ? `domain:${websiteDomain}` : fbPath && seen.has(`fb:${fbPath}`) ? `fb:${fbPath}` : addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`) ? `addr:${addressNorm}` : null;
           if (matchedKey) {
-            logger38.info(`[DailyVendorProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
+            logger39.info(`[DailyVendorProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
             duplicatesSkipped++;
             continue;
           }
@@ -74588,16 +74656,16 @@ async function runDailyVendorPipeline() {
         }
         if (batchCount > 0) {
           await batch.commit();
-          logger38.info(`[DailyVendorProspector] Wrote batch of ${batchCount} vendor prospects.`);
+          logger39.info(`[DailyVendorProspector] Wrote batch of ${batchCount} vendor prospects.`);
         }
         await updateProgress(`${capability.label} in ${location}`);
         const elapsedSecs = (Date.now() - startedAt.getTime()) / 1e3;
         if (elapsedSecs > 480) {
-          logger38.warn("[DailyVendorProspector] Approaching 9-minute limit. Stopping early.");
+          logger39.warn("[DailyVendorProspector] Approaching 9-minute limit. Stopping early.");
           break;
         }
       } catch (err2) {
-        logger38.error(`[DailyVendorProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
+        logger39.error(`[DailyVendorProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
       }
     }
     const stats = {
@@ -74623,9 +74691,9 @@ async function runDailyVendorPipeline() {
       completedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     });
-    logger38.info(`[DailyVendorProspector] Done. Added ${newProspects.length} vendor prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
+    logger39.info(`[DailyVendorProspector] Done. Added ${newProspects.length} vendor prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
   } catch (err2) {
-    logger38.error(`[DailyVendorProspector] Pipeline crashed:`, err2.message || err2);
+    logger39.error(`[DailyVendorProspector] Pipeline crashed:`, err2.message || err2);
     await statusRef.set({
       running: false,
       discovered: totalDiscovered,
@@ -74636,7 +74704,7 @@ async function runDailyVendorPipeline() {
       error: err2.message || "Unknown error",
       failedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
-    }).catch((e2) => logger38.error("[DailyVendorProspector] Failed to write error status:", e2.message));
+    }).catch((e2) => logger39.error("[DailyVendorProspector] Failed to write error status:", e2.message));
     throw err2;
   }
 }
@@ -74648,7 +74716,7 @@ var dailyVendorProspector = (0, import_scheduler12.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger38.info("[DailyVendorProspector] Starting scheduled run...");
+  logger39.info("[DailyVendorProspector] Starting scheduled run...");
   await runDailyVendorPipeline();
 });
 var triggerDailyVendorProspector = (0, import_https25.onCall)({
@@ -74657,7 +74725,7 @@ var triggerDailyVendorProspector = (0, import_https25.onCall)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger38.info("[DailyVendorProspector] Manual trigger invoked.");
+  logger39.info("[DailyVendorProspector] Manual trigger invoked.");
   await runDailyVendorPipeline();
   return { message: "Daily vendor prospector pipeline completed." };
 });
@@ -74675,7 +74743,7 @@ var updateVendorProspectingConfig = (0, import_https25.onCall)({
     throw new import_https25.HttpsError("invalid-argument", "No valid fields to update.");
   }
   await db.collection("vendor_prospecting_config").doc("default").set(update, { merge: true });
-  logger38.info("[updateVendorProspectingConfig] Config updated:", update);
+  logger39.info("[updateVendorProspectingConfig] Config updated:", update);
   return { message: "Vendor prospecting config updated.", updated: update };
 });
 var getVendorProspectingConfig = (0, import_https25.onCall)({
@@ -74693,6 +74761,7 @@ var getVendorProspectingConfig = (0, import_https25.onCall)({
 var import_https26 = require("firebase-functions/v2/https");
 var import_generative_ai12 = require("@google/generative-ai");
 init_promptUtils();
+init_gemini();
 var FALLBACK_SYSTEM_PROMPT = `You are an expert B2B email copywriter for XIRI Facility Solutions, a commercial cleaning and facility management platform based in New York.
 
 Your job is to generate a complete multi-step email outreach sequence targeting a specific segment of businesses.
@@ -74758,7 +74827,7 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
   try {
     const genAI4 = new import_generative_ai12.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     const model2 = genAI4.getGenerativeModel({
-      model: "gemini-3.1-pro-preview",
+      model: resolveGeminiModel("gemini-3.1-pro-preview"),
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.8
@@ -74808,7 +74877,8 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
 // src/functions/askAI.ts
 var import_https27 = require("firebase-functions/v2/https");
 var import_generative_ai13 = require("@google/generative-ai");
-var AI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+init_gemini();
+var AI_MODELS = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 function delay(ms) {
   return new Promise((resolve2) => setTimeout(resolve2, ms));
 }
@@ -74937,7 +75007,7 @@ var askAI = (0, import_https27.onCall)({
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           const model2 = genAI4.getGenerativeModel({
-            model: modelName,
+            model: resolveGeminiModel(modelName),
             systemInstruction: fullSystemPrompt,
             generationConfig: {
               temperature: 0.7,
@@ -74973,6 +75043,7 @@ var askAI = (0, import_https27.onCall)({
 // src/functions/parseCalculatorPrompt.ts
 var import_https28 = require("firebase-functions/v2/https");
 var import_generative_ai14 = require("@google/generative-ai");
+init_gemini();
 var BUILDING_TYPE_IDS = [
   "office",
   "medical",
@@ -75149,13 +75220,14 @@ Input:
 ${prompt}
 `.trim();
   const modelsToTry = [
+    "gemini-3.5-flash",
     "gemini-2.5-flash",
     "gemini-2.0-flash"
   ];
   for (const modelName of modelsToTry) {
     try {
       const model2 = genAI4.getGenerativeModel({
-        model: modelName,
+        model: resolveGeminiModel(modelName),
         generationConfig: {
           temperature: 0,
           maxOutputTokens: 420,
@@ -75173,8 +75245,370 @@ ${prompt}
   return { parsed: {} };
 });
 
-// src/functions/pseoAuth.ts
+// src/functions/rfpBidAnalyzer.ts
 var import_https29 = require("firebase-functions/v2/https");
+var import_generative_ai15 = require("@google/generative-ai");
+init_gemini();
+
+// ../shared/dist/index.mjs
+var import_jspdf2 = __toESM(require_jspdf_node_min(), 1);
+var PAGE_W2 = 215.9;
+var MARGIN2 = 25.4;
+var CONTENT_W2 = PAGE_W2 - MARGIN2 * 2;
+var DEFAULT_SCORE_WEIGHTS = {
+  priceRealism: 20,
+  scopeCompleteness: 20,
+  staffingPlan: 15,
+  qaReporting: 15,
+  complianceDocs: 15,
+  transitionReadiness: 15
+};
+function clamp(value, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, value));
+}
+function normalizeScore(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+  return clamp(Math.round(value));
+}
+function toNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(/[^0-9.]/g, ""));
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return null;
+}
+function normalizeBidExtraction(candidate) {
+  return {
+    vendorName: (candidate.vendorName || "Unknown Vendor").trim(),
+    monthlyPrice: toNumber(candidate.monthlyPrice ?? null),
+    scopeCompleteness: normalizeScore(candidate.scopeCompleteness),
+    staffingPlanQuality: normalizeScore(candidate.staffingPlanQuality),
+    qaReportingQuality: normalizeScore(candidate.qaReportingQuality),
+    complianceConfidence: normalizeScore(candidate.complianceConfidence),
+    transitionPlanQuality: normalizeScore(candidate.transitionPlanQuality),
+    notes: candidate.notes?.trim() || void 0
+  };
+}
+function evaluatePriceRealism(current, all) {
+  const prices = all.map((b) => b.monthlyPrice).filter((p) => typeof p === "number" && Number.isFinite(p) && p > 0);
+  if (typeof current.monthlyPrice !== "number" || prices.length < 2) return 50;
+  const avg = prices.reduce((sum, value) => sum + value, 0) / prices.length;
+  const deltaPct = Math.abs(current.monthlyPrice - avg) / avg;
+  if (deltaPct <= 0.1) return 95;
+  if (deltaPct <= 0.2) return 80;
+  if (deltaPct <= 0.35) return 60;
+  return 35;
+}
+function scoreBids(bids, weights = DEFAULT_SCORE_WEIGHTS) {
+  if (bids.length === 0) return [];
+  const scored = bids.map((bid) => {
+    const priceRealism = evaluatePriceRealism(bid, bids);
+    const total = priceRealism * weights.priceRealism + bid.scopeCompleteness * weights.scopeCompleteness + bid.staffingPlanQuality * weights.staffingPlan + bid.qaReportingQuality * weights.qaReporting + bid.complianceConfidence * weights.complianceDocs + bid.transitionPlanQuality * weights.transitionReadiness;
+    const normalizedTotal = Math.round(total / 100);
+    const missingCriticalItems = [];
+    if (bid.complianceConfidence < 50) missingCriticalItems.push("Compliance documentation weak or missing");
+    if (bid.transitionPlanQuality < 50) missingCriticalItems.push("Transition/takeover plan unclear");
+    if (bid.scopeCompleteness < 60) missingCriticalItems.push("Scope appears incomplete");
+    if (bid.monthlyPrice === null) missingCriticalItems.push("Pricing missing");
+    const rationale = normalizedTotal >= 80 ? "Strong operational fit with balanced pricing and execution confidence." : normalizedTotal >= 60 ? "Viable option, but review highlighted gaps before award." : "Higher risk profile; requires substantial clarification.";
+    return {
+      vendorName: bid.vendorName,
+      totalScore: normalizedTotal,
+      rank: 0,
+      rationale,
+      missingCriticalItems,
+      raw: bid
+    };
+  });
+  return scored.sort((a2, b) => b.totalScore - a2.totalScore).map((item, index) => ({ ...item, rank: index + 1 }));
+}
+function listToBullets(items) {
+  if (items.length === 0) return "- None specified";
+  return items.map((item) => `- ${item}`).join("\n");
+}
+function buildRfpDraft(input) {
+  const title = `Janitorial Services RFP${input.facilityName ? ` - ${input.facilityName}` : ""}`;
+  const summary = `Seeking a verified janitorial partner for ${input.location} (${input.estimatedSqft.toLocaleString()} sqft, ${input.facilityType}).`;
+  const sections = [
+    {
+      id: "scope-overview",
+      title: "Scope Overview",
+      body: `Facility type: ${input.facilityType}
+Location: ${input.location}
+Estimated square footage: ${input.estimatedSqft.toLocaleString()} sqft
+Cleaning frequency: ${input.cleaningFrequency}
+Service window: ${input.serviceWindow}`
+    },
+    {
+      id: "required-services",
+      title: "Required Services",
+      body: listToBullets(input.requiredServices)
+    },
+    {
+      id: "compliance-sla",
+      title: "Compliance and SLA Requirements",
+      body: `${listToBullets(input.complianceRequirements)}
+
+SLA expectations:
+${listToBullets(input.slaRequirements)}`
+    },
+    {
+      id: "transition-takeover",
+      title: "Transition and Takeover Expectations",
+      body: `Target transition date: ${input.transitionDate || "TBD"}
+Known incumbent pain points:
+${listToBullets(input.incumbentPainPoints)}
+
+Vendors must provide a takeover plan with staffing continuity, QA cadence, and issue-escalation path.`
+    },
+    {
+      id: "submission-instructions",
+      title: "Proposal Submission Instructions",
+      body: `Submit proposals to: ${input.picEmail || "TBD"}
+Attention to: ${input.picName || "TBD"}
+Service area ZIP: ${input.zipCode || "TBD"}
+Due date: ${input.transitionDate || "TBD"}
+Subject line format: RFP Response - ${input.facilityName || "Facility"} - [Vendor Name]
+
+Required attachments:
+- Insurance COI
+- Business license/entity documentation
+- Sample QA report
+- Transition plan timeline
+- References`
+    }
+  ];
+  return {
+    title,
+    summary,
+    sections,
+    generatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+var FACILITY_TYPE_LABELS2 = {
+  medical_urgent_care: "Urgent Care",
+  medical_private: "Medical Office",
+  medical_surgery: "Surgery Center",
+  medical_dialysis: "Dialysis Center",
+  medical_dental: "Dental Office",
+  medical_veterinary: "Veterinary",
+  auto_dealer_showroom: "Auto Dealership",
+  auto_service_center: "Auto Service Center",
+  edu_daycare: "Daycare / Preschool",
+  edu_private_school: "Private School",
+  edu_tutoring: "Educational Center / Tutoring",
+  lab_cleanroom: "Lab / Cleanroom",
+  lab_bsl: "Lab (BSL)",
+  manufacturing_light: "Light Manufacturing",
+  office_general: "Office (General)",
+  fitness_gym: "Fitness / Gym",
+  medical_physical_therapy: "Physical Therapy / Rehab",
+  retail_storefront: "Retail Storefront",
+  religious_center: "Religious Center",
+  funeral_home: "Funeral Home",
+  other: "Other"
+};
+var FACILITY_TYPE_OPTIONS2 = Object.entries(FACILITY_TYPE_LABELS2).map(
+  ([value, label]) => ({ value, label })
+);
+
+// src/functions/rfpBidAnalyzer.ts
+function safeJsonParse2(text, fallback) {
+  try {
+    const trimmed = text.trim();
+    const codeFence = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    const candidate = codeFence?.[1] ?? trimmed;
+    return JSON.parse(candidate) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+function sanitizeRfpInput(input) {
+  return {
+    facilityName: input.facilityName?.trim() || void 0,
+    picName: input.picName?.trim() || void 0,
+    picEmail: input.picEmail?.trim() || void 0,
+    zipCode: input.zipCode?.trim() || void 0,
+    facilityType: input.facilityType?.trim() || "Commercial Office",
+    location: input.location?.trim() || "Queens, NY",
+    estimatedSqft: Math.max(500, Math.round(input.estimatedSqft || 1e4)),
+    cleaningFrequency: input.cleaningFrequency || "weekdays",
+    serviceWindow: input.serviceWindow?.trim() || "After-hours",
+    requiredServices: Array.isArray(input.requiredServices) ? input.requiredServices.filter(Boolean).slice(0, 20) : [],
+    complianceRequirements: Array.isArray(input.complianceRequirements) ? input.complianceRequirements.filter(Boolean).slice(0, 20) : [],
+    slaRequirements: Array.isArray(input.slaRequirements) ? input.slaRequirements.filter(Boolean).slice(0, 20) : [],
+    transitionDate: input.transitionDate?.trim() || void 0,
+    incumbentPainPoints: Array.isArray(input.incumbentPainPoints) ? input.incumbentPainPoints.filter(Boolean).slice(0, 20) : []
+  };
+}
+function sanitizeRfpLeadPayload(payload) {
+  return {
+    source: "janitorial_rfp_tool",
+    idempotencyKey: payload.idempotencyKey?.trim() || "",
+    requestedXiri: Boolean(payload.requestedXiri),
+    facilityName: payload.facilityName?.trim() || void 0,
+    facilityType: payload.facilityType?.trim() || "Commercial Office",
+    location: payload.location?.trim() || "Queens, NY",
+    zipCode: payload.zipCode?.trim() || "",
+    estimatedSqft: Math.max(500, Math.round(payload.estimatedSqft || 1e4)),
+    serviceWindow: payload.serviceWindow?.trim() || "After-hours",
+    transitionDate: payload.transitionDate?.trim() || void 0,
+    picName: payload.picName?.trim() || "",
+    picEmail: payload.picEmail?.trim() || "",
+    scopeBrief: payload.scopeBrief?.trim() || void 0
+  };
+}
+var parseRfpBrief = (0, import_https29.onCall)({
+  secrets: ["GEMINI_API_KEY"],
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 30,
+  memory: "256MiB"
+}, async (request) => {
+  const data = request.data;
+  const brief = data?.brief?.trim();
+  if (!brief) return { parsed: null };
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return { parsed: sanitizeRfpInput({}) };
+  const genAI4 = new import_generative_ai15.GoogleGenerativeAI(apiKey);
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
+  const prompt = `
+Extract janitorial RFP fields from this brief and return ONLY valid JSON.
+Use keys:
+- facilityName (string)
+- facilityType (string)
+- location (string)
+- estimatedSqft (number)
+- cleaningFrequency ("daily"|"weekdays"|"3x_week"|"2x_week"|"weekly"|"custom")
+- serviceWindow (string)
+- requiredServices (string[])
+- complianceRequirements (string[])
+- slaRequirements (string[])
+- transitionDate (string, optional)
+- incumbentPainPoints (string[])
+
+If unknown, use reasonable defaults for a Queens facility manager.
+Input:
+${brief}
+`.trim();
+  try {
+    const result = await model2.generateContent(prompt);
+    const raw = result.response.text();
+    const parsed = safeJsonParse2(raw, {});
+    return { parsed: sanitizeRfpInput(parsed) };
+  } catch {
+    return { parsed: sanitizeRfpInput({}) };
+  }
+});
+var generateRfp = (0, import_https29.onCall)({
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 20,
+  memory: "256MiB"
+}, async (request) => {
+  const data = request.data;
+  const input = sanitizeRfpInput(data?.input || {});
+  const draft = buildRfpDraft(input);
+  return { draft };
+});
+var extractBidData = (0, import_https29.onCall)({
+  secrets: ["GEMINI_API_KEY"],
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 30,
+  memory: "256MiB"
+}, async (request) => {
+  const data = request.data;
+  const content2 = data?.content?.trim();
+  if (!content2) return { candidate: null };
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    const fallback = normalizeBidExtraction({ notes: content2.slice(0, 300) });
+    return { candidate: fallback, confidence: { overall: 0.35 } };
+  }
+  const genAI4 = new import_generative_ai15.GoogleGenerativeAI(apiKey);
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
+  const prompt = `
+Extract bid details from this janitorial proposal text. Return ONLY valid JSON with:
+- vendorName (string)
+- monthlyPrice (number or null)
+- scopeCompleteness (0-100)
+- staffingPlanQuality (0-100)
+- qaReportingQuality (0-100)
+- complianceConfidence (0-100)
+- transitionPlanQuality (0-100)
+- notes (string)
+- confidence (object with overall 0-1 and optional per-field)
+
+Content:
+${content2}
+`.trim();
+  try {
+    const result = await model2.generateContent(prompt);
+    const raw = result.response.text();
+    const parsed = safeJsonParse2(raw, {});
+    const candidate = normalizeBidExtraction(parsed);
+    const confidence = parsed.confidence ?? { overall: 0.65 };
+    return { candidate, confidence };
+  } catch {
+    const fallback = normalizeBidExtraction({ notes: content2.slice(0, 300) });
+    return { candidate: fallback, confidence: { overall: 0.4 } };
+  }
+});
+var scoreBidRows = (0, import_https29.onCall)({
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 20,
+  memory: "256MiB"
+}, async (request) => {
+  const rows = request.data?.rows || [];
+  const normalizedRows = rows.map((row) => normalizeBidExtraction(row));
+  const scored = scoreBids(normalizedRows);
+  return { scored };
+});
+var submitRfpLead = (0, import_https29.onCall)({
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 20,
+  memory: "256MiB"
+}, async (request) => {
+  const data = request.data;
+  const payload = sanitizeRfpLeadPayload(data?.payload || {});
+  if (!payload.idempotencyKey) return { success: false, error: "Missing idempotency key." };
+  if (!payload.picName) return { success: false, error: "PIC name is required." };
+  if (!payload.picEmail) return { success: false, error: "PIC email is required." };
+  if (!payload.zipCode) return { success: false, error: "ZIP code is required." };
+  const leadRef = db.collection("rfpLeads").doc(payload.idempotencyKey);
+  const existing = await leadRef.get();
+  if (existing.exists) {
+    const existingData = existing.data();
+    if (payload.requestedXiri && !existingData?.requestedXiri) {
+      await leadRef.set({
+        requestedXiri: true,
+        requestedXiriAt: (/* @__PURE__ */ new Date()).toISOString()
+      }, { merge: true });
+      return { success: true, deduped: false, upgraded: true, leadId: existing.id };
+    }
+    return { success: true, deduped: true, leadId: existing.id };
+  }
+  await leadRef.set({
+    status: "new",
+    source: payload.source,
+    requestedXiri: Boolean(payload.requestedXiri),
+    requestedXiriAt: payload.requestedXiri ? (/* @__PURE__ */ new Date()).toISOString() : null,
+    facilityName: payload.facilityName || null,
+    facilityType: payload.facilityType,
+    location: payload.location,
+    zipCode: payload.zipCode,
+    estimatedSqft: payload.estimatedSqft,
+    serviceWindow: payload.serviceWindow,
+    transitionDate: payload.transitionDate || null,
+    picName: payload.picName,
+    picEmail: payload.picEmail,
+    scopeBrief: payload.scopeBrief || null,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+  return { success: true, deduped: false, leadId: leadRef.id };
+});
+
+// src/functions/pseoAuth.ts
+var import_https30 = require("firebase-functions/v2/https");
 var import_params8 = require("firebase-functions/params");
 var gscClientId = (0, import_params8.defineSecret)("GSC_CLIENT_ID");
 var gscClientSecret = (0, import_params8.defineSecret)("GSC_CLIENT_SECRET");
@@ -75194,7 +75628,7 @@ var TOKEN_DOC_PATH = "pseo_config/gsc_credentials";
 function getRedirectUri(isDev) {
   return isDev ? REDIRECT_URI_DEV : REDIRECT_URI_PROD;
 }
-var getGscAuthUrl = (0, import_https29.onCall)({
+var getGscAuthUrl = (0, import_https30.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10,
   secrets: [gscClientId]
@@ -75215,7 +75649,7 @@ var getGscAuthUrl = (0, import_https29.onCall)({
     url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
   };
 });
-var exchangeGscToken = (0, import_https29.onCall)({
+var exchangeGscToken = (0, import_https30.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30,
   secrets: [gscClientId, gscClientSecret]
@@ -75223,7 +75657,7 @@ var exchangeGscToken = (0, import_https29.onCall)({
   const code = request.data?.code;
   const isDev = request.data?.isDev === true;
   if (!code) {
-    throw new import_https29.HttpsError("invalid-argument", "Missing authorization code");
+    throw new import_https30.HttpsError("invalid-argument", "Missing authorization code");
   }
   const redirectUri = getRedirectUri(isDev);
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -75240,7 +75674,7 @@ var exchangeGscToken = (0, import_https29.onCall)({
   const tokenData = await tokenResponse.json();
   if (tokenData.error) {
     console.error("[pSEO] Token exchange failed:", tokenData);
-    throw new import_https29.HttpsError("internal", `Token exchange failed: ${tokenData.error_description || tokenData.error}`);
+    throw new import_https30.HttpsError("internal", `Token exchange failed: ${tokenData.error_description || tokenData.error}`);
   }
   const expiresAt = admin.firestore.Timestamp.fromMillis(
     Date.now() + tokenData.expires_in * 1e3
@@ -75273,7 +75707,7 @@ var exchangeGscToken = (0, import_https29.onCall)({
     message: "Google Search Console and Analytics connected successfully"
   };
 });
-var getGscConnectionStatus = (0, import_https29.onCall)({
+var getGscConnectionStatus = (0, import_https30.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10
 }, async () => {
@@ -75289,7 +75723,7 @@ var getGscConnectionStatus = (0, import_https29.onCall)({
     connectedAt: data.connectedAt?.toDate?.()?.toISOString() || null
   };
 });
-var disconnectGsc = (0, import_https29.onCall)({
+var disconnectGsc = (0, import_https30.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 15
 }, async () => {
@@ -75347,7 +75781,7 @@ async function getValidAccessToken() {
   });
   return refreshData.access_token;
 }
-var testGscConnection = (0, import_https29.onCall)({
+var testGscConnection = (0, import_https30.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30
 }, async () => {
@@ -75391,9 +75825,10 @@ var testGscConnection = (0, import_https29.onCall)({
 
 // src/triggers/pseoAnalysis.ts
 var import_scheduler13 = require("firebase-functions/v2/scheduler");
-var import_https30 = require("firebase-functions/v2/https");
-var logger39 = __toESM(require("firebase-functions/logger"));
-var import_generative_ai15 = require("@google/generative-ai");
+var import_https31 = require("firebase-functions/v2/https");
+var logger40 = __toESM(require("firebase-functions/logger"));
+var import_generative_ai16 = require("@google/generative-ai");
+init_gemini();
 
 // src/pseo/config.ts
 var DEFAULT_PSEO_BATCH_SIZE = 100;
@@ -75485,7 +75920,7 @@ async function getConfiguredBatchSize() {
     const normalized = Math.floor(rawBatchSize);
     return Math.min(MAX_PSEO_BATCH_SIZE, Math.max(1, normalized));
   } catch (err2) {
-    logger39.warn(`[pSEO] Failed to load engine config batchSize, using default ${DEFAULT_PSEO_BATCH_SIZE}: ${err2.message}`);
+    logger40.warn(`[pSEO] Failed to load engine config batchSize, using default ${DEFAULT_PSEO_BATCH_SIZE}: ${err2.message}`);
     return DEFAULT_PSEO_BATCH_SIZE;
   }
 }
@@ -75531,7 +75966,7 @@ async function fetchGscData(accessToken, segment, startDate, endDate) {
     startRow += rows.length;
     if (rows.length < ROW_LIMIT) break;
   }
-  logger39.info(`[pSEO] Fetched ${allRows.length} GSC rows for segment "${segment}" (${startDate} \u2192 ${endDate})`);
+  logger40.info(`[pSEO] Fetched ${allRows.length} GSC rows for segment "${segment}" (${startDate} \u2192 ${endDate})`);
   return allRows;
 }
 function aggregateByPage(rows) {
@@ -75619,7 +76054,7 @@ async function fetchGa4Engagement(accessToken, pages, startDate, endDate) {
       }
     );
     if (!response.ok) {
-      logger39.warn(`[pSEO] GA4 API error: ${response.status}`);
+      logger40.warn(`[pSEO] GA4 API error: ${response.status}`);
       return result;
     }
     const data = await response.json();
@@ -75641,7 +76076,7 @@ async function fetchGa4Engagement(accessToken, pages, startDate, endDate) {
       }
     }
   } catch (err2) {
-    logger39.warn("[pSEO] GA4 fetch failed (non-critical):", err2.message);
+    logger40.warn("[pSEO] GA4 fetch failed (non-critical):", err2.message);
   }
   return result;
 }
@@ -75675,9 +76110,9 @@ async function fetchTrustSignals() {
       });
     }
   } catch (err2) {
-    logger39.warn("[pSEO] Trust signal fetch failed (non-critical):", err2.message);
+    logger40.warn("[pSEO] Trust signal fetch failed (non-critical):", err2.message);
   }
-  logger39.info(`[pSEO] Trust signals loaded for ${result.size} cities`);
+  logger40.info(`[pSEO] Trust signals loaded for ${result.size} cities`);
   return result;
 }
 async function fetchLivePageMeta(slugs) {
@@ -75693,7 +76128,7 @@ async function fetchLivePageMeta(slugs) {
           signal: AbortSignal.timeout(8e3)
         });
         if (!res.ok) {
-          logger39.warn(`[pSEO] Failed to fetch page for ${slug}: HTTP ${res.status}`);
+          logger40.warn(`[pSEO] Failed to fetch page for ${slug}: HTTP ${res.status}`);
           return;
         }
         const html = await res.text();
@@ -75705,12 +76140,12 @@ async function fetchLivePageMeta(slugs) {
         const h1 = h1Match ? h1Match[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : "";
         result.set(slug, { title, description, h1 });
       } catch (err2) {
-        logger39.warn(`[pSEO] Page fetch failed for ${slug}: ${err2.message}`);
+        logger40.warn(`[pSEO] Page fetch failed for ${slug}: ${err2.message}`);
       }
     });
     await Promise.all(promises);
   }
-  logger39.info(`[pSEO] Fetched live meta for ${result.size}/${slugs.length} pages`);
+  logger40.info(`[pSEO] Fetched live meta for ${result.size}/${slugs.length} pages`);
   return result;
 }
 function getLiveValueForField(meta, field) {
@@ -75976,7 +76411,7 @@ async function fetchExistingPendingNudges() {
     const field = String(d.targetField || "").trim();
     keys.add(`${slug}::${field}`);
   }
-  logger39.info(`[pSEO] Found ${keys.size} existing pending nudges for dedup`);
+  logger40.info(`[pSEO] Found ${keys.size} existing pending nudges for dedup`);
   return keys;
 }
 function deduplicateNudges(nudges, existingKeys) {
@@ -75988,7 +76423,7 @@ function deduplicateNudges(nudges, existingKeys) {
   });
   const removed = before - filtered.length;
   if (removed > 0) {
-    logger39.info(`[pSEO] Dedup removed ${removed} nudges (already pending in inbox)`);
+    logger40.info(`[pSEO] Dedup removed ${removed} nudges (already pending in inbox)`);
   }
   return { filtered, removed };
 }
@@ -76007,7 +76442,7 @@ async function fetchWinningPatterns(segment) {
       });
     }
   }
-  logger39.info(`[pSEO] Found ${patterns.length} winning patterns from approved nudges`);
+  logger40.info(`[pSEO] Found ${patterns.length} winning patterns from approved nudges`);
   return patterns;
 }
 function identifyTopPerformers(pages, liveMetaMap) {
@@ -76052,7 +76487,7 @@ function identifyTopPerformers(pages, liveMetaMap) {
   }
   candidates.sort((a2, b) => b.ctr - a2.ctr);
   const top = candidates.slice(0, 10);
-  logger39.info(`[pSEO] Identified ${top.length} top-performing pages (high CTR vs position benchmark)`);
+  logger40.info(`[pSEO] Identified ${top.length} top-performing pages (high CTR vs position benchmark)`);
   return top;
 }
 async function generateCopySuggestion(nudge, segment, winningPatterns = [], topPerformers = []) {
@@ -76060,8 +76495,8 @@ async function generateCopySuggestion(nudge, segment, winningPatterns = [], topP
   if (!apiKey) {
     return `[GEMINI_API_KEY not configured \u2014 manual suggestion needed for ${nudge.targetField}]`;
   }
-  const genAI4 = new import_generative_ai15.GoogleGenerativeAI(apiKey);
-  const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const genAI4 = new import_generative_ai16.GoogleGenerativeAI(apiKey);
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
   const audienceContext = segment === "leads" ? "facility managers, office managers, and property managers evaluating commercial cleaning partners. They are B2B decision-makers who prioritize compliance documentation, verified quality, and operational reliability over price." : "independent janitorial contractors and cleaning company owners seeking commercial cleaning contracts and subcontracting opportunities in the Long Island/NYC market.";
   const trustContext = nudge.dataPoints.trustSignal ? `
 TRUST SIGNAL: ${nudge.dataPoints.trustSignal} \u2014 weave this verified operational data naturally into the copy as social proof.` : "";
@@ -76221,7 +76656,7 @@ STRICT RULES:
     const text = result.response?.text()?.trim() || "";
     return text.replace(/^["']|["']$/g, "").trim();
   } catch (err2) {
-    logger39.warn(`[pSEO] Gemini generation failed for ${nudge.targetSlug}/${nudge.targetField}:`, err2.message);
+    logger40.warn(`[pSEO] Gemini generation failed for ${nudge.targetSlug}/${nudge.targetField}:`, err2.message);
     return `[Auto-generation failed \u2014 please write manually. Reason: ${nudge.reasoning}]`;
   }
 }
@@ -76259,19 +76694,19 @@ async function runAnalysisPipeline(segment) {
   try {
     await updateStatus({ phase: "Connecting to GSC" });
     const configuredBatchSize = await getConfiguredBatchSize();
-    logger39.info(`[pSEO] Using batch size ${configuredBatchSize} (default ${DEFAULT_PSEO_BATCH_SIZE}, max ${MAX_PSEO_BATCH_SIZE})`);
+    logger40.info(`[pSEO] Using batch size ${configuredBatchSize} (default ${DEFAULT_PSEO_BATCH_SIZE}, max ${MAX_PSEO_BATCH_SIZE})`);
     const accessToken = await getValidAccessToken();
-    logger39.info(`[pSEO] Access token acquired for segment "${segment}"`);
+    logger40.info(`[pSEO] Access token acquired for segment "${segment}"`);
     try {
       const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${accessToken}`);
       const tokenInfo = await tokenInfoRes.json();
-      logger39.info(`[pSEO] Token belongs to: ${tokenInfo.email || "unknown"}, scopes: ${tokenInfo.scope || "unknown"}`);
+      logger40.info(`[pSEO] Token belongs to: ${tokenInfo.email || "unknown"}, scopes: ${tokenInfo.scope || "unknown"}`);
       const sitesRes = await fetch("https://www.googleapis.com/webmasters/v3/sites", {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       const sitesData = await sitesRes.json();
       const siteUrls = (sitesData.siteEntry || []).map((s) => s.siteUrl);
-      logger39.info(`[pSEO] GSC accessible sites: ${JSON.stringify(siteUrls)}`);
+      logger40.info(`[pSEO] GSC accessible sites: ${JSON.stringify(siteUrls)}`);
       if (!siteUrls.includes(GSC_SITE_URL)) {
         throw new Error(
           `Token email "${tokenInfo.email}" does not have access to "${GSC_SITE_URL}". Accessible sites: ${JSON.stringify(siteUrls)}. Please disconnect and reconnect GSC with the correct Google account.`
@@ -76279,7 +76714,7 @@ async function runAnalysisPipeline(segment) {
       }
     } catch (diagErr) {
       if (diagErr.message?.includes("does not have access")) throw diagErr;
-      logger39.warn(`[pSEO] Diagnostic check failed (non-fatal): ${diagErr.message}`);
+      logger40.warn(`[pSEO] Diagnostic check failed (non-fatal): ${diagErr.message}`);
     }
     const today = /* @__PURE__ */ new Date();
     const endDate = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1e3);
@@ -76301,7 +76736,7 @@ async function runAnalysisPipeline(segment) {
         pm.clicksPrior = prior.clicks;
       }
     }
-    logger39.info(`[pSEO] Aggregated ${currentPages.size} pages for segment "${segment}"`);
+    logger40.info(`[pSEO] Aggregated ${currentPages.size} pages for segment "${segment}"`);
     phase = "Fetching GA4 engagement";
     await updateStatus({ phase, pagesAnalyzed: currentPages.size });
     const ga4Data = await fetchGa4Engagement(
@@ -76350,14 +76785,14 @@ async function runAnalysisPipeline(segment) {
       if (pm.scrollDepth == null) reliability.missing_metrics.scrollDepth += 1;
       if (pm.nfcSessionsMonth == null && pm.workOrdersMonth == null) reliability.missing_metrics.trustSignals += 1;
     }
-    logger39.info(`[pSEO] Detected ${allNudges.length} raw nudges across ${currentPages.size} pages`);
+    logger40.info(`[pSEO] Detected ${allNudges.length} raw nudges across ${currentPages.size} pages`);
     phase = "Deduplicating against inbox";
     await updateStatus({ phase });
     const existingPending = await fetchExistingPendingNudges();
     const dedup = deduplicateNudges(allNudges, existingPending);
     allNudges = dedup.filtered;
     reliability.deduped = dedup.removed;
-    logger39.info(`[pSEO] ${allNudges.length} nudges after dedup`);
+    logger40.info(`[pSEO] ${allNudges.length} nudges after dedup`);
     phase = "Loading winning patterns";
     await updateStatus({ phase });
     const winningPatterns = await fetchWinningPatterns(segment);
@@ -76481,7 +76916,7 @@ async function runAnalysisPipeline(segment) {
       batchId,
       reliability
     });
-    logger39.info(`[pSEO] Analysis complete. Batch "${batchId}" \u2014 ${nudgesWithCopy.length} nudges written.`);
+    logger40.info(`[pSEO] Analysis complete. Batch "${batchId}" \u2014 ${nudgesWithCopy.length} nudges written.`);
     return {
       batchId,
       totalNudges: nudgesWithCopy.length,
@@ -76490,7 +76925,7 @@ async function runAnalysisPipeline(segment) {
       reliability
     };
   } catch (err2) {
-    logger39.error("[pSEO] Analysis pipeline failed:", err2.message || err2);
+    logger40.error("[pSEO] Analysis pipeline failed:", err2.message || err2);
     await statusRef.set({
       running: false,
       segment,
@@ -76499,7 +76934,7 @@ async function runAnalysisPipeline(segment) {
       startedAt,
       updatedAt: /* @__PURE__ */ new Date(),
       reliability
-    }).catch((e2) => logger39.error("[pSEO] Failed to write error status:", e2.message));
+    }).catch((e2) => logger40.error("[pSEO] Failed to write error status:", e2.message));
     throw err2;
   }
 }
@@ -76518,11 +76953,11 @@ var weeklyPseoAnalysis = (0, import_scheduler13.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger39.info("[pSEO] Starting scheduled weekly analysis...");
+  logger40.info("[pSEO] Starting scheduled weekly analysis...");
   await runAnalysisPipeline("leads");
   await runAnalysisPipeline("contractors");
 });
-var triggerPseoAnalysis = (0, import_https30.onCall)({
+var triggerPseoAnalysis = (0, import_https31.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY", "GSC_CLIENT_ID", "GSC_CLIENT_SECRET"],
   timeoutSeconds: 540,
@@ -76530,20 +76965,20 @@ var triggerPseoAnalysis = (0, import_https30.onCall)({
 }, async (request) => {
   const segment = request.data?.segment || "leads";
   if (!["leads", "contractors"].includes(segment)) {
-    throw new import_https30.HttpsError("invalid-argument", "Invalid segment. Use 'leads' or 'contractors'.");
+    throw new import_https31.HttpsError("invalid-argument", "Invalid segment. Use 'leads' or 'contractors'.");
   }
   const statusDoc = await db.collection("pseo_config").doc("run_status").get();
   if (statusDoc.exists && statusDoc.data()?.running) {
-    throw new import_https30.HttpsError("already-exists", "Analysis is already running. Please wait for it to complete.");
+    throw new import_https31.HttpsError("already-exists", "Analysis is already running. Please wait for it to complete.");
   }
-  logger39.info(`[pSEO] Manual trigger invoked for segment "${segment}"`);
+  logger40.info(`[pSEO] Manual trigger invoked for segment "${segment}"`);
   const result = await runAnalysisPipeline(segment);
   return {
     message: `Analysis complete for "${segment}"`,
     ...result
   };
 });
-var getPseoRunStatus = (0, import_https30.onCall)({
+var getPseoRunStatus = (0, import_https31.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10
 }, async () => {
@@ -76567,8 +77002,8 @@ var getPseoRunStatus = (0, import_https30.onCall)({
 });
 
 // src/functions/pseoDeployment.ts
-var import_https31 = require("firebase-functions/v2/https");
-var logger40 = __toESM(require("firebase-functions/logger"));
+var import_https32 = require("firebase-functions/v2/https");
+var logger41 = __toESM(require("firebase-functions/logger"));
 var import_params9 = require("firebase-functions/params");
 init_src();
 var googleChatWebhookSecret2 = (0, import_params9.defineSecret)("GOOGLE_CHAT_WEBHOOK_URL");
@@ -76864,7 +77299,7 @@ async function notifyDeployment(params) {
   ].join("\n");
   await sendText(threadKey, summary);
 }
-var deployApprovedNudges = (0, import_https31.onCall)({
+var deployApprovedNudges = (0, import_https32.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [githubTokenSecret, googleChatWebhookSecret2],
   timeoutSeconds: 120,
@@ -76872,34 +77307,34 @@ var deployApprovedNudges = (0, import_https31.onCall)({
 }, async (request) => {
   const { batchId, force } = request.data || {};
   if (!batchId || typeof batchId !== "string") {
-    throw new import_https31.HttpsError("invalid-argument", "batchId is required.");
+    throw new import_https32.HttpsError("invalid-argument", "batchId is required.");
   }
   const token = getGithubToken();
   if (!token) {
-    throw new import_https31.HttpsError("failed-precondition", "GITHUB_PAT secret not configured. Set it in Firebase Secrets.");
+    throw new import_https32.HttpsError("failed-precondition", "GITHUB_PAT secret not configured. Set it in Firebase Secrets.");
   }
-  logger40.info(`[pSEO Deploy] Starting deployment for batch "${batchId}"`);
+  logger41.info(`[pSEO Deploy] Starting deployment for batch "${batchId}"`);
   const nudgesSnap = await db.collection("pseo_nudges").where("batchId", "==", batchId).where("status", "==", "approved").get();
   if (nudgesSnap.empty) {
-    throw new import_https31.HttpsError("not-found", `No approved nudges found for batch "${batchId}".`);
+    throw new import_https32.HttpsError("not-found", `No approved nudges found for batch "${batchId}".`);
   }
   const nudges = nudgesSnap.docs.map((d) => ({
     id: d.id,
     ...d.data()
   }));
-  logger40.info(`[pSEO Deploy] Found ${nudges.length} approved nudges for batch "${batchId}"`);
+  logger41.info(`[pSEO Deploy] Found ${nudges.length} approved nudges for batch "${batchId}"`);
   const branchName = `pseo/${batchId}`;
   const mainSha = await getDefaultBranchSha(token);
   try {
     await createBranch(branchName, mainSha, token);
   } catch (err2) {
     if (err2.message?.includes("422") && err2.message?.includes("Reference already exists")) {
-      logger40.warn(`[pSEO Deploy] Branch "${branchName}" already exists, proceeding with update`);
+      logger41.warn(`[pSEO Deploy] Branch "${branchName}" already exists, proceeding with update`);
     } else {
       throw err2;
     }
   }
-  logger40.info(`[pSEO Deploy] Branch "${branchName}" created from ${mainSha.slice(0, 7)}`);
+  logger41.info(`[pSEO Deploy] Branch "${branchName}" created from ${mainSha.slice(0, 7)}`);
   const { content: seoDataRaw, sha: fileSha } = await getFileContent(SEO_DATA_PATH, branchName, token);
   const {
     modified,
@@ -76910,11 +77345,11 @@ var deployApprovedNudges = (0, import_https31.onCall)({
     expansionQueue
   } = applySeoDataChanges(seoDataRaw, nudges);
   if (skipped.length !== skippedByReason.length) {
-    throw new import_https31.HttpsError("internal", "Deploy aborted: skipped nudges must include explicit reason codes.");
+    throw new import_https32.HttpsError("internal", "Deploy aborted: skipped nudges must include explicit reason codes.");
   }
   if (applied.length === 0) {
     if (!force) {
-      throw new import_https31.HttpsError(
+      throw new import_https32.HttpsError(
         "failed-precondition",
         "Deploy aborted: zero applicable nudges in batch. Re-run with force=true if this is expected."
       );
@@ -76954,7 +77389,7 @@ var deployApprovedNudges = (0, import_https31.onCall)({
 Applied ${applied.length} approved nudges.
 Skipped ${skipped.length} nudges.`;
   await updateFile(SEO_DATA_PATH, branchName, modified, fileSha, commitMessage, token);
-  logger40.info(`[pSEO Deploy] Committed ${applied.length} changes to ${branchName}`);
+  logger41.info(`[pSEO Deploy] Committed ${applied.length} changes to ${branchName}`);
   const segment = nudges[0]?.segment || "leads";
   const scopeBreakdown = nudges.reduce((acc, n) => {
     const label = SCOPE_LABELS[n.scope] || n.scope;
@@ -76965,7 +77400,7 @@ Skipped ${skipped.length} nudges.`;
   const prTitle = `[pSEO] ${batchId} \u2014 ${applied.length} content optimizations (${scopeSummary})`;
   const prBodyText = buildPrBody(nudges, applied, skipped);
   const pr = await createPR(prTitle, prBodyText, branchName, GITHUB_DEFAULT_BRANCH, token);
-  logger40.info(`[pSEO Deploy] PR #${pr.number} created: ${pr.url}`);
+  logger41.info(`[pSEO Deploy] PR #${pr.number} created: ${pr.url}`);
   const batch = db.batch();
   for (const nudgeId of applied) {
     const ref = db.collection("pseo_nudges").doc(nudgeId);
@@ -77028,7 +77463,7 @@ Skipped ${skipped.length} nudges.`;
       prNumber: pr.number
     });
   } catch (err2) {
-    logger40.warn("[pSEO Deploy] Chat notification failed (non-critical):", err2.message);
+    logger41.warn("[pSEO Deploy] Chat notification failed (non-critical):", err2.message);
   }
   return {
     success: true,
@@ -77042,14 +77477,14 @@ Skipped ${skipped.length} nudges.`;
     branchName
   };
 });
-var getPseoDeployStatus = (0, import_https31.onCall)({
+var getPseoDeployStatus = (0, import_https32.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [githubTokenSecret],
   timeoutSeconds: 15
 }, async (request) => {
   const { batchId } = request.data || {};
   if (!batchId) {
-    throw new import_https31.HttpsError("invalid-argument", "batchId is required.");
+    throw new import_https32.HttpsError("invalid-argument", "batchId is required.");
   }
   const batchDoc = await db.collection("pseo_batches").doc(batchId).get();
   if (!batchDoc.exists) {
@@ -77107,10 +77542,12 @@ var getPseoDeployStatus = (0, import_https31.onCall)({
   enrichFromWebsite,
   exchangeGscToken,
   expandLocation,
+  extractBidData,
   generateAISequence,
   generateLeads,
   generateMonthlyInvoices,
   generateMorningReports,
+  generateRfp,
   getComplianceLog,
   getDashboardTimeslots,
   getFacebookPosts,
@@ -77151,6 +77588,7 @@ var getPseoDeployStatus = (0, import_https31.onCall)({
   onWorkOrderHandoff,
   optimizeTemplate,
   parseCalculatorPrompt,
+  parseRfpBrief,
   processCommissionPayouts,
   processMailQueue,
   processOutreachQueue,
@@ -77170,6 +77608,7 @@ var getPseoDeployStatus = (0, import_https31.onCall)({
   runSocialContentGenerator,
   runSocialPublisher,
   runVendorProspector,
+  scoreBidRows,
   searchPlaces,
   seedInHouseSequence,
   sendBookingConfirmation,
@@ -77181,6 +77620,7 @@ var getPseoDeployStatus = (0, import_https31.onCall)({
   sendVendorBookingConfirmation,
   sourceProperties,
   startLeadSequence,
+  submitRfpLead,
   testGscConnection,
   testSendEmail,
   triggerClarityReport,

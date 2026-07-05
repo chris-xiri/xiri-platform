@@ -7,6 +7,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { DASHBOARD_CORS } from "../utils/cors";
 import { getPrompt } from "../utils/promptUtils";
+import { resolveGeminiModel } from "../utils/gemini";
 
 const FALLBACK_SYSTEM_PROMPT = `You are an expert B2B email copywriter for XIRI Facility Solutions, a commercial cleaning and facility management platform based in New York.
 
@@ -100,7 +101,7 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
     try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
         const model = genAI.getGenerativeModel({
-            model: "gemini-3.1-pro-preview",
+            model: resolveGeminiModel("gemini-3.1-pro-preview"),
             generationConfig: {
                 responseMimeType: "application/json",
                 temperature: 0.8,

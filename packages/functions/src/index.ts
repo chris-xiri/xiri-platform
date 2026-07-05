@@ -106,6 +106,7 @@ export { generateAISequence } from "./functions/sequenceGenerator";
 // ── AI Sales Assistant (onCall — public-site chat widget) ──
 export { askAI } from "./functions/askAI";
 export { parseCalculatorPrompt } from "./functions/parseCalculatorPrompt";
+export { parseRfpBrief, generateRfp, extractBidData, scoreBidRows, submitRfpLead } from "./functions/rfpBidAnalyzer";
 
 // ── pSEO Engine – OAuth & Connection (onCall) ──
 export {

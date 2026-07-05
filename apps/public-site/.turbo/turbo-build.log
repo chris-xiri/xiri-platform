@@ -2,63 +2,142 @@
 > @xiri/public-site@0.1.0 build
 > next build
 
-▲ Next.js 16.1.6 (Turbopack)
-- Environments: .env.local
+   ▲ Next.js 15.1.9
+   - Environments: .env.local, .env.production
+   - Experiments (use with caution):
+     · externalDir
 
-  Creating an optimized production build ...
-✓ Compiled successfully in 2.4s
-  Running TypeScript ...
-  Collecting page data using 19 workers ...
-  Generating static pages using 19 workers (0/568) ...
-  Generating static pages using 19 workers (142/568) 
-  Generating static pages using 19 workers (284/568) 
-  Generating static pages using 19 workers (426/568) 
-✓ Generating static pages using 19 workers (568/568) in 2.2s
-  Finalizing page optimization ...
+   Creating an optimized production build ...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+ ⚠ Using edge runtime on a page currently disables static generation for that page
+   Generating static pages (0/4139) ...
+   Generating static pages (1034/4139) 
+   Generating static pages (2069/4139) 
+   Generating static pages (3104/4139) 
+ ✓ Generating static pages (4139/4139)
+   Finalizing page optimization ...
+   Collecting build traces ...
 
-Route (app)
-┌ ○ /
-├ ○ /_not-found
-├ ● /[slug]
-│ ├ /medical-office-cleaning
-│ ├ /urgent-care-cleaning
-│ ├ /surgery-center-cleaning
-│ └ [+45 more paths]
-├ ● /[slug]/[location]
-│ ├ /medical-office-cleaning/garden-city-ny
-│ ├ /medical-office-cleaning/hempstead-ny
-│ ├ /medical-office-cleaning/great-neck-ny
-│ └ [+513 more paths]
-└ ƒ /onboarding/[vendorId]
+Route (app)                                                                     Size     First Load JS
+┌ ○ /                                                                           5.82 kB         125 kB
+├ ○ /_not-found                                                                 989 B           107 kB
+├ ● /[slug]                                                                     181 B           106 kB
+├   ├ /medical-offices
+├   ├ /urgent-care
+├   ├ /surgery-centers
+├   └ [+12 more paths]
+├ ○ /about                                                                      193 B           110 kB
+├ ƒ /api/ai-bot-log                                                             181 B           106 kB
+├ ƒ /api/demo-clicks                                                            181 B           106 kB
+├ ƒ /api/demo-clicks/report                                                     181 B           106 kB
+├ ƒ /api/guides/approve                                                         181 B           106 kB
+├ ○ /apple-icon.png                                                             0 B                0 B
+├ ƒ /audit/[id]                                                                 7.09 kB         265 kB
+├ ○ /audit/start                                                                2.24 kB         225 kB
+├ ○ /blog                                                                       193 B           110 kB
+├ ● /blog/[slug]                                                                3.09 kB         229 kB
+├   ├ /blog/affordable-bms-small-commercial-buildings
+├   ├ /blog/backflow-testing-requirements-commercial-buildings
+├   ├ /blog/bas-vs-preventive-maintenance-small-buildings
+├   └ [+63 more paths]
+├ ƒ /c/[locationId]                                                             3.33 kB         230 kB
+├ ○ /calculator                                                                 1.04 kB         377 kB
+├ ● /compare/[slug]                                                             472 B           115 kB
+├   ├ /compare/xiri-vs-jani-king
+├   ├ /compare/xiri-vs-coverall
+├   ├ /compare/best-commercial-cleaning-nassau-county
+├   └ [+13 more paths]
+├ ○ /contractors                                                                5.51 kB         237 kB
+├ ● /contractors/[slug]                                                         2.09 kB         117 kB
+├   ├ /contractors/janitorial-subcontractor
+├   ├ /contractors/hvac-subcontractor
+├   ├ /contractors/landscaping-subcontractor
+├   └ [+457 more paths]
+├ ○ /contractors/calculator                                                     202 B           373 kB
+├ ○ /demo                                                                       12.6 kB         118 kB
+├ ○ /directory/locations                                                        192 B           115 kB
+├ ○ /directory/solutions                                                        192 B           115 kB
+├ ● /guides/[slug]                                                              472 B           115 kB
+├   ├ /guides/aaahc-surgery-center-cleaning-standards
+├   ├ /guides/accreditation-360-preparation-guide
+├   ├ /guides/cms-conditions-for-coverage-cleaning
+├   └ [+126 more paths]
+├ ƒ /guides/preview/[id]                                                        446 B           115 kB
+├ ○ /icon.png                                                                   0 B                0 B
+├ ○ /icon.svg                                                                   0 B                0 B
+├ ● /industries/[pillar]                                                        472 B           115 kB
+├   ├ /industries/healthcare
+├   ├ /industries/automotive
+├   ├ /industries/education
+├   └ [+2 more paths]
+├ ● /industries/[pillar]/[slug]                                                 208 B           119 kB
+├   ├ /industries/healthcare/medical-offices
+├   ├ /industries/healthcare/medical-offices-in-great-neck-nassau-county-ny
+├   ├ /industries/healthcare/medical-offices-in-new-hyde-park-nassau-county-ny
+├   └ [+972 more paths]
+├ ƒ /invoice/pay/[token]                                                        3.42 kB         214 kB
+├ ƒ /onboarding/[vendorId]                                                      10.8 kB         233 kB
+├ ○ /onboarding/start                                                           2 kB            224 kB
+├ ƒ /opengraph-image                                                            0 B                0 B
+├ ○ /partners                                                                   1.27 kB         111 kB
+├ ● /partners/[capability]                                                      3.86 kB         372 kB
+├   ├ /partners/janitorial-services
+├   ├ /partners/commercial-cleaning
+├   ├ /partners/floor-care
+├   └ [+20 more paths]
+├ ƒ /partners/profile/[slug]                                                    6.6 kB          375 kB
+├ ○ /privacy                                                                    181 B           106 kB
+├ ƒ /quote/review/[token]                                                       3.95 kB         219 kB
+├ ○ /refer                                                                      153 B           274 kB
+├ ● /refer/[slug]                                                               153 B           274 kB
+├   ├ /refer/plumber-referral-partner
+├   ├ /refer/electrician-referral-partner
+├   ├ /refer/hvac-referral-partner
+├   └ [+189 more paths]
+├ ƒ /referral/payment-info/[id]                                                 3.7 kB          226 kB
+├ ○ /robots.txt                                                                 0 B                0 B
+├ ƒ /s/[locationId]                                                             4.01 kB         231 kB
+├ ○ /services                                                                   193 B           110 kB
+├ ● /services/[slug]                                                            3.1 kB          122 kB
+├   ├ /services/medical-office-cleaning
+├   ├ /services/urgent-care-cleaning
+├   ├ /services/surgery-center-cleaning
+├   └ [+1362 more paths]
+├ ○ /services/commercial-cleaning                                               472 B           115 kB
+├ ○ /services/facility-management                                               472 B           115 kB
+├ ○ /services/preventive-maintenance                                            472 B           115 kB
+├ ○ /sitemap.xml                                                                0 B                0 B
+├ ○ /solutions                                                                  193 B           110 kB
+├ ● /solutions/[slug]                                                           2.09 kB         117 kB
+├   ├ /solutions/medical-facility-management
+├   ├ /solutions/single-tenant-maintenance
+├   ├ /solutions/vendor-management-alternative
+├   └ [+851 more paths]
+├ ○ /solutions/cleaning-verification                                            193 B           110 kB
+├ ○ /terms                                                                      181 B           106 kB
+├ ○ /test-firebase                                                              1.09 kB         224 kB
+├ ○ /tools                                                                      193 B           110 kB
+├ ○ /tools/compliance-checker                                                   6.71 kB         116 kB
+├ ○ /tools/janitorial-rfp                                                       9.83 kB         378 kB
+├ ○ /tools/janitorial-rfp-bid-analyzer                                          181 B           106 kB
+├ ○ /tools/sds-lookup                                                           15.3 kB         125 kB
+├ ○ /waitlist                                                                   2.6 kB          363 kB
+└ ƒ /z/[locationId]/[zoneId]                                                    6.55 kB         233 kB
++ First Load JS shared by all                                                   106 kB
+  ├ chunks/2855-249e808548bfa23c.js                                             50.6 kB
+  ├ chunks/87c73c54-26bd9e688b8400d9.js                                         53 kB
+  └ other shared chunks (total)                                                 2.16 kB
 
+
+ƒ Middleware                                                                    31.8 kB
 
 ○  (Static)   prerendered as static content
 ●  (SSG)      prerendered as static HTML (uses generateStaticParams)
 ƒ  (Dynamic)  server-rendered on demand
-
-
-> @xiri/public-site@0.1.0 postbuild
-> next-sitemap
-
-✨ [next-sitemap] Loading next-sitemap config: file:///K:/Repos/xiri-platform/apps/public-site/next-sitemap.config.js
-✅ [next-sitemap] Generation completed
-┌───────────────┬────────┐
-│ (index)       │ Values │
-├───────────────┼────────┤
-│ indexSitemaps │ 1      │
-│ sitemaps      │ 1      │
-└───────────────┴────────┘
------------------------------------------------------
- SITEMAP INDICES 
------------------------------------------------------
-
-   ○ https://www.xiri.com/sitemap.xml
-
-
------------------------------------------------------
- SITEMAPS 
------------------------------------------------------
-
-   ○ https://www.xiri.com/sitemap-0.xml
-
 

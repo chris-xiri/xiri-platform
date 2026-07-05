@@ -1,8 +1,151 @@
 
-> xiri-web@0.1.0 build
+> @xiri/dashboard@0.1.0 build
 > next build
 
-   ▲ Next.js 15.1.3
-   - Environments: .env.local
+   ▲ Next.js 15.1.9
+   - Environments: .env.local, .env.production
 
    Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/40) ...
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /operations/nfc-zones. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/reports. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Connecting to Production Firebase
+Connecting to Production Firebase
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /operations/site-visits/conduct. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/commissions. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/profile. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/social. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/seo-engine. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/templates. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/monitoring. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/users. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /operations/site-visits. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /sales/referrals. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /accounting/vendor-remittances. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (10/40) 
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /supply/crm. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /sales/prospects. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /unauthorized. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /operations/work-orders. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/email-templates. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/company. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /sales/quotes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /sales/companies. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /accounting/commissions. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /operations/contracts. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /operations/audits. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /sales/crm. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /operations/audits/check-in. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /operations/dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (20/40) 
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /supply/dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /accounting/invoices. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (30/40) 
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /operations/command-center. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/agents. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/seed-command-center. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/legal. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ✓ Generating static pages (40/40)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    573 B           274 kB
+├ ○ /_not-found                          989 B           107 kB
+├ ○ /accounting/commissions              5.42 kB         279 kB
+├ ○ /accounting/invoices                 7.62 kB         422 kB
+├ ƒ /accounting/invoices/[id]            7.66 kB         285 kB
+├ ○ /accounting/vendor-remittances       4.69 kB         262 kB
+├ ƒ /accounting/vendor-remittances/[id]  6.41 kB         284 kB
+├ ○ /admin/agents                        6.07 kB         279 kB
+├ ○ /admin/commissions                   5.52 kB         279 kB
+├ ○ /admin/company                       6.86 kB         422 kB
+├ ○ /admin/email-templates               144 kB          577 kB
+├ ○ /admin/legal                         6.32 kB         280 kB
+├ ○ /admin/monitoring                    5.9 kB          263 kB
+├ ○ /admin/profile                       4.26 kB         278 kB
+├ ○ /admin/reports                       4.23 kB         395 kB
+├ ○ /admin/seed-command-center           5.77 kB         263 kB
+├ ○ /admin/seo-engine                    17.2 kB         416 kB
+├ ○ /admin/social                        16.9 kB         274 kB
+├ ○ /admin/templates                     13.8 kB         272 kB
+├ ○ /admin/users                         6.37 kB         280 kB
+├ ○ /icon.svg                            0 B                0 B
+├ ○ /login                               4.35 kB         278 kB
+├ ○ /operations/audits                   5.14 kB         279 kB
+├ ○ /operations/audits/check-in          8.23 kB         282 kB
+├ ○ /operations/command-center           10.4 kB         284 kB
+├ ○ /operations/contracts                4.85 kB         278 kB
+├ ƒ /operations/contracts/[id]           10.3 kB         267 kB
+├ ○ /operations/dashboard                5.02 kB         283 kB
+├ ○ /operations/nfc-zones                12.4 kB         286 kB
+├ ○ /operations/site-visits              4.57 kB         278 kB
+├ ○ /operations/site-visits/conduct      8.34 kB         282 kB
+├ ○ /operations/work-orders              5.36 kB         283 kB
+├ ƒ /operations/work-orders/[id]         8.95 kB         287 kB
+├ ○ /robots.txt                          0 B                0 B
+├ ○ /sales/companies                     4.79 kB         424 kB
+├ ○ /sales/crm                           28 kB           533 kB
+├ ƒ /sales/crm/[id]                      11.3 kB         486 kB
+├ ○ /sales/prospects                     21.9 kB         458 kB
+├ ○ /sales/quotes                        5.87 kB         475 kB
+├ ƒ /sales/quotes/[id]                   10.8 kB         484 kB
+├ ○ /sales/referrals                     5.79 kB         263 kB
+├ ○ /supply/crm                          5.59 kB         327 kB
+├ ƒ /supply/crm/[id]                     7.99 kB         330 kB
+├ ○ /supply/dashboard                    18.2 kB         395 kB
+├ ƒ /supply/recruitment/[id]             5.28 kB         266 kB
+├ ○ /unauthorized                        1.9 kB          275 kB
+└ ƒ /vendor/onboarding/[id]              9.7 kB          267 kB
++ First Load JS shared by all            106 kB
+  ├ chunks/2855-5deed4513ae135e4.js      50.6 kB
+  ├ chunks/87c73c54-598aa8e1b0961ccb.js  53 kB
+  └ other shared chunks (total)          2.18 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

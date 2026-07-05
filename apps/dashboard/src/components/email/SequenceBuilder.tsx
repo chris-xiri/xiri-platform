@@ -1288,7 +1288,7 @@ export default function SequenceBuilder() {
                                 {aiGenerating ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Generating with Gemini Pro...
+                                        Generating with Gemini...
                                     </>
                                 ) : (
                                     <>

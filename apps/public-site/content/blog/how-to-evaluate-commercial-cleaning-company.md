@@ -1,6 +1,6 @@
 ---
-title: "7 Questions to Ask Before Hiring a Cleaning Company"
-description: "The 7 questions that separate reliable cleaning companies from headaches waiting to happen."
+title: "8 Questions to Ask Before Hiring a Cleaning Company"
+description: "The 8 questions that separate reliable cleaning companies from headaches waiting to happen."
 publishDate: "2025-09-08"
 readTime: "6 min"
 category: "Guides"
@@ -15,7 +15,7 @@ leadMagnet:
 
 ## Every Cleaning Company Says They're "Reliable." Here's How to Check.
 
-You've seen the pitches: "Quality service. Reliable crews. Customer satisfaction." But when your lobby is dirty at 7 AM, those words don't help. Here are 7 questions that separate the pros from the no-shows.
+You've seen the pitches: "Quality service. Reliable crews. Customer satisfaction." But when your lobby is dirty at 7 AM, those words don't help. Whether you're managing a building in New York or California, here are 8 questions that separate the pros from the no-shows.
 
 ## 1. "What does your insurance actually cover?"
 
@@ -45,4 +45,12 @@ Right answer: Below industry average. Red flag: Evasion.
 
 Right answer: Month-to-month. Red flag: Multi-year with heavy termination fees.
 
-[**See How XIRI Compares →**](/solutions/vendor-management-alternative)
+## 8. "How does your pricing compare to national averages?"
+
+Right answer: They can explain their pricing model based on your specific facility type and region. Red flag: "We just charge $X per square foot."
+
+## See What You Should Be Paying (Nationwide)
+
+Before you hire a cleaning company, know what your facility should actually cost to clean. Get a transparent, national-average benchmarked quote using our free audit tool.
+
+[**Start Your Free Cleaning Audit →**](/calculator)

@@ -10,6 +10,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { GoogleGenerativeAI, Content } from "@google/generative-ai";
 import { DASHBOARD_CORS } from "../utils/cors";
+import { resolveGeminiModel } from "../utils/gemini";
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -25,8 +26,8 @@ interface AskAIRequest {
 }
 
 // Request/response callable path prefers non-live models.
-// Use 2.5 Flash first, then fall back to older flash variants.
-const AI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"] as const;
+// Use 3.5 Flash first, then fall back to older/other flash variants.
+const AI_MODELS = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"] as const;
 
 function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -189,7 +190,7 @@ export const askAI = onCall({
             for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
                     const model = genAI.getGenerativeModel({
-                        model: modelName,
+                        model: resolveGeminiModel(modelName),
                         systemInstruction: fullSystemPrompt,
                         generationConfig: {
                             temperature: 0.7,

@@ -12,7 +12,8 @@ const db = admin.firestore();
 // Initialize Gemini
 const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCSmKaZsBUm4SIrxouk3tAmhHZUY0jClUw";
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+const model = genAI.getGenerativeModel({ model: MODEL });
 
 async function reprocessVendors() {
     console.log("🔄 Starting Vendor Location Reprocessing...");

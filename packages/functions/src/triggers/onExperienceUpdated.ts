@@ -16,6 +16,7 @@ import { logger } from 'firebase-functions/v2';
 import { defineSecret } from 'firebase-functions/params';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '../utils/firebase';
+import { resolveGeminiModel } from '../utils/gemini';
 
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 
@@ -58,7 +59,7 @@ export const onExperienceUpdated = onDocumentUpdated({
 
     try {
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY.value());
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.0-flash') });
 
         const prompt = SUMMARY_PROMPT.replace('{RAW_TEXT}', newRaw);
         const result = await model.generateContent(prompt);

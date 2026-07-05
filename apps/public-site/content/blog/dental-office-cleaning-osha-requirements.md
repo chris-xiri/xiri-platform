@@ -28,4 +28,8 @@ Aerosols from drills. Amalgam waste from fillings. Sterilization areas that can'
 | Restrooms | 2x daily minimum | Patient-facing standard |
 | Lab Area | Daily | Chemical-safe products only |
 
-[**Get Dental-Compliant Cleaning →**](/services/dental-offices)
+## Is Your Dental Practice Actually Compliant?
+
+Don't wait for an OSHA inspection or a patient complaint to find out if your current cleaners are cutting corners. No matter where your practice is located in the US, you can get a free, custom compliance scope built for your facility.
+
+[**Start Your Free Dental Cleaning Audit →**](/calculator)

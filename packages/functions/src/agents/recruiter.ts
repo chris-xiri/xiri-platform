@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { resolveGeminiModel } from "../utils/gemini";
 import { admin, db } from "../utils/firebase";
 import { Vendor, RecruitmentAnalysisResult } from "../utils/types";
 import { parseAddress } from "../utils/emailUtils";
@@ -13,7 +14,7 @@ function normalizeUrl(url: string): string {
 // Initialize Gemini
 const API_KEY = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
 
 export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, hasActiveContract: boolean = false, previewOnly: boolean = false): Promise<RecruitmentAnalysisResult> => {
     console.log("!!! RECRUITER AGENT UPDATED - V4 (Robust Dedup + Blacklist) !!!");

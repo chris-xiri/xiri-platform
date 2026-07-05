@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Resend } from 'resend';
 import { getPrompt } from './promptUtils';
+import { resolveGeminiModel } from './gemini';
 import { getFacilityPhrases } from '@xiri/shared';
 import { isEmailSuppressed } from './suppressionUtils';
 
@@ -74,7 +75,7 @@ export async function generatePersonalizedEmail(
         const template = await getTemplate(templateId);
         if (!template) return null;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
 
         const FALLBACK = `You are a professional email writer for XIRI Facility Solutions.
 

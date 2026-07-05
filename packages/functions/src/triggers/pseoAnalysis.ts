@@ -19,6 +19,7 @@ import { db } from "../utils/firebase";
 import { getValidAccessToken } from "../functions/pseoAuth";
 import { DASHBOARD_CORS } from "../utils/cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { resolveGeminiModel } from "../utils/gemini";
 import type {
     NudgeSegment, NudgeScope, NudgePriority, HeuristicRuleId,
     NudgeDataPoints, PseoNudge, PseoBatch, PseoEngineConfig,
@@ -913,7 +914,7 @@ async function generateCopySuggestion(
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
 
     const audienceContext = segment === "leads"
         ? "facility managers, office managers, and property managers evaluating commercial cleaning partners. They are B2B decision-makers who prioritize compliance documentation, verified quality, and operational reliability over price."

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { inferFacilityType, type FacilityType } from '@xiri/shared';
+import { resolveGeminiModel } from './gemini';
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
@@ -58,7 +59,7 @@ function shouldEscalateToLlm(scores: Array<{ facilityType: FacilityType; score: 
 
 async function classifyWithGemini(text: string, businessName: string, searchQuery: string, geminiApiKey: string): Promise<FacilityType | undefined> {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.0-flash') });
 
     const prompt = `Classify this business into one canonical facility type for commercial cleaning outreach.
 

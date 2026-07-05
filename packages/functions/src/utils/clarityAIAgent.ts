@@ -9,6 +9,7 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from "firebase-functions/v2";
+import { resolveGeminiModel } from "./gemini";
 import type { ClarityMetrics, ClarityPageMetric } from "./clarityUtils";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -201,7 +202,7 @@ export async function analyzeWithAI(
     geminiApiKey: string
 ): Promise<AIAnalysisResult> {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
 
     // Build context about pages with friction
     const pageContext = currentMetrics.topPages

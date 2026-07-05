@@ -1,0 +1,1040 @@
+   ▲ Next.js 15.1.9
+   - Local:        http://localhost:3001
+   - Network:      http://10.5.0.2:3001
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · externalDir
+
+ ✓ Starting...
+ ✓ Ready in 1495ms
+ ✓ Compiled /middleware in 410ms (143 modules)
+ ○ Compiling /tools/janitorial-rfp ...
+ ✓ Compiled /tools/janitorial-rfp in 5.3s (1688 modules)
+ GET /tools/janitorial-rfp 200 in 6117ms
+ ✓ Compiled in 891ms (576 modules)
+ GET /tools/janitorial-rfp 200 in 33ms
+ ✓ Compiled /icon.png in 252ms (1108 modules)
+ GET /icon.png?ffff46713c55405f 200 in 331ms
+ ✓ Compiled in 584ms (1669 modules)
+ GET /tools/janitorial-rfp 200 in 115ms
+ ✓ Compiled /favicon.ico in 119ms (1108 modules)
+ ✓ Compiled (1110 modules)
+ GET /icon.png?ffff46713c55405f 200 in 308ms
+ GET /favicon.ico 200 in 312ms
+ GET /icon.png?ffff46713c55405f 200 in 12ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 786ms (1690 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 1158ms
+ GET /_next/static/css/app/layout.css?v=1777655725010 404 in 1167ms
+ GET /tools/janitorial-rfp 200 in 38ms
+ GET /_next/static/css/app/layout.css?v=1777655784935 404 in 18ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5274)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5322) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/icon.png'
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2725)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2773) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 70ms
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 832ms (1918 modules)
+ GET /tools/janitorial-rfp 200 in 467ms
+ GET /tools/janitorial-rfp 200 in 17ms
+ GET /icon.png?ffff46713c55405f 500 in 1540ms
+ GET /_next/static/css/app/layout.css?v=1777655786137 404 in 385ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5274)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5322) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/icon.png'
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2725)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2773) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 40ms
+ GET /icon.png?ffff46713c55405f 500 in 250ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5274)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5322) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/icon.png'
+}
+ GET /icon.png?ffff46713c55405f 500 in 247ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5274)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5322) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/icon.png'
+}
+ GET /icon.png?ffff46713c55405f 500 in 247ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2725)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2773) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 39ms
+ ✓ Compiled in 1727ms (1909 modules)
+ GET /tools/janitorial-rfp 200 in 198ms
+ ✓ Compiled /_not-found in 325ms (1899 modules)
+ GET /_next/static/css/app/layout.css?v=1777655855358 404 in 923ms
+ ✓ Compiled /icon.png in 344ms (1154 modules)
+ ✓ Compiled (1156 modules)
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5274)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5322) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/icon.png'
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2725)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2773) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 635ms
+ ✓ Compiled /_error in 314ms (1918 modules)
+ GET /icon.png?ffff46713c55405f 500 in 1254ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5274)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\icon.png\route.js:1:5322) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/icon.png'
+}
+ GET /icon.png?ffff46713c55405f 500 in 267ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2725)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2773) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 41ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\tools\janitorial-rfp\page.js:83:19307)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\tools\janitorial-rfp\page.js:83:19375) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/tools/janitorial-rfp'
+}
+ GET /tools/janitorial-rfp 500 in 998ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/development/_buildManifest.js 500 in 6248ms
+ GET /_next/static/chunks/main.js 500 in 6260ms
+ GET /_next/static/chunks/react-refresh.js 500 in 6260ms
+ GET /_next/static/chunks/pages/_app.js 500 in 6234ms
+ GET /_next/static/chunks/webpack.js 500 in 6322ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/chunks/pages/_error.js 500 in 6291ms
+ GET /_next/static/development/_ssgManifest.js 500 in 67ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2725)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2773) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 78ms
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'K:\Repos\xiri-platform\apps\public-site\.next\cache\webpack\client-development-fallback\0.pack.gz_' -> 'K:\Repos\xiri-platform\apps\public-site\.next\cache\webpack\client-development-fallback\0.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'K:\Repos\xiri-platform\apps\public-site\.next\cache\webpack\client-development-fallback\0.pack.gz_' -> 'K:\Repos\xiri-platform\apps\public-site\.next\cache\webpack\client-development-fallback\0.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'K:\Repos\xiri-platform\apps\public-site\.next\cache\webpack\client-development-fallback\0.pack.gz_' -> 'K:\Repos\xiri-platform\apps\public-site\.next\cache\webpack\client-development-fallback\0.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'K:\Repos\xiri-platform\apps\public-site\.next\cache\webpack\client-development-fallback\0.pack.gz_' -> 'K:\Repos\xiri-platform\apps\public-site\.next\cache\webpack\client-development-fallback\0.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'K:\Repos\xiri-platform\apps\public-site\.next\cache\webpack\client-development-fallback\0.pack.gz_' -> 'K:\Repos\xiri-platform\apps\public-site\.next\cache\webpack\client-development-fallback\0.pack.gz'
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\tools\janitorial-rfp\page.js:83:19307)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\tools\janitorial-rfp\page.js:83:19375) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/tools/janitorial-rfp'
+}
+ GET /tools/janitorial-rfp 500 in 259ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/chunks/webpack.js 500 in 27ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/chunks/main.js 500 in 86ms
+ GET /_next/static/chunks/react-refresh.js 500 in 86ms
+ GET /_next/static/chunks/pages/_app.js 500 in 85ms
+ GET /_next/static/development/_buildManifest.js 500 in 85ms
+ GET /_next/static/chunks/pages/_error.js 500 in 79ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/development/_ssgManifest.js 500 in 18ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2725)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2773) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 24ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\tools\janitorial-rfp\page.js:83:19307)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\tools\janitorial-rfp\page.js:83:19375) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/tools/janitorial-rfp'
+}
+ GET /tools/janitorial-rfp 500 in 249ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/chunks/main.js 500 in 98ms
+ GET /_next/static/chunks/react-refresh.js 500 in 97ms
+ GET /_next/static/chunks/pages/_app.js 500 in 96ms
+ GET /_next/static/chunks/webpack.js 500 in 96ms
+ GET /_next/static/development/_buildManifest.js 500 in 96ms
+ GET /_next/static/chunks/pages/_error.js 500 in 95ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3207)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\_not-found\page.js:1:3260) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/development/_ssgManifest.js 500 in 18ms
+ ⨯ Error: Cannot find module './6207.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\pages\_document.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\options.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\swc\index.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\config.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\next.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\lib\start-server.js
+    at __webpack_require__.f.require (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:203:28)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js:167:22)
+    at <unknown> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2725)
+    at Object.<anonymous> (K:\Repos\xiri-platform\apps\public-site\.next\server\app\favicon.ico\route.js:1:2773) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 22ms
+ GET /tools/janitorial-rfp 404 in 10ms
+ GET /tools/janitorial-rfp 404 in 18ms
+ ○ Compiling /[slug] ...
+ ✓ Compiled /[slug] in 802ms (1936 modules)
+ ⨯ [Error: Cannot find module './vendor-chunks/@swc.js'
+Require stack:
+- K:\Repos\xiri-platform\apps\public-site\.next\server\webpack-runtime.js
+- K:\Repos\xiri-platform\apps\public-site\.next\server\app\[slug]\page.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\require.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\load-components.js
+- K:\Repos\xiri-platform\node_modules\next\dist\build\utils.js
+- K:\Repos\xiri-platform\node_modules\next\dist\server\dev\static-paths-worker.js
+- K:\Repos\xiri-platform\node_modules\next\dist\compiled\jest-worker\processChild.js] {
+  type: 'Error',
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 1386ms
+ GET /tools/janitorial-rfp 200 in 358ms
+ GET /tools/janitorial-rfp 200 in 25ms
+ ✓ Compiled /icon.png in 144ms (1176 modules)
+ GET /icon.png?ffff46713c55405f 200 in 188ms
+ ○ Compiling / ...
+ ✓ Compiled / in 4.1s (1961 modules)
+ ✓ Compiled in 3.2s (1923 modules)

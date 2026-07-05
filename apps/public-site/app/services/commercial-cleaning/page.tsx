@@ -245,7 +245,13 @@ export default function CommercialCleaningPage() {
                             Use the janitorial cost calculator
                         </Link>
                         {' '}
-                        for instant monthly estimates, then return here for service scope details.
+                        for instant monthly estimates. Comparing takeover bids?
+                        {' '}
+                        <Link href="/tools/janitorial-rfp" className="font-semibold text-sky-700 hover:underline">
+                            Use the janitorial RFP builder tool
+                        </Link>
+                        {' '}
+                        to standardize scope and vendor scoring.
                     </p>
                 </div>
             </section>

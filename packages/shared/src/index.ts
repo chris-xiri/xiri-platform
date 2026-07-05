@@ -7,6 +7,7 @@ export * from "./generateProposal";
 export * from "./proposalDefaults";
 export * from "./taxRates";
 export * from "./pseo-types";
+export * from "./rfp-bid-analyzer";
 
 // --- SHARED DOMAIN TYPES ---
 

@@ -7,6 +7,7 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "../utils/firebase";
+import { resolveGeminiModel } from "../utils/gemini";
 import { getRecentPosts } from "../utils/facebookApi";
 import { generatePostImage } from "../utils/imagenApi";
 import { generateReelVideo } from "../utils/veoApi";
@@ -385,7 +386,7 @@ export async function generateSocialContent(channel: string = "facebook_posts"):
 
     // 6. Generate content for each missing slot
     const genAI = new GoogleGenerativeAI(API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
     const isReels = channel === "facebook_reels";
 
     let slotIndex = 0;

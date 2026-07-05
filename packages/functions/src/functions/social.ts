@@ -2,6 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../utils/firebase";
 import { getPrompt } from "../utils/promptUtils";
 import { DASHBOARD_CORS } from "../utils/cors";
+import { resolveGeminiModel } from "../utils/gemini";
 import { publishPost, publishReel, searchFacebookPlaces, schedulePost, getRecentPosts, getPageInsights, deletePost } from "../utils/facebookApi";
 import { generateSocialContent } from "../triggers/socialContentGenerator";
 
@@ -407,7 +408,7 @@ export const regeneratePostCaption = onCall({
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
     const API_KEY = process.env.GEMINI_API_KEY || "";
     const genAI = new GoogleGenerativeAI(API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
 
     const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 

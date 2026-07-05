@@ -1,6 +1,7 @@
 import { onCall } from "firebase-functions/v2/https";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { DASHBOARD_CORS } from "../utils/cors";
+import { resolveGeminiModel } from "../utils/gemini";
 
 interface ParseCalculatorPromptRequest {
     prompt: string;
@@ -215,6 +216,7 @@ ${prompt}
 `.trim();
 
     const modelsToTry = [
+        "gemini-3.5-flash",
         "gemini-2.5-flash",
         "gemini-2.0-flash",
     ];
@@ -222,7 +224,7 @@ ${prompt}
     for (const modelName of modelsToTry) {
         try {
             const model = genAI.getGenerativeModel({
-                model: modelName,
+                model: resolveGeminiModel(modelName),
                 generationConfig: {
                     temperature: 0,
                     maxOutputTokens: 420,

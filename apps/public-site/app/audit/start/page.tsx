@@ -18,8 +18,15 @@ function AuditInitializer() {
                 const zip = searchParams.get("zip");
                 const service = searchParams.get("service") || "general";
                 const source = searchParams.get("source") || "direct";
+                const facilityType = searchParams.get("facilityType") || "";
+                const businessName = searchParams.get("businessName") || "";
+                const address = searchParams.get("address") || "";
+                const squareFootage = searchParams.get("squareFootage") || "";
+                const serviceWindow = searchParams.get("serviceWindow") || "";
+                const transitionDate = searchParams.get("transitionDate") || "";
+                const scopeBrief = searchParams.get("scopeBrief") || "";
 
-                if (!zip) {
+                if (!zip && !address) {
                     router.replace("/");
                     return;
                 }
@@ -27,8 +34,15 @@ function AuditInitializer() {
                 // Create Lead
                 const docRef = await addDoc(collection(db, "leads"), {
                     status: 'new',
-                    zipCode: zip,
+                    zipCode: zip || null,
                     serviceInterest: service,
+                    facilityType: facilityType || null,
+                    businessName: businessName || null,
+                    address: address || null,
+                    squareFootage: squareFootage ? Number(squareFootage) : null,
+                    serviceWindow: serviceWindow || null,
+                    transitionDate: transitionDate || null,
+                    scopeBrief: scopeBrief || null,
                     attribution: {
                         source,
                         medium: 'web_audit_flow',

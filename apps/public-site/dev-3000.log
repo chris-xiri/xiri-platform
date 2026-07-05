@@ -1,0 +1,27 @@
+   ▲ Next.js 15.1.9
+   - Local:        http://localhost:3000
+   - Network:      http://10.5.0.2:3000
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · externalDir
+
+ ✓ Starting...
+ ✓ Ready in 2.9s
+ ✓ Compiled /middleware in 144ms (143 modules)
+ ○ Compiling /tools/janitorial-rfp ...
+ ✓ Compiled /tools/janitorial-rfp in 2.9s (1669 modules)
+ ✓ Compiled in 620ms (576 modules)
+ GET /tools/janitorial-rfp 200 in 3493ms
+ ○ Compiling /icon.png ...
+ ✓ Compiled /icon.png in 627ms (1108 modules)
+ GET /icon.png?ffff46713c55405f 200 in 703ms
+ ○ Compiling /[slug] ...
+ ✓ Compiled /[slug] in 1228ms (1689 modules)
+ ✓ Compiled in 403ms (577 modules)
+ GET /login 404 in 2577ms
+ GET /login 404 in 49ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.3s (1740 modules)
+ ✓ Compiled in 2.4s (590 modules)
+ ✓ Compiled in 2.4s (1702 modules)
+ ✓ Compiled in 535ms (590 modules)

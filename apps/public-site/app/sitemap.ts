@@ -108,7 +108,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     });
 
     // 12. Free Tools (supporting assets, lower transactional intent)
-    ['compliance-checker', 'sds-lookup'].forEach((tool) => {
+    ['janitorial-rfp', 'compliance-checker', 'sds-lookup'].forEach((tool) => {
         sitemapEntries.push({ url: `${BASE_URL}/tools/${tool}`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.45 });
     });
 

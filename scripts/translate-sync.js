@@ -55,7 +55,7 @@ Translation:`;
 async function translateText(text) {
     try {
         const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-flash',
+            model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
             generationConfig: {
                 temperature: 0.3, // Lower temperature for more consistent translations
                 maxOutputTokens: 500,

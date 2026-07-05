@@ -19,7 +19,7 @@ const PROMPTS = [
         name: 'Onboarding Chat Classifier',
         agent: 'onboardingChat',
         description: 'Classifies vendor responses during the onboarding chat flow (e.g., YES/NO for entity type, insurance).',
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.5-flash',
         content: `Analyze this user response: "{{userMessage}}".
 Instruction: {{classificationInstruction}}
 
@@ -33,7 +33,7 @@ Return ONLY the classification label (e.g., YES, NO, YES_CORRECT_ENTITY).`,
         name: 'Document Verifier (Legacy COI/W9)',
         agent: 'documentVerifier',
         description: 'Verifies simulated COI and W9 documents for vendor compliance (legacy flow).',
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.5-flash',
         content: `You are a document verification agent for Xiri Facility Solutions.
 
 Analyze this {{documentType}} for {{vendorName}} (specialty: {{specialty}}).
@@ -63,7 +63,7 @@ Verify compliance and extract key data. Return JSON:
         name: 'ACORD 25 Certificate Verifier',
         agent: 'documentVerifier',
         description: 'Analyzes real ACORD 25 PDF certificates to verify insurance compliance, cross-referencing vendor attestations.',
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.5-flash',
         content: `You are an insurance compliance verification agent for Xiri Facility Solutions.
 
 Analyze this ACORD 25 Certificate of Liability Insurance and extract the following data in JSON format.
@@ -116,7 +116,7 @@ Return ONLY valid JSON in this exact format:
         name: 'Website Contact Extractor',
         agent: 'websiteScraper',
         description: 'Extracts business contact information from scraped website HTML using AI.',
-        model: 'gemini-1.5-flash',
+        model: 'gemini-3.5-flash',
         content: `Extract business contact information from this website content. 
 This is a commercial cleaning or janitorial company. Find the owner/manager's direct contact info if possible.
 
@@ -139,7 +139,7 @@ Website content:
         name: 'Email Personalizer',
         agent: 'emailUtils',
         description: 'Takes an email template and personalizes it using AI while maintaining the core message.',
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.5-flash',
         content: `You are a professional email writer for Xiri Facility Solutions.
 
 Take this email template and personalize it while maintaining the core message:
@@ -168,7 +168,7 @@ BODY:
         name: 'Email Template Optimizer',
         agent: 'aiTemplateOptimizer',
         description: 'Analyzes email template performance and suggests improved subject lines and body copy.',
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.5-flash',
         content: `You are an email marketing expert specializing in B2B contractor outreach for facility management companies.
 
 ## Current Template Performance
@@ -225,7 +225,7 @@ Return ONLY valid JSON, no markdown fences.`,
         name: 'Social Media Post Generator',
         agent: 'socialContentGenerator',
         description: 'Generates Facebook post content for client or contractor audiences based on engagement data.',
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.5-flash',
         content: `You are the social media manager for XIRI Facility Solutions, a facility management company based in New York that services commercial and medical buildings across Queens, Nassau, and Suffolk County.
 
 ## BRAND IDENTITY
@@ -290,7 +290,7 @@ Respond with ONLY the post text. No introductions, no explanations, just the rea
         name: 'Social Media Reel Caption Generator',
         agent: 'socialContentGenerator',
         description: 'Generates short, punchy Facebook Reel captions for client or contractor audiences.',
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.5-flash',
         content: `You are writing a Facebook Reel caption for XIRI Facility Solutions — a facility management company in New York (Queens, Nassau, Suffolk County).
 
 ## BRAND IDENTITY
@@ -341,7 +341,7 @@ Respond with ONLY the caption text. Nothing else.`,
         name: 'Social Caption Regenerator',
         agent: 'index (regenCaption)',
         description: 'Regenerates a social media post caption based on reviewer feedback.',
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.5-flash',
         content: `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 
 --- CURRENT POST ---

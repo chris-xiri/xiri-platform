@@ -112,7 +112,7 @@ export default function AIAgentsPage() {
         } else {
             setExpandedId(prompt.id);
             setEditContent(prompt.content);
-            setEditModel(prompt.model || "gemini-2.0-flash");
+            setEditModel(prompt.model || "gemini-3.5-flash");
         }
     };
 
@@ -252,7 +252,7 @@ export default function AIAgentsPage() {
                                                         <Input
                                                             value={editModel}
                                                             onChange={(e) => setEditModel(e.target.value)}
-                                                            placeholder="gemini-2.0-flash"
+                                                            placeholder="gemini-3.5-flash"
                                                             className="font-mono text-sm max-w-xs"
                                                         />
                                                     </div>
