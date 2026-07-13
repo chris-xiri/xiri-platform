@@ -16,6 +16,7 @@ function AuditInitializer() {
             try {
                 // Extract params
                 const zip = searchParams.get("zip");
+                const email = searchParams.get("email");
                 const service = searchParams.get("service") || "general";
                 const source = searchParams.get("source") || "direct";
                 const facilityType = searchParams.get("facilityType") || "";
@@ -35,6 +36,7 @@ function AuditInitializer() {
                 const docRef = await addDoc(collection(db, "leads"), {
                     status: 'new',
                     zipCode: zip || null,
+                    email: email || null,
                     serviceInterest: service,
                     facilityType: facilityType || null,
                     businessName: businessName || null,

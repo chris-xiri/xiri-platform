@@ -23,6 +23,7 @@ export function StickyMobileCTA() {
     const [visible, setVisible] = useState(false);
     const [dismissed, setDismissed] = useState(false);
     const [zip, setZip] = useState('');
+    const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const tracked = useRef(false);
     const lastScrollY = useRef(0);
@@ -77,7 +78,7 @@ export function StickyMobileCTA() {
 
     const handleTenantSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (zip.length !== 5) return;
+        if (zip.length !== 5 || !email) return;
         setLoading(true);
         trackEvent('lead_zip_submit', { zip, source: 'sticky_mobile' });
 
@@ -90,7 +91,7 @@ export function StickyMobileCTA() {
 
 
 
-        router.push(`/audit/start?zip=${zip}&service=general&source=sticky_mobile`);
+        router.push(`/audit/start?zip=${zip}&email=${encodeURIComponent(email)}&service=general&source=sticky_mobile`);
     };
 
     const handleContractorClick = () => {
@@ -117,27 +118,38 @@ export function StickyMobileCTA() {
                     : 'bg-gradient-to-r from-sky-700 to-sky-800 border-sky-600'
             }`}>
                 {mode === 'tenant' ? (
-                    <form onSubmit={handleTenantSubmit} className="flex items-center gap-2">
+                    <form onSubmit={handleTenantSubmit} className="flex flex-col gap-2">
                         <input
-                            type="text"
-                            value={zip}
-                            onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                            placeholder="Zip Code"
-                            maxLength={5}
-                            className="flex-1 h-12 px-4 rounded-lg bg-white/95 text-slate-900 text-base font-bold placeholder:text-slate-400 placeholder:font-normal focus:ring-2 focus:ring-white/50 outline-none"
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Work Email"
+                            className="w-full h-12 px-4 rounded-lg bg-white/95 text-slate-900 text-base font-bold placeholder:text-slate-400 placeholder:font-normal focus:ring-2 focus:ring-white/50 outline-none"
                         />
-                        <button
-                            type="submit"
-                            disabled={loading || zip.length < 5}
-                            className="h-12 px-5 bg-white text-sky-700 font-bold text-sm rounded-lg hover:bg-sky-50 active:bg-sky-100 transition-colors disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
-                        >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                                <>
-                                    Free Audit
-                                    <ArrowRight className="w-4 h-4" />
-                                </>
-                            )}
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={zip}
+                                onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                                placeholder="Zip Code"
+                                maxLength={5}
+                                required
+                                className="flex-1 h-12 px-4 rounded-lg bg-white/95 text-slate-900 text-base font-bold placeholder:text-slate-400 placeholder:font-normal focus:ring-2 focus:ring-white/50 outline-none"
+                            />
+                            <button
+                                type="submit"
+                                disabled={loading || zip.length < 5 || !email}
+                                className="h-12 px-5 bg-white text-sky-700 font-bold text-sm rounded-lg hover:bg-sky-50 active:bg-sky-100 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5 whitespace-nowrap"
+                            >
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                                    <>
+                                        Free Audit
+                                        <ArrowRight className="w-4 h-4" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </form>
                 ) : (
                     <button

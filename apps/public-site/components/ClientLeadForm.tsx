@@ -17,6 +17,7 @@ interface ClientLeadFormProps {
 export function ClientLeadForm({ industryName, prefilledService, className, onStart }: ClientLeadFormProps) {
     const router = useRouter();
     const [zip, setZip] = useState("");
+    const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const tracked = useRef(false);
@@ -57,6 +58,7 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
         // Valid -> Start Audit Flow
         const params = new URLSearchParams({
             zip,
+            email,
             service: prefilledService || "general",
             source: "homepage_lead_form"
         });
@@ -73,11 +75,23 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
                     {industryName ? `Get Your ${industryName} Scope` : CTA.primary}
                 </h3>
                 <p className="text-gray-600">
-                    Enter your zip and we&apos;ll build a custom cleaning plan for your facility — free.
+                    See what you should be paying. Enter your details to get a data-backed cleaning quote in under 2 minutes.
                 </p>
             </div>
 
             <form onSubmit={handleStart} className="space-y-4">
+                <div>
+                    <label htmlFor="email" className="sr-only">Work Email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Work Email Address"
+                        className="w-full px-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 outline-none transition-all placeholder:text-gray-400 font-bold text-lg text-gray-900 tracking-wide"
+                        required
+                    />
+                </div>
                 <div>
                     <label htmlFor="zip" className="sr-only">Zip Code</label>
                     <div className="relative">
@@ -105,7 +119,7 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
 
                 <button
                     type="submit"
-                    disabled={loading || zip.length < 5}
+                    disabled={loading || zip.length < 5 || !email}
                     className="w-full bg-sky-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-sky-700 transition-all shadow-lg hover:shadow-sky-600/30 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group"
                 >
                     {loading ? (

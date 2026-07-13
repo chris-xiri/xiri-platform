@@ -31,9 +31,10 @@ export default function AuditWizardPage() {
     const [services, setServices] = useState<string[]>([]);
     const [facilityType, setFacilityType] = useState("");
     const [companyName, setCompanyName] = useState("");
+    const [squareFootage, setSquareFootage] = useState("");
     const [address, setAddress] = useState<any>(null); // Google Maps Object
     const [manualAddress, setManualAddress] = useState("");
-    const [contact, setContact] = useState({ name: "", email: "", phone: "", role: "Facility Manager" });
+    const [contact, setContact] = useState({ name: "", phone: "", role: "Facility Manager" });
 
     // Load Lead
     useEffect(() => {
@@ -428,7 +429,7 @@ export default function AuditWizardPage() {
                                     disabled={services.length === 0 || submitting}
                                     className="px-6 py-2.5 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
-                                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continue'}
+                                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Services'}
                                     {!submitting && <ArrowRight className="w-4 h-4" />}
                                 </button>
                             </div>
@@ -450,6 +451,17 @@ export default function AuditWizardPage() {
                                     value={companyName}
                                     onChange={(e) => setCompanyName(e.target.value)}
                                     placeholder="e.g. Northwell Health"
+                                    className="w-full p-4 rounded-xl border border-gray-200"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Estimated Square Footage</label>
+                                <input
+                                    type="number"
+                                    value={squareFootage}
+                                    onChange={(e) => setSquareFootage(e.target.value)}
+                                    placeholder="e.g. 10000"
                                     className="w-full p-4 rounded-xl border border-gray-200"
                                 />
                             </div>
@@ -490,11 +502,11 @@ export default function AuditWizardPage() {
                                     Back
                                 </button>
                                 <button
-                                    onClick={() => updateLead({ businessName: companyName, address: address ? address.label : manualAddress }, 2)}
+                                    onClick={() => updateLead({ businessName: companyName, address: address ? address.label : manualAddress, squareFootage: squareFootage ? Number(squareFootage) : null }, 2)}
                                     disabled={!companyName || (!address && !manualAddress) || submitting}
                                     className="btn-primary w-full max-w-xs"
                                 >
-                                    Continue
+                                    Save Facility Details
                                 </button>
                             </div>
                         </div>
@@ -524,11 +536,6 @@ export default function AuditWizardPage() {
                                         <option value="Owner">Owner / Principal</option>
                                         <option value="Other">Other</option>
                                     </select>
-                                    <input
-                                        type="email" placeholder="Email Address"
-                                        value={contact.email} onChange={e => setContact({ ...contact, email: e.target.value })}
-                                        className="w-full p-4 rounded-xl border border-gray-200"
-                                    />
                                     <input
                                         type="tel"
                                         placeholder="Phone Number"
@@ -563,12 +570,13 @@ export default function AuditWizardPage() {
                                     </button>
                                     <button
                                         onClick={() => updateLead({ ...contact, contactName: contact.name, contactPhone: contact.phone, contactRole: contact.role, status: 'new' }, 3)}
-                                        disabled={!contact.name || !contact.email || submitting}
+                                        disabled={!contact.name || submitting}
                                         className="btn-primary w-full max-w-xs"
                                     >
-                                        Continue to Scheduling
+                                        See Your Estimate & Schedule
                                     </button>
                                 </div>
+                                <p className="text-center text-xs text-gray-400 font-medium">🔒 Your information is secure and no commitment is required.</p>
                             </div>
                         )
                     }
@@ -585,7 +593,7 @@ export default function AuditWizardPage() {
                                 {/* TidyCal Embed — clip bottom to hide branding */}
                                 <div className="rounded-xl overflow-hidden" style={{ marginBottom: '-40px' }}>
                                     <iframe
-                                        src={`https://tidycal.com/xiri-facility-solutions/walkthrough?name=${encodeURIComponent(contact.name || '')}&email=${encodeURIComponent(contact.email || '')}`}
+                                        src={`https://tidycal.com/xiri-facility-solutions/walkthrough?name=${encodeURIComponent(contact.name || '')}`}
                                         width="100%"
                                         frameBorder="0"
                                         title="Book Site Walk-through"
