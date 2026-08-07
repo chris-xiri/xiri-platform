@@ -5753,32 +5753,64 @@
       "name": "Babylon, NY",
       "state": "NY",
       "region": "Suffolk County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Babylon, NY.",
-      "zipCodes": []
+      "localInsight": "Babylon is a vibrant commercial and suburban hub in southwestern Suffolk County, featuring active retail along Montauk Highway and Deer Park Avenue, professional office suites, and light industrial facilities.",
+      "zipCodes": [],
+      "landmarks": [
+        "Montauk Highway Business Corridor",
+        "Babylon Village Main Street",
+        "Deer Park Avenue Commercial District",
+        "Sunrise Highway Retail Zone"
+      ],
+      "complianceNote": "Facilities in Babylon must adhere to Suffolk County Department of Health Services standards, OSHA general industry protocols, and Town of Babylon commercial sanitation rules.",
+      "serviceChallenges": "High retail foot-traffic floor wear along Deer Park Ave, coastal humidity influence on window and floor surfaces, and flexible night-shift scheduling for multi-tenant spaces."
     },
     {
       "slug": "islip-ny",
       "name": "Islip, NY",
       "state": "NY",
       "region": "Suffolk County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Islip, NY.",
-      "zipCodes": []
+      "localInsight": "Islip spans major commercial and logistics zones anchored by MacArthur Airport, industrial parks along Veterans Highway, and extensive healthcare and dental suites across Islip Village.",
+      "zipCodes": [],
+      "landmarks": [
+        "Long Island MacArthur Airport (ISP)",
+        "Main Street Islip Commercial Hub",
+        "Veterans Memorial Highway Business Park",
+        "Carll's Straight Path Industrial Corridor"
+      ],
+      "complianceNote": "Aviation-adjacent and industrial sites must comply with FAA security boundary rules, OSHA workplace safety regulations, and Suffolk County Health Department guidelines.",
+      "serviceChallenges": "24/7 logistics facility access management, heavy-duty warehouse floor degreasing, and sterile cleaning standards for regional medical practices."
     },
     {
       "slug": "brookhaven-ny",
       "name": "Brookhaven, NY",
       "state": "NY",
       "region": "Suffolk County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Brookhaven, NY.",
-      "zipCodes": []
+      "localInsight": "Brookhaven is Suffolk County's largest township, encompassing high-tech research campuses near Brookhaven Lab, healthcare clusters around Stony Brook, and bustling retail corridors in Patchogue.",
+      "zipCodes": [],
+      "landmarks": [
+        "Brookhaven National Laboratory",
+        "Stony Brook University Commercial Perimeter",
+        "Patchogue Main Street District",
+        "William Floyd Parkway Tech Corridor"
+      ],
+      "complianceNote": "Research and clinical facilities in Brookhaven require strict compliance with ISO cleanroom standards, CDC infection prevention guidelines, and NYSDOH clinical protocols.",
+      "serviceChallenges": "Managing expansive multi-building footprints, specialized cleanroom/lab dust mitigation, and high-capacity floor care for high-traffic retail spaces."
     },
     {
       "slug": "riverhead-ny",
       "name": "Riverhead, NY",
       "state": "NY",
       "region": "Suffolk County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Riverhead, NY.",
-      "zipCodes": []
+      "localInsight": "Riverhead is the commercial gateway to Long Island's East End, featuring massive retail development along Route 58, a major medical hub at Peconic Bay Medical Center, and regional government centers.",
+      "zipCodes": [],
+      "landmarks": [
+        "Route 58 Commercial Corridor",
+        "Peconic Bay Medical Center / Northwell Hub",
+        "East End Business Park",
+        "Main Street Riverhead Waterfront"
+      ],
+      "complianceNote": "Healthcare and commercial sites must comply with NYSDOH infection control standards, OSHA bloodborne pathogen compliance, and Suffolk County commercial sanitation laws.",
+      "serviceChallenges": "High seasonal commercial traffic fluctuations, medical suite terminal disinfection, and wide-footprint retail floor polishing along the Route 58 retail strip."
     },
     {
       "slug": "melville-ny",
