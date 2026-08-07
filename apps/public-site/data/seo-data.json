@@ -689,6 +689,84 @@
           "answer": "Yes. Residential HVAC systems weren't designed for clinical air quality. We implement more frequent filter changes, document air quality metrics, and ensure compliance with ASHRAE 62.1 ventilation standards required for healthcare occupancy."
         }
       ]
+    },
+    {
+      "slug": "physical-therapy",
+      "name": "Physical Therapy Studios",
+      "heroTitle": "Physical Therapy Studio Cleaning & Sanitation",
+      "heroSubtitle": "Specialized clinic sanitation, equipment disinfection, and OSHA compliance for physical therapy centers.",
+      "coreServices": [
+        "Treatment Table Disinfection",
+        "Floor & Mat Sanitation",
+        "Restroom Sanitization"
+      ],
+      "specializedServices": [
+        "High-Touch Disinfection",
+        "Hydrotherapy Area Cleaning"
+      ],
+      "benefits": [
+        "OSHA Compliant",
+        "Reduced Germ Transmission",
+        "Pristine Patient Experience"
+      ],
+      "faqs": [
+        {
+          "question": "How do you disinfect physical therapy equipment?",
+          "answer": "We use EPA List N hospital-grade disinfectants safe for vinyl mats and therapy equipment."
+        }
+      ]
+    },
+    {
+      "slug": "chiropractors",
+      "name": "Chiropractic Clinics",
+      "heroTitle": "Chiropractic Office Cleaning & Medical Sanitation",
+      "heroSubtitle": "Keep your chiropractic clinic immaculate with non-toxic, medical-grade janitorial services.",
+      "coreServices": [
+        "Adjusting Table Disinfection",
+        "Waiting Room Cleaning",
+        "Floor Care"
+      ],
+      "specializedServices": [
+        "Biohazard Disposal",
+        "Air Purification Filter Checks"
+      ],
+      "benefits": [
+        "HIPAA & OSHA Compliant",
+        "Odormatch Hygiene Control",
+        "Nightly Verified Audits"
+      ],
+      "faqs": [
+        {
+          "question": "Do you clean adjustment tables between patient shifts?",
+          "answer": "We provide deep nightly terminal cleaning and can train staff on daytime spot disinfection routines."
+        }
+      ]
+    },
+    {
+      "slug": "libraries",
+      "name": "Libraries & Educational Facilities",
+      "heroTitle": "Library & Learning Facility Cleaning Services",
+      "heroSubtitle": "High-dusting, stack maintenance, carpet care, and public sanitation for municipal and private libraries.",
+      "coreServices": [
+        "Book Stack Dusting",
+        "Carpet & Upholstery Care",
+        "Computer Station Disinfection"
+      ],
+      "specializedServices": [
+        "Archive Room Climate Clean",
+        "Public Restroom Sanitation"
+      ],
+      "benefits": [
+        "Low-VOC Green Cleaning",
+        "Flexible Off-Hours Scheduling",
+        "Municipal Compliant"
+      ],
+      "faqs": [
+        {
+          "question": "Do you use eco-friendly products for public libraries?",
+          "answer": "Yes, we use 100% Green Seal certified, low-VOC products safe for high public traffic and delicate archives."
+        }
+      ]
     }
   ],
   "services": [
@@ -1894,6 +1972,60 @@
         }
       ],
       "heroTitle": "Indoor Plant Watering & Care Services"
+    },
+    {
+      "slug": "auto-detailing",
+      "targetFacilityType": "auto_dealerships",
+      "name": "Automobile Detailing",
+      "shortDescription": "Commercial auto detailing and fleet washing services for dealerships and corporate fleets.",
+      "longDescription": "Our commercial auto detailing services are designed specifically for high-volume automotive dealerships and commercial fleets. We focus on consistent brand presentation, rapid turnaround times, and strict compliance with EPA water runoff regulations. Whether it's daily showroom inventory maintenance, bi-weekly fleet washing, or lease-return reconditioning, our verified contractors deliver professional results.",
+      "benefits": [
+        "EPA Water Runoff Compliant",
+        "Showroom Quality Finish",
+        "Fleet Volume Pricing",
+        "Flexible Scheduling"
+      ],
+      "valueProps": [
+        {
+          "icon": "✨",
+          "title": "Showroom Ready",
+          "description": "High-gloss finishes that boost CSI scores."
+        }
+      ],
+      "features": [
+        {
+          "title": "Fleet Washing",
+          "description": "Bi-weekly or monthly exterior washing and interior cleaning to maintain your corporate brand image on the road.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "EPA Runoff Compliance",
+          "description": "Strict adherence to Clean Water Act regulations using water recovery berms and proper sanitary sewer disposal.",
+          "icon": "shield"
+        },
+        {
+          "title": "Lease-Return Reconditioning",
+          "description": "Full interior extraction, odor removal, and exterior paint correction to maximize vehicle resale value.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Showroom Maintenance",
+          "description": "Daily dust removal, tire dressing, and spot-free finishes to keep dealership inventory pristine under the lights.",
+          "icon": "sparkles"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Do you provide mobile fleet washing?",
+          "answer": "Yes, our verified contractors offer mobile fleet washing services that come directly to your facility, saving your employees time and keeping your vehicles on the road."
+        },
+        {
+          "question": "How do you handle environmental compliance for detailing?",
+          "answer": "We strictly adhere to EPA regulations regarding water runoff. Our contractors use containment berms and water recovery systems to ensure no wash water enters storm drains."
+        }
+      ],
+      "heroTitle": "Commercial Fleet & Auto Detailing—$1M+ Insured | XIRI",
+      "heroSubtitle": "EPA-compliant commercial auto detailing and fleet washing. Showroom quality, flexible scheduling, $1M insured. Get a free quote."
     }
   ],
   "locations": [
@@ -5488,6 +5620,118 @@
         }
       ],
       "lastVerified": "2026-04-14"
+    },
+    {
+      "slug": "astoria-ny",
+      "name": "Astoria, NY",
+      "state": "NY",
+      "region": "Queens County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Astoria, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "long-island-city-ny",
+      "name": "Long Island City, NY",
+      "state": "NY",
+      "region": "Queens County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Long Island City, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "flushing-ny",
+      "name": "Flushing, NY",
+      "state": "NY",
+      "region": "Queens County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Flushing, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "jamaica-ny",
+      "name": "Jamaica, NY",
+      "state": "NY",
+      "region": "Queens County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Jamaica, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "bayside-ny",
+      "name": "Bayside, NY",
+      "state": "NY",
+      "region": "Queens County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Bayside, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "forest-hills-ny",
+      "name": "Forest Hills, NY",
+      "state": "NY",
+      "region": "Queens County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Forest Hills, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "huntington-ny",
+      "name": "Huntington, NY",
+      "state": "NY",
+      "region": "Suffolk County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Huntington, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "smithtown-ny",
+      "name": "Smithtown, NY",
+      "state": "NY",
+      "region": "Suffolk County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Smithtown, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "babylon-ny",
+      "name": "Babylon, NY",
+      "state": "NY",
+      "region": "Suffolk County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Babylon, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "islip-ny",
+      "name": "Islip, NY",
+      "state": "NY",
+      "region": "Suffolk County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Islip, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "brookhaven-ny",
+      "name": "Brookhaven, NY",
+      "state": "NY",
+      "region": "Suffolk County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Brookhaven, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "riverhead-ny",
+      "name": "Riverhead, NY",
+      "state": "NY",
+      "region": "Suffolk County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Riverhead, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "melville-ny",
+      "name": "Melville, NY",
+      "state": "NY",
+      "region": "Suffolk County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Melville, NY.",
+      "zipCodes": []
+    },
+    {
+      "slug": "hauppauge-ny",
+      "name": "Hauppauge, NY",
+      "state": "NY",
+      "region": "Suffolk County, NY",
+      "localInsight": "Serving commercial facilities and automotive businesses across Hauppauge, NY.",
+      "zipCodes": []
     }
   ]
 }

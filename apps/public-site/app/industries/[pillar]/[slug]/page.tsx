@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import seoData from '@/data/seo-data.json';
 import { IndustryHubPage } from '@/components/IndustryHubPage';
@@ -162,28 +162,14 @@ export default async function IndustryDetailPage({ params }: Props) {
     }
 
     if (parsed.type === 'INDUSTRY_LOCATION') {
-        const { industry, location, pillar } = parsed.data!;
-        const naicsMapping = getNAICSMapping((industry as any).slug);
-        const censusResult = naicsMapping
-            ? getEstablishments(naicsMapping, DEFAULT_LOCAL_AREA)
-            : undefined;
+        const { industry, location } = parsed.data!;
+        const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const stateSlug = slugify(location.state);
+        const countySlug = slugify(location.region);
+        const townSlug = slugify(location.name.split(',')[0]);
+        const industrySlug = (industry as any).slug;
 
-        // Resolve county-level open data for this location
-        const countyId = regionToCountyId(location.region);
-        const countySummary = countyId ? getCountySummary(countyId) : undefined;
-        const wageContext = countyId ? getMarketWageContext(countyId) : undefined;
-
-        return (
-            <IndustryHubPage
-                industry={industry as any}
-                pillar={{ href: `/industries/${pillar.slug}`, text: pillar.name }}
-                location={location}
-                censusResult={censusResult}
-                censusPlural={naicsMapping?.plural}
-                countySummary={countySummary ?? undefined}
-                wageContext={wageContext ?? undefined}
-            />
-        );
+        redirect(`/locations/${stateSlug}/${countySlug}/${townSlug}/${industrySlug}`);
     }
 
     notFound();

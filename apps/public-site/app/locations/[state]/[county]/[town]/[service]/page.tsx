@@ -6,7 +6,7 @@ import { JsonLd } from '@/components/JsonLd';
 import { FAQ } from '@/components/FAQ';
 import { NearbyAreas } from '@/components/NearbyAreas';
 import { SITE } from '@/lib/constants';
-import { getLocationBySlugs, slugify } from '@/lib/location-utils';
+import { getLocationBySlugs } from '@/lib/location-utils';
 import seoData from '@/data/seo-data.json';
 import { regionToCountyId, getCountySummary, getMarketWageContext } from '@/data/open-data';
 import { getServiceFaqProfile, type FaqEntry } from '@/data/service-faq-intelligence';
@@ -21,43 +21,69 @@ type Props = {
     }>;
 };
 
+function getOfferingData(offeringSlug: string) {
+    const service = seoData.services.find(s => s.slug === offeringSlug);
+    if (service) {
+        return {
+            type: 'SERVICE' as const,
+            name: service.name,
+            description: service.shortDescription,
+            faqs: service.faqs || [],
+            slug: service.slug,
+        };
+    }
+
+    const industry = seoData.industries.find((i: any) => i.slug === offeringSlug);
+    if (industry) {
+        return {
+            type: 'INDUSTRY' as const,
+            name: (industry as any).name || (industry as any).heroTitle,
+            description: (industry as any).heroSubtitle,
+            faqs: (industry as any).faqs || [],
+            slug: (industry as any).slug,
+        };
+    }
+
+    return null;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { state, county, town, service: serviceSlug } = await params;
+    const { state, county, town, service: offeringSlug } = await params;
     
     const location = getLocationBySlugs(state, county, town);
-    const serviceData = seoData.services.find(s => s.slug === serviceSlug);
+    const offering = getOfferingData(offeringSlug);
     
-    if (!location || !serviceData) return {};
+    if (!location || !offering) return {};
     
     const townName = location.name.split(',')[0];
-    const title = `${serviceData.name} in ${townName}, ${state.toUpperCase()} | Free Quote`;
+    const title = `${offering.name} Cleaning in ${townName}, ${state.toUpperCase()} | Free Walkthrough`;
     const description = location.localInsight 
-        ? `${location.localInsight} Professional ${serviceData.name.toLowerCase()} in ${townName}. Get local pricing, review scope options, and request a verified quote.`
-        : `Expert ${serviceData.name.toLowerCase()} in ${townName}, ${state.toUpperCase()}. Compare local monthly pricing, review scope options, and request a verified quote.`;
+        ? `${location.localInsight} Professional ${offering.name.toLowerCase()} cleaning & sanitation in ${townName}. Get local pricing and request a verified quote.`
+        : `Expert ${offering.name.toLowerCase()} cleaning in ${townName}, ${state.toUpperCase()}. $1M insured, OSHA compliant, nightly verified. Get a free quote.`;
 
     return {
         title,
         description,
         alternates: {
-            canonical: `${SITE.url}/locations/${state}/${county}/${town}/${serviceSlug}`
+            canonical: `${SITE.url}/locations/${state}/${county}/${town}/${offeringSlug}`
         },
         openGraph: {
             title,
             description,
-            url: `${SITE.url}/locations/${state}/${county}/${town}/${serviceSlug}`,
+            url: `${SITE.url}/locations/${state}/${county}/${town}/${offeringSlug}`,
             siteName: SITE.name,
             type: 'website',
         },
     };
 }
 
-export default async function LocalServicePage({ params }: Props) {
-    const { state, county, town, service: serviceSlug } = await params;
+export default async function LocalOfferingPage({ params }: Props) {
+    const { state, county, town, service: offeringSlug } = await params;
     
     const location = getLocationBySlugs(state, county, town);
-    const service = seoData.services.find(s => s.slug === serviceSlug);
+    const offering = getOfferingData(offeringSlug);
     
-    if (!location || !service) {
+    if (!location || !offering) {
         notFound();
     }
     
@@ -68,16 +94,16 @@ export default async function LocalServicePage({ params }: Props) {
     const countySummary = countyId ? getCountySummary(countyId) : null;
     const wageContext = countyId ? getMarketWageContext(countyId) : null;
 
-    const heroTitle = `${service.name} in ${townName}, ${state.toUpperCase()}`;
+    const heroTitle = `${offering.name} Cleaning in ${townName}, ${state.toUpperCase()}`;
     const heroSubtitle = location.localInsight
-        || `${service.shortDescription} Proudly serving commercial facilities near ${location.landmarks?.join(', ') || location.region}.`;
+        || `${offering.description} Dedicated commercial cleaning and sanitation for facilities near ${location.landmarks?.join(', ') || location.region}.`;
 
-    const faqProfile = getServiceFaqProfile(service.slug);
+    const faqProfile = getServiceFaqProfile(offering.slug);
     const dataFaqs: FaqEntry[] = [];
 
     dataFaqs.push({
-        question: `What zip codes does XIRI cover for ${service.name} in ${townName}?`,
-        answer: `We provide ${service.name.toLowerCase()} services across zip codes ${location.zipCodes?.join(', ') || 'in the surrounding area'}, covering all of ${location.region}. Our crews are already on established routes in these areas, minimizing ramp-up time.`,
+        question: `What zip codes does XIRI cover for ${offering.name} in ${townName}?`,
+        answer: `We provide specialized ${offering.name.toLowerCase()} cleaning services across zip codes ${location.zipCodes?.join(', ') || 'in the surrounding area'}, covering all of ${location.region}. Our crews maintain active routes across local business corridors.`,
     });
 
     if (wageContext) {
@@ -88,16 +114,16 @@ export default async function LocalServicePage({ params }: Props) {
         dataFaqs.push(faqProfile.competitorFaq(townName, location.region, countySummary.janitorialCompetitors));
     }
 
-    dataFaqs.push(faqProfile.pricingFaq(townName, service.name));
-    dataFaqs.push(faqProfile.complianceFaq(townName, service.name));
+    dataFaqs.push(faqProfile.pricingFaq(townName, offering.name));
+    dataFaqs.push(faqProfile.complianceFaq(townName, offering.name));
     
     if (faqProfile.bonusFaq) {
-        dataFaqs.push(faqProfile.bonusFaq(townName, service.name));
+        dataFaqs.push(faqProfile.bonusFaq(townName, offering.name));
     }
 
     const allFaqs = [
         ...(location.localFaqs || []),
-        ...(service.faqs || []),
+        ...(offering.faqs || []),
         ...dataFaqs,
     ];
 
@@ -106,11 +132,11 @@ export default async function LocalServicePage({ params }: Props) {
         {
             '@context': 'https://schema.org',
             '@type': 'LocalBusiness',
-            '@id': `${SITE.url}/locations/${state}/${county}/${town}/${serviceSlug}#business`,
-            name: `${SITE.shortName} ${service.name} — ${location.name}`,
-            description: location.localInsight || service.shortDescription,
+            '@id': `${SITE.url}/locations/${state}/${county}/${town}/${offering.slug}#business`,
+            name: `${SITE.shortName} ${offering.name} Cleaning — ${location.name}`,
+            description: location.localInsight || offering.description,
             image: `${SITE.url}/xiri-logo-horizontal.svg`,
-            url: `${SITE.url}/locations/${state}/${county}/${town}/${serviceSlug}`,
+            url: `${SITE.url}/locations/${state}/${county}/${town}/${offering.slug}`,
             telephone: SITE.phone,
             ...(location.lastVerified && { dateModified: location.lastVerified }),
             priceRange: '$$',
@@ -134,24 +160,24 @@ export default async function LocalServicePage({ params }: Props) {
             }),
             department: {
                 '@type': 'ProfessionalService',
-                name: service.name,
+                name: `${offering.name} Cleaning Services`,
             },
         },
         {
             '@context': 'https://schema.org',
             '@type': 'Service',
-            '@id': `${SITE.url}/locations/${state}/${county}/${town}/${serviceSlug}#service`,
-            name: `${service.name} in ${location.name}`,
-            description: service.shortDescription,
+            '@id': `${SITE.url}/locations/${state}/${county}/${town}/${offering.slug}#service`,
+            name: `${offering.name} Cleaning in ${location.name}`,
+            description: offering.description,
             provider: {
                 '@type': 'LocalBusiness',
-                '@id': `${SITE.url}/locations/${state}/${county}/${town}/${serviceSlug}#business`,
+                '@id': `${SITE.url}/locations/${state}/${county}/${town}/${offering.slug}#business`,
             },
             areaServed: {
                 '@type': 'Place',
                 name: `${townName}, ${state.toUpperCase()}`,
             },
-            serviceType: service.name,
+            serviceType: `${offering.name} Cleaning`,
         }
     ];
 
@@ -178,7 +204,7 @@ export default async function LocalServicePage({ params }: Props) {
                 title={heroTitle}
                 subtitle={heroSubtitle}
                 ctaText="Get a Local Quote"
-                mediaSlides={getServiceHeroSlides(service.slug)}
+                mediaSlides={getServiceHeroSlides(offering.slug)}
             />
 
             {/* GEO Statistics Block for AI Extraction */}
@@ -186,21 +212,21 @@ export default async function LocalServicePage({ params }: Props) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">Local Service Insights: {townName}</h2>
-                        <p className="text-gray-600">Data-driven facility management tailored for {location.region}.</p>
+                        <p className="text-gray-600">Data-driven facility management & sanitation tailored for {location.region}.</p>
                     </div>
                     <div className="grid md:grid-cols-3 gap-6">
                         {wageContext && (
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
-                                <p className="text-sm text-gray-500 font-medium mb-1">Local Wage Standard</p>
+                                <p className="text-sm text-gray-500 font-medium mb-1">Local Wage Benchmark</p>
                                 <p className="text-3xl font-bold text-sky-700 mb-2">${wageContext.medianHourly}/hr</p>
                                 <p className="text-xs text-gray-400">Based on BLS data for {wageContext.areaTitle}. We pay above market to retain top talent.</p>
                             </div>
                         )}
                         {countySummary && (
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
-                                <p className="text-sm text-gray-500 font-medium mb-1">Commercial Cleaners in {location.region}</p>
+                                <p className="text-sm text-gray-500 font-medium mb-1">Cleaners in {location.region}</p>
                                 <p className="text-3xl font-bold text-sky-700 mb-2">{countySummary.janitorialCompetitors.toLocaleString()}+</p>
-                                <p className="text-xs text-gray-400">Navigating the crowded local market? We manage the vetting and insurance for you.</p>
+                                <p className="text-xs text-gray-400">Navigating local vendor selection? We manage vetting, audits, and insurance for you.</p>
                             </div>
                         )}
                         {location.zipCodes && location.zipCodes.length > 0 && (
@@ -231,9 +257,9 @@ export default async function LocalServicePage({ params }: Props) {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 <tr>
-                                    <td className="py-4 px-4 font-medium text-gray-900">Vetting & Insurance</td>
-                                    <td className="py-4 px-4 bg-sky-50 text-sky-900 font-medium">Pre-vetted, $1M+ Insured</td>
-                                    <td className="py-4 px-4 text-gray-500">Often unverified</td>
+                                    <td className="py-4 px-4 font-medium text-gray-900">Compliance & Insurance</td>
+                                    <td className="py-4 px-4 bg-sky-50 text-sky-900 font-medium">OSHA/HIPAA audit ready, $1M+ Insured</td>
+                                    <td className="py-4 px-4 text-gray-500">Standard janitorial only</td>
                                 </tr>
                                 <tr>
                                     <td className="py-4 px-4 font-medium text-gray-900">Billing & Invoicing</td>
@@ -242,8 +268,8 @@ export default async function LocalServicePage({ params }: Props) {
                                 </tr>
                                 <tr>
                                     <td className="py-4 px-4 font-medium text-gray-900">Quality Assurance</td>
-                                    <td className="py-4 px-4 bg-sky-50 text-sky-900 font-medium">Nightly Audits & Digital Logs</td>
-                                    <td className="py-4 px-4 text-gray-500">Set it and forget it</td>
+                                    <td className="py-4 px-4 bg-sky-50 text-sky-900 font-medium">Nightly Digital Logs & Audits</td>
+                                    <td className="py-4 px-4 text-gray-500">Inconsistent check-ins</td>
                                 </tr>
                                 <tr>
                                     <td className="py-4 px-4 font-medium text-gray-900">Replacement Coverage</td>
@@ -261,10 +287,10 @@ export default async function LocalServicePage({ params }: Props) {
             <section className="py-16 bg-gray-50 border-t border-gray-200">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                        Ready for {service.name} in {townName}?
+                        Ready for {offering.name} Cleaning in {townName}?
                     </h2>
                     <p className="text-xl text-gray-600 mb-8">
-                        Book a free site audit. We'll walk your facility, build a custom scope, and have you covered within a week.
+                        Book a free site audit. We'll walk your facility, build a custom compliance scope, and have you covered within a week.
                     </p>
                     <CTAButton
                         href="/#audit"
@@ -275,8 +301,8 @@ export default async function LocalServicePage({ params }: Props) {
             </section>
 
             <NearbyAreas
-                serviceSlug={service.slug}
-                serviceName={service.name}
+                serviceSlug={offering.slug}
+                serviceName={offering.name}
                 nearbyCities={location.nearbyCities || []}
                 currentLocationName={location.name}
             />

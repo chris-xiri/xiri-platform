@@ -78,10 +78,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
                 priority: isOverlapLeadLocation ? 0.6 : 0.9,
             });
         });
+
+        // High-Priority Industry × Location Pages (Dental, Urgent Care, Gyms, PT, etc.)
+        const TARGET_INDUSTRY_SLUGS = [
+            'dental-offices',
+            'urgent-care',
+            'auto-dealerships',
+            'fitness-gyms',
+            'medical-offices',
+            'physical-therapy',
+            'chiropractors',
+            'libraries',
+            'surgery-centers',
+            'dialysis-centers'
+        ];
+        const industries = seoData.industries || [];
+        industries.filter((i: any) => TARGET_INDUSTRY_SLUGS.includes(i.slug)).forEach((ind: any) => {
+            sitemapEntries.push({
+                url: `${BASE_URL}/locations/${stateSlug}/${countySlug}/${townSlug}/${ind.slug}`,
+                lastModified: new Date(),
+                changeFrequency: 'weekly',
+                priority: 0.95,
+            });
+        });
     });
-    // NOTE: Other 14 services × location excluded from sitemap.
-    // Industry × Location (960 pages) also excluded.
-    // All pages remain live — just not submitted to Google.
 
     // 5. Solutions — Editorial + DLP + Spoke Hubs
     ['medical-facility-management', 'single-tenant-maintenance', 'vendor-management-alternative'].forEach((slug) => {
