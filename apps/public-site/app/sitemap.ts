@@ -46,23 +46,40 @@ export default function sitemap(): MetadataRoute.Sitemap {
         sitemapEntries.push({ url: `${BASE_URL}/services/${item.slug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 });
     });
 
-    // 4. Service × Location Pages — core cleaning services only (crawl budget)
+    // 4. Locations Hubs & Service × Location Pages
     const locations = seoData.locations || [];
-    services.filter((s) => SITEMAP_LEAD_SERVICE_SLUGS.includes(s.slug as any)).forEach((service) => {
-        locations.forEach((location) => {
-            const countySlug = toSlug(location.region);
-            const townSlug = toSlug(location.name.split(',')[0]);
-            const stateSlug = location.state.toLowerCase();
+    const states = new Set(locations.map(loc => loc.state));
+    
+    // Top-level hub
+    sitemapEntries.push({ url: `${BASE_URL}/locations`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 });
+    
+    // State hubs
+    states.forEach(state => {
+        const stateSlug = toSlug(state);
+        sitemapEntries.push({ url: `${BASE_URL}/locations/${stateSlug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 });
+    });
+
+    // County hubs, Town Hubs, and Service pages
+    locations.forEach((location) => {
+        const stateSlug = toSlug(location.state);
+        const countySlug = toSlug(location.region);
+        const townSlug = toSlug(location.name.split(',')[0]);
+        
+        // Town Hub
+        sitemapEntries.push({ url: `${BASE_URL}/locations/${stateSlug}/${countySlug}/${townSlug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 });
+        
+        // Service × Location Pages (core cleaning services only for crawl budget)
+        services.filter((s) => SITEMAP_LEAD_SERVICE_SLUGS.includes(s.slug as any)).forEach((service) => {
             const isOverlapLeadLocation = OVERLAP_LEAD_LOCATION_SLUGS.has(service.slug);
             sitemapEntries.push({
-                url: `${BASE_URL}/services/${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}`,
+                url: `${BASE_URL}/locations/${stateSlug}/${countySlug}/${townSlug}/${service.slug}`,
                 lastModified: new Date(),
                 changeFrequency: isOverlapLeadLocation ? 'yearly' : 'monthly',
-                priority: isOverlapLeadLocation ? 0.55 : 0.85,
+                priority: isOverlapLeadLocation ? 0.6 : 0.9,
             });
         });
     });
-    // NOTE: Other 14 services × location (896 pages) excluded from sitemap.
+    // NOTE: Other 14 services × location excluded from sitemap.
     // Industry × Location (960 pages) also excluded.
     // All pages remain live — just not submitted to Google.
 
