@@ -5626,64 +5626,127 @@
       "name": "Astoria, NY",
       "state": "NY",
       "region": "Queens County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Astoria, NY.",
-      "zipCodes": []
+      "localInsight": "Astoria is a rapidly growing commercial and cultural hub in Queens, featuring high-density retail along Steinway Street, medical practices near Ditmars, and production studios. Facilities require high-frequency sanitation due to heavy foot traffic from N/W subway lines.",
+      "zipCodes": [],
+      "landmarks": [
+        "Kaufman Astoria Studios",
+        "Steinway Street Commercial Corridor",
+        "Ditmars Blvd",
+        "Astoria Park",
+        "Broadway Business Hub"
+      ],
+      "complianceNote": "Facilities in Astoria must comply with NYC DOHMH Article 81 food/health standards, OSHA workplace safety regulations, and NYC Sanitation commercial waste containerization laws.",
+      "serviceChallenges": "Subway dust, heavy pedestrian traffic on commercial corridors, and historic multi-story commercial buildings requiring specialized floor care and night-shift scheduling."
     },
     {
       "slug": "long-island-city-ny",
       "name": "Long Island City, NY",
       "state": "NY",
       "region": "Queens County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Long Island City, NY.",
-      "zipCodes": []
+      "localInsight": "Long Island City is New York City's premier mixed-use commercial and tech corridor, featuring modern high-rise office towers, life science labs near Anable Basin, and industrial spaces along Sunnyside Yard.",
+      "zipCodes": [],
+      "landmarks": [
+        "Queens Plaza",
+        "Anable Basin",
+        "Hunters Point South",
+        "Sunnyside Yard",
+        "Court Square"
+      ],
+      "complianceNote": "Commercial spaces in LIC must meet strict NYC DOB building codes, LEED environmental standards, and specialized lab/cleanroom bio-sanitation compliance where applicable.",
+      "serviceChallenges": "High-rise logistical access, specialized life-science lab sanitation requirements, and rapid turnarounds for corporate spaces."
     },
     {
       "slug": "flushing-ny",
       "name": "Flushing, NY",
       "state": "NY",
       "region": "Queens County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Flushing, NY.",
-      "zipCodes": []
+      "localInsight": "Flushing represents one of the busiest retail and medical office clusters in New York City. Downtown Flushing hosts hundreds of independent dental clinics, medical suites, and high-volume retail centers.",
+      "zipCodes": [],
+      "landmarks": [
+        "Main Street Commercial District",
+        "Flushing Commons",
+        "SkyView Center",
+        "Willets Point",
+        "Roosevelt Ave Corridor"
+      ],
+      "complianceNote": "Medical and dental facilities in Flushing require strict adherence to OSHA Bloodborne Pathogen Standards, CDC infection control guidelines, and NYC DOHMH waste disposal mandates.",
+      "serviceChallenges": "Extremely high foot-traffic density, multi-tenant medical suites requiring flexible night-shift sanitation, and complex waste segregation compliance."
     },
     {
       "slug": "jamaica-ny",
       "name": "Jamaica, NY",
       "state": "NY",
       "region": "Queens County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Jamaica, NY.",
-      "zipCodes": []
+      "localInsight": "Jamaica is a vital commercial and transit hub in Queens, encompassing massive retail corridors on Jamaica Ave, legal/professional offices near the county courts, and logistics hubs near JFK.",
+      "zipCodes": [],
+      "landmarks": [
+        "Jamaica Avenue Commercial Corridor",
+        "JFK Airport Commercial Perimeter",
+        "York College Corridor",
+        "Sutphin Blvd Courts"
+      ],
+      "complianceNote": "Commercial facilities must adhere to NYC DOHMH standards, TSA/port authority compliance near transit zones, and NYC sanitation commercial recycling rules.",
+      "serviceChallenges": "Transit-adjacent soot and dust buildup, high-volume retail floor wear, and 24/7 facility access management."
     },
     {
       "slug": "bayside-ny",
       "name": "Bayside, NY",
       "state": "NY",
       "region": "Queens County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Bayside, NY.",
-      "zipCodes": []
+      "localInsight": "Bayside is an affluent Queens neighborhood dominated by professional offices, healthcare clinics, and boutique retail along Bell Blvd and Northern Blvd.",
+      "zipCodes": [],
+      "landmarks": [
+        "Bell Blvd Commercial District",
+        "Bay Terrace Shopping Center",
+        "Northern Blvd Business Corridor"
+      ],
+      "complianceNote": "Facilities must maintain compliance with NY State Department of Health clinical space guidelines and OSHA office safety protocols.",
+      "serviceChallenges": "High customer expectation for pristine aesthetics, high-end floor care maintenance, and quiet off-hours cleaning."
     },
     {
       "slug": "forest-hills-ny",
       "name": "Forest Hills, NY",
       "state": "NY",
       "region": "Queens County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Forest Hills, NY.",
-      "zipCodes": []
+      "localInsight": "Forest Hills combines vibrant retail along Austin Street with a dense concentration of medical, dental, and specialty healthcare clinics along Queens Boulevard.",
+      "zipCodes": [],
+      "landmarks": [
+        "Austin Street Retail Corridor",
+        "Queens Blvd Medical Mile",
+        "71st Ave Transit Hub"
+      ],
+      "complianceNote": "Dental and outpatient clinics in Forest Hills must strictly adhere to CDC dental infection prevention standards and OSHA bloodborne pathogen compliance.",
+      "serviceChallenges": "Preserving high-traffic retail storefront glass and floors, coupled with sterile cleaning standards for Queens Blvd medical practices."
     },
     {
       "slug": "huntington-ny",
       "name": "Huntington, NY",
       "state": "NY",
       "region": "Suffolk County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Huntington, NY.",
-      "zipCodes": []
+      "localInsight": "Huntington is a bustling Suffolk County commerce center featuring a dense medical network anchored by Huntington Hospital, along with historic retail and professional offices.",
+      "zipCodes": [],
+      "landmarks": [
+        "Huntington Village Main Street",
+        "Huntington Hospital / Northwell Health Hub",
+        "New York Avenue Corridor"
+      ],
+      "complianceNote": "Medical practices near Huntington Hospital must follow NYSDOH healthcare facility infection control protocols and OSHA standards.",
+      "serviceChallenges": "Historic building layout navigation, high-standard patient area disinfection, and high-footprint retail floor polishing."
     },
     {
       "slug": "smithtown-ny",
       "name": "Smithtown, NY",
       "state": "NY",
       "region": "Suffolk County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Smithtown, NY.",
-      "zipCodes": []
+      "localInsight": "Smithtown serves as a major suburban commercial and healthcare hub in central Suffolk County, featuring suburban office parks, dental offices, and medical plazas.",
+      "zipCodes": [],
+      "landmarks": [
+        "Main Street Smithtown Business Corridor",
+        "St. Catherine of Siena Medical Hub",
+        "Nesconset Highway Retail Zone"
+      ],
+      "complianceNote": "Facilities must comply with Suffolk County Department of Health Services standards and OSHA office safety requirements.",
+      "serviceChallenges": "Suburban office park perimeter dirt management, medical suite sanitization, and specialized floor care."
     },
     {
       "slug": "babylon-ny",
@@ -5722,16 +5785,30 @@
       "name": "Melville, NY",
       "state": "NY",
       "region": "Suffolk County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Melville, NY.",
-      "zipCodes": []
+      "localInsight": "Melville is the corporate heart of Suffolk County, hosting headquarters, industrial parks, tech campuses, and large-scale commercial facilities along the Route 110 corridor.",
+      "zipCodes": [],
+      "landmarks": [
+        "Route 110 Corporate Corridor",
+        "Maxess Road Business Park",
+        "Huntington Quadrangle"
+      ],
+      "complianceNote": "Corporate campuses and industrial sites in Melville must meet OSHA general industry standards, EPA waste disposal rules, and Suffolk County Dept of Health guidelines.",
+      "serviceChallenges": "Large-footprint floor care (VCR/epoxy/carpet), extensive multi-building HVAC dust management, and strict corporate security protocols."
     },
     {
       "slug": "hauppauge-ny",
       "name": "Hauppauge, NY",
       "state": "NY",
       "region": "Suffolk County, NY",
-      "localInsight": "Serving commercial facilities and automotive businesses across Hauppauge, NY.",
-      "zipCodes": []
+      "localInsight": "Hauppauge is home to one of the largest industrial parks in the United States, spanning over 1,400 companies, manufacturing facilities, medical tech labs, and corporate offices.",
+      "zipCodes": [],
+      "landmarks": [
+        "Hauppauge Industrial Park",
+        "Motor Parkway Business Corridor",
+        "Suffolk County Government Complex"
+      ],
+      "complianceNote": "Facilities in Hauppauge Industrial Park must adhere to strict OSHA industrial hygiene regulations, ISO cleanroom standards, and Suffolk County environmental laws.",
+      "serviceChallenges": "Heavy industrial floor degreasing, cleanroom particulate control, and large-scale warehouse/office sanitation maintenance."
     }
   ]
 }
