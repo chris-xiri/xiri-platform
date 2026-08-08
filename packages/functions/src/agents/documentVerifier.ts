@@ -61,7 +61,7 @@ export interface Acord25VerificationResult {
 
 // ─── Legacy: Simulated Document Verification ───
 export async function verifyDocument(docType: 'COI' | 'W9', vendorName: string, specialty: string): Promise<VerificationResult> {
-    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
 
     let simulatedOcrText = "";
 
@@ -257,7 +257,7 @@ export async function verifyAcord25(
         hasEntity: boolean;
     }
 ): Promise<Acord25VerificationResult> {
-    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
 
     try {
         // 1. Download the PDF/image from Firebase Storage

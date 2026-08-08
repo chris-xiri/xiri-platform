@@ -120,7 +120,7 @@ Return ONLY a JSON object (no markdown, no code fences, no explanation) with the
 }`;
 
     const accessToken = getAccessToken();
-    const url = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT}/locations/${GCP_REGION}/publishers/google/models/gemini-2.0-flash:generateContent`;
+    const url = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT}/locations/${GCP_REGION}/publishers/google/models/gemini-2.5-flash:generateContent`;
 
     try {
         const res = await fetch(url, {
