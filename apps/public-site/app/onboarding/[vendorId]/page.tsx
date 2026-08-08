@@ -10,6 +10,7 @@ import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft, Globe, Calenda
 import { translations, t, type Language } from "./translations";
 import { addDays, format } from "date-fns";
 import { trackEvent } from "@/lib/tracking";
+import { isSubcontractorInAllowedServiceArea } from "@/lib/location-utils";
 
 // Cloud Functions base URL
 const CF_BASE = process.env.NEXT_PUBLIC_CF_BASE || "https://us-central1-xiri-facility-solutions.cloudfunctions.net";
@@ -171,6 +172,7 @@ export default function OnboardingPage() {
         { value: 'elevator',             label: 'Elevator Maintenance',           group: 'specialty' as const },
         { value: 'fire_safety',          label: 'Fire Safety / Extinguishers',    group: 'specialty' as const },
         { value: 'medical_cleaning',     label: 'Medical Facility Cleaning',      group: 'specialty' as const },
+        { value: 'auto_detailing',       label: 'Automobile Detailing',           group: 'specialty' as const },
     ];
 
     const CAPABILITY_GROUPS = [
@@ -393,11 +395,12 @@ export default function OnboardingPage() {
         );
     }
 
-    // Check if vendor qualifies for onboarding call (GL + LLC + WC)
-    const qualifiesForCall = hasGeneralLiability && hasBusinessEntity && hasWorkersComp;
+    // Check if vendor qualifies for onboarding call (GL + LLC + WC + Allowed Location)
+    const isAllowedLocation = isSubcontractorInAllowedServiceArea(city, state);
+    const qualifiesForCall = hasGeneralLiability && hasBusinessEntity && hasWorkersComp && isAllowedLocation;
 
     if (completed) {
-        // ─── Scheduling UI via TidyCal Embed (if qualified) ───
+        // ─── Scheduling UI via TidyCal Embed (if qualified and in service area) ───
         if (qualifiesForCall) {
             return (
                 <div className="min-h-screen bg-slate-50 p-4">
@@ -431,7 +434,30 @@ export default function OnboardingPage() {
             );
         }
 
-        // ─── Simple Success (doesn't qualify for call) ───
+        // ─── Out-of-Area Notice (Outside Nassau, Suffolk, Queens, Brooklyn, Bronx, Manhattan) ───
+        if (!isAllowedLocation) {
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
+                    <div className="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full text-center space-y-4">
+                        <div className="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto">
+                            <CheckCircle className="w-8 h-8 text-sky-600" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900">Application Received</h2>
+                        <p className="text-slate-600 leading-relaxed">
+                            Thank you for submitting your application! XIRI active subcontractor onboarding is currently focused on <strong>Nassau, Suffolk, Queens, Brooklyn, Bronx, and Manhattan</strong>.
+                        </p>
+                        <div className="text-sm text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-200 text-left space-y-1">
+                            <p className="font-semibold text-slate-900">Application Status:</p>
+                            <p>• Qualifications saved on file for {businessName || contactName || 'your business'}</p>
+                            <p>• Location: {city ? `${city}, ` : ''}{state || 'US'}</p>
+                            <p className="text-xs text-slate-400 pt-2">Our vendor operations team will reach out directly as we expand active subcontractor onboarding to your area.</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ─── Simple Success (doesn't qualify for insurance/entity call) ───
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
                 <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center space-y-4">

@@ -82,11 +82,52 @@ export const bookOnboardingCall = onRequest({
             return;
         }
 
-        // Verify vendor exists
+        // Verify vendor exists & check location restriction
         const vendorRef = db.collection("vendors").doc(vendorId);
         const vendorDoc = await vendorRef.get();
         if (!vendorDoc.exists) {
             res.status(404).json({ error: "Vendor not found" });
+            return;
+        }
+
+        const vendorData = vendorDoc.data() || {};
+        const vState = (vendorData.state || "").trim().toUpperCase();
+        const vCity = (vendorData.city || "").trim().toLowerCase();
+
+        const ALLOWED_AREAS = [
+            "nassau", "suffolk", "queens", "brooklyn", "kings", "bronx", "manhattan", "new york",
+            "garden city", "mineola", "hicksville", "levittown", "freeport", "hempstead", "westbury", 
+            "great neck", "manhasset", "floral park", "massapequa", "rockville centre", "long beach", 
+            "valley stream", "port washington", "syosset", "glen cove", "farmingdale", "merrick", 
+            "bellmore", "wantagh", "plainview", "bethpage", "oceanside", "east meadow", "franklin square", 
+            "lynbrook", "new hyde park", "jericho", "carle place", "woodbury", "woodmere", "inwood", 
+            "north woodmere", "lido beach", "old westbury", "old bethpage", "oyster bay", "sea cliff", 
+            "seaford", "uniondale", "west hempstead", "williston park", "roslyn", "roslyn heights", 
+            "massapequa park", "malverne", "roosevelt", "point lookout",
+            "huntington", "babylon", "bay shore", "islip", "brentwood", "smithtown", "commack", 
+            "hauppauge", "patchogue", "ronkonkoma", "lake grove", "riverhead", "deer park", 
+            "lindenhurst", "west islip", "centereach", "bohemia", "holbrook", "medford", "sayville", 
+            "east northport", "kings park", "port jefferson", "stony brook", "coram", "selden", 
+            "east hampton", "southampton", "sag harbor", "hampton bays", "westhampton", "mattituck", 
+            "cutchogue", "greenport", "montauk",
+            "flushing", "jamaica", "astoria", "long island city", "forest hills", "bayside", 
+            "jackson heights", "rego park", "elmhurst", "ridgewood", "fresh meadows", "whitestone", 
+            "college point", "woodside", "kew gardens", "howard beach", "ozone park", "richmond hill", 
+            "maspeth", "glendale", "far rockaway", "arverne", "breezy point",
+            "williamsburg", "bushwick", "greenpoint", "dumbo", "brooklyn heights", 
+            "crown heights", "flatbush", "bay ridge", "sunset park", "park slope", "bed stuy", 
+            "bedford stuyvesant", "canarsie", "bensonhurst", "coney island", "sheepshead bay", "marine park",
+            "riverdale", "mott haven", "pelham bay", "throggs neck", "fordham", 
+            "city island", "morris park", "kingsbridge", "belmont", "coop city",
+            "harlem", "soho", "tribeca", "chelsea", "midtown", 
+            "upper east side", "upper west side", "washington heights", "financial district", 
+            "fidi", "east village", "west village"
+        ];
+        const isNY = vState === "NY" || vState === "NEW YORK";
+        const isAllowedLocation = isNY && (ALLOWED_AREAS.some(a => vCity.includes(a) || a.includes(vCity)) || !vCity);
+
+        if (!isAllowedLocation) {
+            res.status(400).json({ error: "Subcontractor call scheduling is restricted to Nassau, Suffolk, Queens, Brooklyn, Bronx, and Manhattan." });
             return;
         }
 
