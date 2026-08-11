@@ -49,6 +49,16 @@ interface StepBuildingScopeProps {
         sqft?: number;
         facilityType?: string;
     };
+    existingScope?: {
+        mode?: 'janitorial' | 'trades' | 'unit_based';
+        serviceType?: string;
+        frequency?: string;
+        unitItems?: UnitPriceItem[];
+        rooms?: RoomScope[];
+        inputs?: CalculatorInputs;
+        results?: CalculatorResults;
+        location?: Location;
+    } | null;
     onScopeChange: (scope: {
         mode?: 'janitorial' | 'trades' | 'unit_based';
         serviceType?: string;
@@ -87,6 +97,7 @@ function makeRoomId() {
 export default function StepBuildingScope({
     selectedLead,
     initialData,
+    existingScope,
     onScopeChange,
 }: StepBuildingScopeProps) {
 
@@ -95,16 +106,27 @@ export default function StepBuildingScope({
     const companyDefaultsLoaded = useRef(false);
 
     // ─── Service Category / Mode State ────────────────────────────────
-    const [serviceCategory, setServiceCategory] = useState<'trades' | 'janitorial' | 'custom'>('trades');
+    const [serviceCategory, setServiceCategory] = useState<'trades' | 'janitorial' | 'custom'>(
+        existingScope?.mode === 'janitorial' ? 'janitorial' :
+        existingScope?.mode === 'trades' ? 'trades' : 'trades'
+    );
 
     // ─── Trade & Unit Pricing State ───────────────────────────────────
-    const [tradeServiceType, setTradeServiceType] = useState('Light Carpentry & Woodwork');
-    const [tradeFrequency, setTradeFrequency] = useState('one_time');
-    const [unitItems, setUnitItems] = useState<UnitPriceItem[]>([
-        { id: 'unit_1', description: 'Baseboard & Trim Installation', quantity: 50, unit: 'linear_ft', unitPrice: 8.50, subtotal: 425 },
-        { id: 'unit_2', description: 'Custom Door Frame Repair', quantity: 2, unit: 'units', unitPrice: 175.00, subtotal: 350 },
-        { id: 'unit_3', description: 'Skilled Carpenter Labor', quantity: 4, unit: 'hours', unitPrice: 85.00, subtotal: 340 },
-    ]);
+    const [tradeServiceType, setTradeServiceType] = useState(
+        existingScope?.serviceType || 'Light Carpentry & Woodwork'
+    );
+    const [tradeFrequency, setTradeFrequency] = useState(
+        existingScope?.frequency || 'one_time'
+    );
+    const [unitItems, setUnitItems] = useState<UnitPriceItem[]>(
+        existingScope?.unitItems && existingScope.unitItems.length > 0
+            ? existingScope.unitItems
+            : [
+                { id: 'unit_1', description: 'Baseboard & Trim Installation', quantity: 50, unit: 'linear_ft', unitPrice: 8.50, subtotal: 425 },
+                { id: 'unit_2', description: 'Custom Door Frame Repair', quantity: 2, unit: 'units', unitPrice: 175.00, subtotal: 350 },
+                { id: 'unit_3', description: 'Skilled Carpenter Labor', quantity: 4, unit: 'hours', unitPrice: 85.00, subtotal: 340 },
+            ]
+    );
 
     const totalUnitRate = useMemo(() =>
         unitItems.reduce((sum, u) => sum + (u.subtotal || 0), 0),

@@ -409,36 +409,39 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     isCustom: true,
                 }));
 
-                const NASSAU_TAX_RATE = 0.08625; // 8.625% Nassau County Tax
-                const tradeItem: QuoteLineItem = {
-                    id: `li_${Date.now()}_trade`,
-                    locationId: scope.location.id,
-                    locationName: scope.location.name,
-                    locationAddress: scope.location.address,
-                    locationCity: scope.location.city,
-                    locationState: scope.location.state,
-                    locationZip: scope.location.zip,
-                    serviceType: scope.serviceType || 'Light Carpentry & Woodwork',
-                    serviceCategory: 'trades',
-                    frequency: (scope.frequency as any) || 'one_time',
-                    clientRate: totalRate,
-                    taxRate: NASSAU_TAX_RATE,
-                    taxAmount: Math.round(totalRate * NASSAU_TAX_RATE * 100) / 100,
-                    unitItems: unitItems,
-                    scopeTasks,
-                    lineItemStatus: 'pending' as const,
-                    addedBy: userId,
-                    addedByRole: (isFsm ? 'fsm' : 'sales') as 'sales' | 'fsm',
-                    isUpsell: false,
-                };
-
-                setContractTenure(0); // No Contract / One-Time Project
-                setPaymentTerms('Due Upon Completion & Sign-off');
-
                 setLineItems(prev => {
-                    const nonTrade = prev.filter(li => !li.unitItems && li.serviceCategory !== 'trades');
+                    const existingTrade = prev.find(li => li.serviceCategory === 'trades' || (li.unitItems && li.unitItems.length > 0));
+                    const itemId = existingTrade?.id || `li_trade_${Date.now()}`;
+                    const taxRate = existingTrade?.taxRate ?? 0.08625;
+
+                    const tradeItem: QuoteLineItem = {
+                        id: itemId,
+                        locationId: scope.location.id,
+                        locationName: scope.location.name,
+                        locationAddress: scope.location.address,
+                        locationCity: scope.location.city,
+                        locationState: scope.location.state,
+                        locationZip: scope.location.zip,
+                        serviceType: scope.serviceType || existingTrade?.serviceType || 'Light Carpentry & Woodwork',
+                        serviceCategory: 'trades',
+                        frequency: (scope.frequency as any) || existingTrade?.frequency || 'one_time',
+                        clientRate: totalRate,
+                        taxRate,
+                        taxAmount: Math.round(totalRate * taxRate * 100) / 100,
+                        unitItems: unitItems,
+                        scopeTasks,
+                        lineItemStatus: 'pending' as const,
+                        addedBy: userId,
+                        addedByRole: (isFsm ? 'fsm' : 'sales') as 'sales' | 'fsm',
+                        isUpsell: false,
+                    };
+
+                    const nonTrade = prev.filter(li => li.id !== itemId && !li.unitItems && li.serviceCategory !== 'trades');
                     return [tradeItem, ...nonTrade];
                 });
+
+                setContractTenure(prev => (prev === undefined || prev === 12) ? 0 : prev);
+                setPaymentTerms(prev => (prev === 'Pay on the 25th' || !prev) ? 'Due Upon Completion & Sign-off' : prev);
             } else if (scope.rooms && scope.rooms.length > 0 && scope.results && scope.inputs) {
                 const scopeTasks = scope.rooms.flatMap(room =>
                     room.tasks.map((taskId: string) => {
@@ -514,17 +517,26 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     version: existingQuote.version || 1,
                     totalMonthlyRate: existingQuote.lineItems?.reduce((s, li) => s + (li.clientRate || 0), 0) || 0,
                     lineItems: stripUndefined(existingQuote.lineItems || []),
-                    changedBy: profile.uid || profile.email || 'unknown',
-                    changedAt: new Date(),
-                    notes: notes || '',
+                    contractTenure: existingQuote.contractTenure,
+                    paymentTerms: existingQuote.paymentTerms,
+                    exitClause: existingQuote.exitClause,
+                    notes: existingQuote.notes,
+                    updatedAt: new Date(),
                 };
 
                 await updateDoc(doc(db, 'quotes', existingQuote.quoteId), {
                     lineItems: stripUndefined(lineItems),
-                    totalMonthlyRate: totals.totalMonthly, oneTimeCharges: totals.totalOneTime,
-                    subtotalBeforeTax: totals.subtotalBeforeTax, totalTax: totals.totalTax,
-                    contractTenure, paymentTerms, exitClause, notes,
-                    version: newVersion, status: 'draft', updatedAt: serverTimestamp(),
+                    totalMonthlyRate: totals.totalMonthly,
+                    oneTimeCharges: totals.totalOneTime,
+                    subtotalBeforeTax: totals.subtotalBeforeTax,
+                    totalTax: totals.totalTax,
+                    contractTenure,
+                    paymentTerms,
+                    exitClause,
+                    notes,
+                    assignedTo: assignedTo || profile.uid || 'unassigned',
+                    version: newVersion,
+                    updatedAt: serverTimestamp(),
                 });
 
                 const quoteRef = doc(db, 'quotes', existingQuote.quoteId);
@@ -557,15 +569,16 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     } : {}),
                     // Proposal T&C (if edited)
                     ...(proposalTerms ? { proposalTerms } : {}),
-                    version: 1, revisionHistory: [], status: 'draft',
-                    createdBy: profile.uid || profile.email || 'unknown',
-                    assignedTo: assignedTo || profile.uid || profile.email || 'unknown',
+                    version: 1, status: 'draft',
+                    assignedTo: assignedTo || profile.uid || 'unassigned',
                     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
                 });
 
                 await addDoc(collection(db, 'activity_logs'), {
-                    type: 'QUOTE_CREATED', quoteId: docRef.id, leadId: selectedLead.id,
-                    totalRate: totals.totalMonthly, createdBy: profile.uid || profile.email || 'unknown',
+                    type: 'QUOTE_CREATED', quoteId: docRef.id,
+                    leadId: selectedLead.id, businessName: selectedLead.businessName,
+                    totalMonthlyRate: totals.totalMonthly,
+                    createdBy: profile.uid || profile.email || 'unknown',
                     createdAt: serverTimestamp(),
                 });
 
@@ -573,8 +586,8 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                 onCreated(docRef.id);
             }
         } catch (err) {
-            quoteLogger.quoteError('handleSubmit', err);
-            alert('Failed to save quote. Check console for details.');
+            console.error('Failed to save quote:', err);
+            alert('Failed to save quote. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -582,14 +595,16 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
 
     // ─── Render ────────────────────────────────────────────────────────
     return (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-            <div className="bg-background rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+        <Dialog open onOpenChange={() => onClose()}>
+            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b">
+                <div className="flex items-center justify-between px-6 py-4 border-b">
                     <div>
-                        <h2 className="text-xl font-bold">{isEditing ? 'Revise Quote' : 'New Quote'}</h2>
-                        <p className="text-sm text-muted-foreground">
-                            Step {step + 1} of {STEPS.length}: {STEPS[step]}
+                        <DialogTitle className="text-lg font-semibold">
+                            {isEditing ? `Edit Quote v${(existingQuote?.version || 1) + 1}` : 'Create New Quote'}
+                        </DialogTitle>
+                        <p className="text-xs text-muted-foreground">
+                            Step {step + 1} of {STEPS.length} — {STEPS[step]}
                         </p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={onClose}>
@@ -621,6 +636,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                         <StepBuildingScope
                             selectedLead={selectedLead}
                             initialData={initialData}
+                            existingScope={scope}
                             onScopeChange={setScope}
                         />
                     )}
