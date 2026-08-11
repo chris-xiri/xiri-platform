@@ -49,8 +49,13 @@ export const onDocumentUploaded = onDocumentUpdated({
             const wcVerified = ext.wcActive === true;
             const autoVerified = ext.autoActive === true;
 
+            // Determine compliance status & dispatch blocking
+            const isVerified = status === 'VERIFIED';
+            const dispatchBlocked = !isVerified;
+            const dispatchBlockReason = isVerified ? null : `Insurance non-compliant or flagged: ${result.reasoning}`;
+
             // Update the vendor document
-            await db.doc(`vendors/${vendorId}`).update({
+            const vendorUpdates: Record<string, any> = {
                 'compliance.acord25.status': status,
                 'compliance.acord25.verifiedAt': admin.firestore.FieldValue.serverTimestamp(),
                 'compliance.acord25.aiAnalysis': {
@@ -65,8 +70,20 @@ export const onDocumentUploaded = onDocumentUpdated({
                 'compliance.workersComp.verified': wcVerified,
                 'compliance.workersComp.hasInsurance': wcVerified,
                 'compliance.autoInsurance.verified': autoVerified,
+                // Flag & Block vendor in CRM if insurance is invalid / flagged
+                dispatchBlocked,
+                dispatchBlockReason,
+                canAcceptWork: isVerified,
                 updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
+            };
+
+            if (dispatchBlocked) {
+                vendorUpdates.status = 'suspended';
+            } else if (after.status === 'suspended' || after.status === 'compliance_review') {
+                vendorUpdates.status = 'active';
+            }
+
+            await db.doc(`vendors/${vendorId}`).update(vendorUpdates);
 
             // Log activity
             await db.collection('vendor_activities').add({

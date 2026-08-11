@@ -153,10 +153,27 @@ export default function CRMDetailPage(props: PageProps) {
 
     if (!vendor) return <div className="p-8">Vendor not found</div>;
 
+    const isDispatchBlocked = (vendor as any).dispatchBlocked || (vendor.compliance as any)?.acord25?.status === 'FLAGGED' || (vendor.compliance as any)?.acord25?.status === 'REJECTED';
+    const blockReason = (vendor as any).dispatchBlockReason || (vendor.compliance as any)?.acord25?.aiAnalysis?.reasoning;
+
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-background">
             {/* Header */}
             <div className="flex-shrink-0 px-6 py-4 border-b bg-card shadow-sm z-10">
+                {isDispatchBlocked && (
+                    <div className="mb-3 p-2.5 rounded-lg border border-red-300 bg-red-50 text-red-900 text-xs flex items-center justify-between shadow-xs">
+                        <div className="flex items-center gap-2">
+                            <span className="text-base">⛔</span>
+                            <div>
+                                <p className="font-bold uppercase tracking-wider text-[11px] text-red-700">DISPATCH BLOCKED — Cannot be assigned to jobs</p>
+                                <p className="text-xs text-red-800">{blockReason || 'Insurance is missing, expired, or non-compliant.'}</p>
+                            </div>
+                        </div>
+                        <Badge variant="destructive" className="text-[10px] px-2 py-0.5 font-bold">
+                            NON-COMPLIANT
+                        </Badge>
+                    </div>
+                )}
                 <div className="mb-2">
                     <Link href="/supply/crm" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
                         <ArrowLeft className="w-4 h-4 mr-1" /> Back to CRM
@@ -171,6 +188,11 @@ export default function CRMDetailPage(props: PageProps) {
                             <div className="flex items-center gap-2">
                                 <h1 className="text-2xl font-bold tracking-tight">{vendor.businessName}</h1>
                                 <LanguageBadge lang={vendor.preferredLanguage} />
+                                {isDispatchBlocked && (
+                                    <Badge variant="destructive" className="gap-1 text-xs py-0.5">
+                                        ⛔ Insurance Blocked
+                                    </Badge>
+                                )}
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                                 <select

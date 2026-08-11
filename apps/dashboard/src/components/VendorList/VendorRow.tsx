@@ -143,6 +143,11 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                     <Link href={detailLink} onClick={handleRowClick} className="block group cursor-pointer">
                         <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-1.5">
+                                {((vendor as any).dispatchBlocked || (vendor.compliance as any)?.acord25?.status === 'FLAGGED' || (vendor.compliance as any)?.acord25?.status === 'REJECTED') && (
+                                    <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 px-1 py-0 h-4 text-[9px] font-bold gap-0.5">
+                                        ⛔ Blocked
+                                    </Badge>
+                                )}
                                 {/* "New" badge for organic/SEO entries */}
                                 {((vendor.status || '').toLowerCase() === 'new_lead' ||
                                     ((vendor.status || 'pending_review').toLowerCase() === 'pending_review' && !vendor.outreachStatus)) && (

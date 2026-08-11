@@ -40,6 +40,9 @@ async function triggerReverification() {
             batch.update(doc.ref, {
                 'compliance.acord25.status': 'PENDING',
                 'compliance.acord25.retriggeredAt': admin.firestore.FieldValue.serverTimestamp(),
+                dispatchBlocked: true,
+                dispatchBlockReason: 'Insurance verification pending or non-compliant',
+                canAcceptWork: false,
                 updatedAt: admin.firestore.FieldValue.serverTimestamp()
             });
         }
