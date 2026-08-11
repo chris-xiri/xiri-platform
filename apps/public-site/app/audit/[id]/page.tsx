@@ -130,6 +130,12 @@ export default function AuditWizardPage() {
                         description: 'Mowing, edging, mulching, seasonal plantings',
                         frequency: 'Bi-weekly or monthly'
                     },
+                    {
+                        id: 'auto_detailing',
+                        label: 'Automobile Detailing',
+                        description: 'Fleet and individual vehicle detailing',
+                        frequency: 'On-Demand or Scheduled'
+                    },
                 ]
             },
             {

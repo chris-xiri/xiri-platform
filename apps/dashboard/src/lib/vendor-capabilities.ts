@@ -43,6 +43,7 @@ export const VENDOR_CAPABILITIES: CapabilityOption[] = [
   { value: 'elevator',             label: 'Elevator Maintenance',   group: 'specialty' },
   { value: 'fire_safety',          label: 'Fire Safety / Extinguishers', group: 'specialty' },
   { value: 'medical_cleaning',     label: 'Medical Facility Cleaning', group: 'specialty' },
+  { value: 'auto_detailing',       label: 'Automobile Detailing',   group: 'specialty' },
 ];
 
 /** Group labels for display */
@@ -129,6 +130,10 @@ const NORMALIZE_MAP: Record<string, string> = {
   'medical cleaning':       'medical_cleaning',
   'medical facility cleaning': 'medical_cleaning',
   'medical':                'medical_cleaning',
+  'auto detailing':         'auto_detailing',
+  'car detailing':          'auto_detailing',
+  'automobile detailing':   'auto_detailing',
+  'auto_detailing':         'auto_detailing',
 };
 
 /**

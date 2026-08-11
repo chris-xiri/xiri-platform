@@ -1,0 +1,68 @@
+{
+  "title": "Commercial Fleet & Dealership Detailing: The Complete Guide (2026)",
+  "heroTitle": "The Ultimate Guide to Commercial Auto Detailing",
+  "heroSubtitle": "A comprehensive framework for dealership showrooms, commercial fleets, and high-volume detailing operations. Learn about pricing, compliance, and standard operating procedures.",
+  "metaDescription": "Complete guide to commercial auto detailing for dealerships and fleets. Covers pricing benchmarks, OSHA/EPA compliance, and frequency schedules.",
+  "datePublished": "2026-07-13",
+  "dateModified": "2026-07-13",
+  "sections": [
+    {
+      "title": "What is Commercial Auto Detailing?",
+      "content": "**Commercial auto detailing** is a specialized cleaning service designed for businesses that operate vehicle fleets or automotive dealerships. Unlike consumer auto detailing which focuses on individual aesthetic perfection, commercial detailing prioritizes consistent brand presentation, high-throughput efficiency, and strict environmental compliance. Services typically include exterior fleet washing, interior deep cleaning, showroom inventory maintenance, and lease-return reconditioning."
+    },
+    {
+      "title": "Dealership Showroom & Lot Maintenance",
+      "content": "For automotive dealerships, the presentation of inventory directly impacts CSI (Customer Satisfaction Index) scores and perceived vehicle value.",
+      "items": [
+        "SHOWROOM INVENTORY: Daily wipe-down to remove dust and fingerprints. Weekly tire dressing and interior vacuuming. Monthly wax or sealant application.",
+        "FRONT-LINE LOT VEHICLES: Bi-weekly exterior wash. Water spot prevention using spot-free rinse systems or specialized drying agents.",
+        "SERVICE BAY LOANERS: Rapid-turnover interior sanitization between clients, exterior wash, and fluid top-off.",
+        "LEASE RETURNS & TRADE-INS: Full reconditioning including paint correction, interior extraction, and odor removal to maximize resale value."
+      ]
+    },
+    {
+      "title": "Commercial Fleet Detailing Frequencies",
+      "content": "Maintaining a commercial fleet requires a structured frequency to balance cost against brand presentation and vehicle preservation.",
+      "items": [
+        "EXECUTIVE / SALES VEHICLES: Weekly exterior wash, bi-weekly interior detail. High focus on presentation and interior cleanliness.",
+        "DELIVERY VANS & TRUCKS: Bi-weekly exterior wash to maintain branding visibility and prevent corrosive buildup (salt, road grime).",
+        "HEAVY EQUIPMENT / CONSTRUCTION: Monthly heavy-duty pressure washing and degreasing to prevent mechanical issues and maintain safety compliance.",
+        "POOL VEHICLES: Monthly full detail with focus on sanitization (steering wheel, shifters, door handles) to prevent cross-contamination between drivers."
+      ]
+    },
+    {
+      "title": "OSHA and EPA Compliance in Commercial Detailing",
+      "content": "Commercial detailing operations must adhere to strict environmental and safety regulations, particularly regarding water runoff and chemical handling.",
+      "items": [
+        "WATER RECOVERY (EPA): The Clean Water Act prohibits the discharge of wash water containing soaps, heavy metals, or petroleum products into storm drains. Commercial detailers must use water recovery mats, berms, and filtration systems or utilize dedicated wash bays tied to the sanitary sewer via an oil/water separator.",
+        "CHEMICAL HANDLING (OSHA): All cleaning chemicals must have corresponding Safety Data Sheets (SDS) readily available. Employees must be trained in the Hazard Communication Standard (HCS) and use appropriate PPE when handling acidic wheel cleaners or heavy degreasers.",
+        "VOC COMPLIANCE: Use of solvents and dressings must comply with state-specific Volatile Organic Compound (VOC) limits to protect air quality."
+      ]
+    }
+  ],
+  "calloutTitle": "Get a Custom Fleet or Dealership Detailing Plan",
+  "calloutContent": "XIRI provides verified, insured contractors for your commercial detailing needs. We manage the compliance, scheduling, and quality assurance so you can focus on your business.",
+  "relatedServices": [
+    "auto-detailing",
+    "commercial-cleaning",
+    "pressure-washing"
+  ],
+  "faqs": [
+    {
+      "question": "What is the average cost of commercial fleet detailing?",
+      "answer": "Commercial fleet detailing pricing depends on volume and vehicle size. Basic exterior fleet washing typically ranges from $15 to $35 per vehicle (cars/vans). Full reconditioning for trade-ins or lease returns ranges from $150 to $300+ per vehicle."
+    },
+    {
+      "question": "How do you handle water runoff for mobile fleet washing?",
+      "answer": "Compliant mobile fleet washing requires water containment. We use specialized berms and vacuum recovery systems to capture wash water, which is then filtered and properly disposed of in a sanitary sewer, adhering strictly to EPA regulations."
+    },
+    {
+      "question": "Do you offer dealership showroom detailing?",
+      "answer": "Yes. Showroom detailing focuses on maintaining a flawless finish under bright lights. This includes daily dust removal, high-gloss tire dressing, and periodic paint protection to ensure inventory looks its best."
+    },
+    {
+      "question": "Why is commercial detailing better than taking fleet vehicles to a car wash?",
+      "answer": "Commercial detailing provides consistency, accountability, and convenience. Mobile services come to your facility (saving employee time), offer detailed invoicing, and can handle specialized needs like biohazard cleanup, decal removal, or lease-return reconditioning that standard car washes cannot."
+    }
+  ]
+}

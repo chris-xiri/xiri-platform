@@ -82,12 +82,12 @@ function resolveGeminiModel(requestedModel) {
     return targetModel;
   }
   if (cleanedName.includes("flash")) {
-    return "gemini-3.5-flash";
+    return "gemini-2.5-flash";
   }
   if (cleanedName.includes("pro") || cleanedName.includes("ultra") || cleanedName.includes("preview")) {
-    return "gemini-3.5-pro";
+    return "gemini-2.5-pro";
   }
-  return "gemini-3.5-flash";
+  return "gemini-2.5-flash";
 }
 var logger2, MODEL_MAPPING;
 var init_gemini = __esm({
@@ -95,20 +95,22 @@ var init_gemini = __esm({
     "use strict";
     logger2 = __toESM(require("firebase-functions/logger"));
     MODEL_MAPPING = {
-      // Flash models map to gemini-3.5-flash
-      "gemini-1.0-flash": "gemini-3.5-flash",
-      "gemini-1.5-flash": "gemini-3.5-flash",
-      "gemini-2.0-flash": "gemini-3.5-flash",
-      "gemini-2.5-flash": "gemini-3.5-flash",
-      "gemini-3.0-flash": "gemini-3.5-flash",
-      // Pro/Ultra/Preview models map to gemini-3.5-pro
-      "gemini-1.0-pro": "gemini-3.5-pro",
-      "gemini-1.5-pro": "gemini-3.5-pro",
-      "gemini-2.0-pro": "gemini-3.5-pro",
-      "gemini-2.5-pro": "gemini-3.5-pro",
-      "gemini-3.0-pro": "gemini-3.5-pro",
-      "gemini-3.1-pro-preview": "gemini-3.5-pro",
-      "gemini-pro": "gemini-3.5-pro"
+      // Flash models map to gemini-2.5-flash
+      "gemini-1.0-flash": "gemini-2.5-flash",
+      "gemini-1.5-flash": "gemini-2.5-flash",
+      "gemini-2.5-flash": "gemini-2.5-flash",
+      "gemini-2.5-flash": "gemini-2.5-flash",
+      "gemini-3.0-flash": "gemini-2.5-flash",
+      "gemini-3.5-flash": "gemini-2.5-flash",
+      // Pro/Ultra/Preview models map to gemini-2.5-pro
+      "gemini-1.0-pro": "gemini-2.5-pro",
+      "gemini-1.5-pro": "gemini-2.5-pro",
+      "gemini-2.0-pro": "gemini-2.5-pro",
+      "gemini-2.5-pro": "gemini-2.5-pro",
+      "gemini-3.0-pro": "gemini-2.5-pro",
+      "gemini-3.5-pro": "gemini-2.5-pro",
+      "gemini-3.1-pro-preview": "gemini-2.5-pro",
+      "gemini-pro": "gemini-2.5-pro"
     };
   }
 });
@@ -39753,7 +39755,7 @@ async function generatePersonalizedEmail(templateId, variables) {
   try {
     const template = await getTemplate(templateId);
     if (!template) return null;
-    const model2 = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+    const model2 = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
     const FALLBACK = `You are a professional email writer for XIRI Facility Solutions.
 
 Take this email template and personalize it while maintaining the core message:
@@ -58859,7 +58861,7 @@ function mergeContactPages(pages) {
 async function extractWithAI(html, geminiApiKey) {
   try {
     const genAI4 = new import_generative_ai.GoogleGenerativeAI(geminiApiKey);
-    const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+    const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
     const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 15e3);
     const FALLBACK = `Extract business contact information AND the BEST local decision-maker for commercial cleaning / facilities vendor outreach from this website content.
 
@@ -60255,7 +60257,7 @@ function downloadFileAsBuffer(url) {
   });
 }
 async function verifyDocument(docType, vendorName, specialty) {
-  const model2 = genAI2.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+  const model2 = genAI2.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
   let simulatedOcrText = "";
   if (docType === "COI") {
     const today = /* @__PURE__ */ new Date();
@@ -60401,7 +60403,7 @@ function validateExtracted(extracted, vendorName, attestations, today) {
   return { valid, reasoning, flags };
 }
 async function verifyAcord25(fileUrl, vendorName, attestations) {
-  const model2 = genAI2.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+  const model2 = genAI2.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
   try {
     logger6.info(`Downloading ACORD 25 from: ${fileUrl}`);
     const buffer = await downloadFileAsBuffer(fileUrl);
@@ -64902,7 +64904,7 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
   });
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65537,7 +65539,7 @@ var onExperienceUpdated = (0, import_firestore20.onDocumentUpdated)({
   import_v25.logger.info(`[ExperienceSummary] ${vendorId} \u2014 generating AI summary (${newRaw.length} chars)`);
   try {
     const genAI4 = new import_generative_ai4.GoogleGenerativeAI(GEMINI_API_KEY3.value());
-    const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+    const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
     const prompt = SUMMARY_PROMPT.replace("{RAW_TEXT}", newRaw);
     const result = await model2.generateContent(prompt);
     const summary = result.response.text().trim();
@@ -66303,7 +66305,7 @@ async function generateSocialContent(channel = "facebook_posts") {
   const activeCampaignsSnap = await db.collection("social_campaigns").where("channel", "==", channel).where("status", "==", "active").get();
   const activeCampaigns = activeCampaignsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const genAI4 = new import_generative_ai5.GoogleGenerativeAI(API_KEY);
-  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
   const isReels = channel === "facebook_reels";
   let slotIndex = 0;
   for (const scheduledFor of toGenerate) {
@@ -67102,7 +67104,7 @@ function normalizeUrl(url) {
 }
 var API_KEY2 = process.env.GEMINI_API_KEY || "";
 var genAI3 = new import_generative_ai6.GoogleGenerativeAI(API_KEY2);
-var model = genAI3.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+var model = genAI3.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
 var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false, previewOnly = false) => {
   console.log("!!! RECRUITER AGENT UPDATED - V4 (Robust Dedup + Blacklist) !!!");
   let analyzed = 0;
@@ -68525,7 +68527,7 @@ var regeneratePostCaption = (0, import_https16.onCall)({
   const { GoogleGenerativeAI: GoogleGenerativeAI17 } = await import("@google/generative-ai");
   const API_KEY3 = process.env.GEMINI_API_KEY || "";
   const genAI4 = new GoogleGenerativeAI17(API_KEY3);
-  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
   const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 
 --- CURRENT POST ---
@@ -70319,7 +70321,7 @@ Respond in JSON format:
 }`;
 async function analyzeWithAI(spikes, currentMetrics, geminiApiKey) {
   const genAI4 = new import_generative_ai7.GoogleGenerativeAI(geminiApiKey);
-  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
   const pageContext = currentMetrics.topPages.slice(0, 8).map((p) => {
     const components = getComponentsForPage(p.url);
     return `  - ${p.url} (${p.sessions} sessions) \u2192 Components: [${components.join(", ") || "unknown"}]`;
@@ -70719,6 +70721,171 @@ var bookOnboardingCall = (0, import_https20.onRequest)({
     const vendorDoc = await vendorRef.get();
     if (!vendorDoc.exists) {
       res.status(404).json({ error: "Vendor not found" });
+      return;
+    }
+    const vendorData = vendorDoc.data() || {};
+    const vState = (vendorData.state || "").trim().toUpperCase();
+    const vCity = (vendorData.city || "").trim().toLowerCase();
+    const ALLOWED_AREAS = [
+      "nassau",
+      "suffolk",
+      "queens",
+      "brooklyn",
+      "kings",
+      "bronx",
+      "manhattan",
+      "new york",
+      "garden city",
+      "mineola",
+      "hicksville",
+      "levittown",
+      "freeport",
+      "hempstead",
+      "westbury",
+      "great neck",
+      "manhasset",
+      "floral park",
+      "massapequa",
+      "rockville centre",
+      "long beach",
+      "valley stream",
+      "port washington",
+      "syosset",
+      "glen cove",
+      "farmingdale",
+      "merrick",
+      "bellmore",
+      "wantagh",
+      "plainview",
+      "bethpage",
+      "oceanside",
+      "east meadow",
+      "franklin square",
+      "lynbrook",
+      "new hyde park",
+      "jericho",
+      "carle place",
+      "woodbury",
+      "woodmere",
+      "inwood",
+      "north woodmere",
+      "lido beach",
+      "old westbury",
+      "old bethpage",
+      "oyster bay",
+      "sea cliff",
+      "seaford",
+      "uniondale",
+      "west hempstead",
+      "williston park",
+      "roslyn",
+      "roslyn heights",
+      "massapequa park",
+      "malverne",
+      "roosevelt",
+      "point lookout",
+      "huntington",
+      "babylon",
+      "bay shore",
+      "islip",
+      "brentwood",
+      "smithtown",
+      "commack",
+      "hauppauge",
+      "patchogue",
+      "ronkonkoma",
+      "lake grove",
+      "riverhead",
+      "deer park",
+      "lindenhurst",
+      "west islip",
+      "centereach",
+      "bohemia",
+      "holbrook",
+      "medford",
+      "sayville",
+      "east northport",
+      "kings park",
+      "port jefferson",
+      "stony brook",
+      "coram",
+      "selden",
+      "east hampton",
+      "southampton",
+      "sag harbor",
+      "hampton bays",
+      "westhampton",
+      "mattituck",
+      "cutchogue",
+      "greenport",
+      "montauk",
+      "flushing",
+      "jamaica",
+      "astoria",
+      "long island city",
+      "forest hills",
+      "bayside",
+      "jackson heights",
+      "rego park",
+      "elmhurst",
+      "ridgewood",
+      "fresh meadows",
+      "whitestone",
+      "college point",
+      "woodside",
+      "kew gardens",
+      "howard beach",
+      "ozone park",
+      "richmond hill",
+      "maspeth",
+      "glendale",
+      "far rockaway",
+      "arverne",
+      "breezy point",
+      "williamsburg",
+      "bushwick",
+      "greenpoint",
+      "dumbo",
+      "brooklyn heights",
+      "crown heights",
+      "flatbush",
+      "bay ridge",
+      "sunset park",
+      "park slope",
+      "bed stuy",
+      "bedford stuyvesant",
+      "canarsie",
+      "bensonhurst",
+      "coney island",
+      "sheepshead bay",
+      "marine park",
+      "riverdale",
+      "mott haven",
+      "pelham bay",
+      "throggs neck",
+      "fordham",
+      "city island",
+      "morris park",
+      "kingsbridge",
+      "belmont",
+      "coop city",
+      "harlem",
+      "soho",
+      "tribeca",
+      "chelsea",
+      "midtown",
+      "upper east side",
+      "upper west side",
+      "washington heights",
+      "financial district",
+      "fidi",
+      "east village",
+      "west village"
+    ];
+    const isNY = vState === "NY" || vState === "NEW YORK";
+    const isAllowedLocation = isNY && (ALLOWED_AREAS.some((a2) => vCity.includes(a2) || a2.includes(vCity)) || !vCity);
+    if (!isAllowedLocation) {
+      res.status(400).json({ error: "Subcontractor call scheduling is restricted to Nassau, Suffolk, Queens, Brooklyn, Bronx, and Manhattan." });
       return;
     }
     const booking = await createBooking(
@@ -71233,7 +71400,7 @@ function shouldEscalateToLlm(scores, heuristic) {
 }
 async function classifyWithGemini(text, businessName, searchQuery, geminiApiKey) {
   const genAI4 = new import_generative_ai8.GoogleGenerativeAI(geminiApiKey);
-  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
   const prompt = `Classify this business into one canonical facility type for commercial cleaning outreach.
 
 Allowed facility types only:
@@ -73592,7 +73759,7 @@ function extractFromPatterns2($, html) {
 async function extractWithAI2(pageText, geminiApiKey) {
   try {
     const genAI4 = new import_generative_ai10.GoogleGenerativeAI(geminiApiKey);
-    const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+    const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
     const truncated = pageText.substring(0, 12e3);
     const FALLBACK = `You are extracting business information from a Facebook business page.
 This is a contractor/service business. Extract all available contact and qualification information.
@@ -74878,7 +75045,7 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
 var import_https27 = require("firebase-functions/v2/https");
 var import_generative_ai13 = require("@google/generative-ai");
 init_gemini();
-var AI_MODELS = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+var AI_MODELS = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
 function delay(ms) {
   return new Promise((resolve2) => setTimeout(resolve2, ms));
 }
@@ -75222,7 +75389,7 @@ ${prompt}
   const modelsToTry = [
     "gemini-3.5-flash",
     "gemini-2.5-flash",
-    "gemini-2.0-flash"
+    "gemini-2.5-flash"
   ];
   for (const modelName of modelsToTry) {
     try {
@@ -76496,7 +76663,7 @@ async function generateCopySuggestion(nudge, segment, winningPatterns = [], topP
     return `[GEMINI_API_KEY not configured \u2014 manual suggestion needed for ${nudge.targetField}]`;
   }
   const genAI4 = new import_generative_ai16.GoogleGenerativeAI(apiKey);
-  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+  const model2 = genAI4.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
   const audienceContext = segment === "leads" ? "facility managers, office managers, and property managers evaluating commercial cleaning partners. They are B2B decision-makers who prioritize compliance documentation, verified quality, and operational reliability over price." : "independent janitorial contractors and cleaning company owners seeking commercial cleaning contracts and subcontracting opportunities in the Long Island/NYC market.";
   const trustContext = nudge.dataPoints.trustSignal ? `
 TRUST SIGNAL: ${nudge.dataPoints.trustSignal} \u2014 weave this verified operational data naturally into the copy as social proof.` : "";

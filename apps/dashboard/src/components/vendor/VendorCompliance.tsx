@@ -1,24 +1,29 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Vendor } from '@xiri-facility-solutions/shared';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import {
     ShieldCheck, ShieldAlert, CheckCircle2, XCircle,
     Building2, Shield, Users, Car, Droplet, FileText, AlertTriangle,
-    Download, ExternalLink
+    Download, ExternalLink, Upload, Loader2, History, Plus
 } from 'lucide-react';
+import { db, storage } from '@/lib/firebase';
+import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 interface VendorComplianceProps {
     vendor: Vendor;
 }
 
-// ... imports ...
-
 export default function VendorCompliance({ vendor }: VendorComplianceProps) {
     const compliance = vendor.compliance;
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadMessage, setUploadMessage] = useState<string | null>(null);
 
     if (!compliance) {
         return (
@@ -30,6 +35,68 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
             </Alert>
         );
     }
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !vendor.id) return;
+
+        setUploading(true);
+        setUploadProgress(0);
+        setUploadMessage("Uploading document to storage...");
+
+        try {
+            const storagePath = `acord25/${vendor.id}/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, storagePath);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setUploadProgress(Math.round(progress));
+                },
+                (error) => {
+                    console.error('Upload error:', error);
+                    setUploadMessage(`Upload failed: ${error.message}`);
+                    setUploading(false);
+                },
+                async () => {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    setUploadMessage("Triggering AI Document Verification...");
+
+                    const docRecord = {
+                        id: `doc_${Date.now()}`,
+                        fileName: file.name,
+                        url: downloadURL,
+                        uploadedAt: new Date().toISOString(),
+                        status: 'PENDING'
+                    };
+
+                    // Update primary acord25 trigger AND document history array
+                    const vendorRef = doc(db, "vendors", vendor.id);
+                    await updateDoc(vendorRef, {
+                        'compliance.acord25': {
+                            status: 'PENDING',
+                            url: downloadURL,
+                            uploadedAt: serverTimestamp(),
+                            fileName: file.name
+                        },
+                        'compliance.documentsHistory': arrayUnion(docRecord),
+                        updatedAt: serverTimestamp()
+                    });
+
+                    setUploadMessage("✅ Document uploaded & queued for AI Verification!");
+                    setTimeout(() => {
+                        setUploading(false);
+                        setUploadMessage(null);
+                    }, 3000);
+                }
+            );
+        } catch (err: any) {
+            console.error(err);
+            setUploadMessage(`Error: ${err.message}`);
+            setUploading(false);
+        }
+    };
 
     // Calculate compliance score
     const requirements = [
@@ -49,10 +116,8 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
 
     const getInsuranceStatus = (coverageField: any, acordActive: boolean | undefined) => {
         if (hasAcordAnalysis && acordActive !== undefined) {
-            // AI extraction is the source of truth
             return { value: acordActive, verified: true, notFound: !acordActive };
         }
-        // No ACORD analysis yet — use self-attestation
         return { value: coverageField?.hasInsurance, verified: coverageField?.verified, notFound: false };
     };
 
@@ -91,10 +156,50 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
     );
 
     const acord25 = compliance.acord25 as any;
+    const documentsHistory = (compliance as any).documentsHistory || [];
 
     return (
         <div className="space-y-4">
-            {/* ACORD 25 Document */}
+            {/* Header / Actions & Score */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-muted/30 p-3 rounded-lg border gap-3">
+                <div>
+                    <h3 className="font-semibold text-sm">Compliance Score</h3>
+                    <p className="text-xs text-muted-foreground">{metRequirements}/{totalRequirements} Requirements Met</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <span className={`text-xl font-bold ${complianceScore === 100 ? 'text-green-600' : 'text-yellow-600'}`}>
+                        {complianceScore}%
+                    </span>
+                    <Badge variant={complianceScore === 100 ? "default" : "outline"}>
+                        {complianceScore === 100 ? "Compliant" : "Review"}
+                    </Badge>
+
+                    <label className="cursor-pointer">
+                        <input
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            disabled={uploading}
+                        />
+                        <Button size="sm" variant="default" className="gap-1.5 text-xs h-8" disabled={uploading} asChild>
+                            <span>
+                                {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                                Upload Insurance Doc
+                            </span>
+                        </Button>
+                    </label>
+                </div>
+            </div>
+
+            {uploadMessage && (
+                <div className="p-2.5 rounded-lg border bg-blue-50 text-blue-800 text-xs flex items-center justify-between">
+                    <span className="font-medium">{uploadMessage}</span>
+                    {uploading && <span className="font-bold">{uploadProgress}%</span>}
+                </div>
+            )}
+
+            {/* Active ACORD 25 Document Status */}
             {(acord25?.url || acord25?.status || acord25?.extractedData) && (
                 <div className="p-3 rounded-lg border bg-card">
                     <div className="flex items-center justify-between">
@@ -103,7 +208,7 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
                                 {acord25.status === 'FLAGGED' ? <AlertTriangle className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
                             </div>
                             <div>
-                                <p className="text-sm font-medium">ACORD 25 — Certificate of Insurance</p>
+                                <p className="text-sm font-medium">ACORD 25 — Active Certificate of Insurance</p>
                                 {acord25.extractedData?.insuredName && (
                                     <p className="text-xs text-muted-foreground">{acord25.extractedData.insuredName}</p>
                                 )}
@@ -147,21 +252,44 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
                 </div>
             )}
 
-            {/* Header / Score */}
-            <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg border">
-                <div>
-                    <h3 className="font-semibold text-sm">Compliance Score</h3>
-                    <p className="text-xs text-muted-foreground">{metRequirements}/{totalRequirements} Requirements Met</p>
+            {/* Document History Array */}
+            {documentsHistory.length > 0 && (
+                <div className="p-3 rounded-lg border bg-card space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <History className="w-3.5 h-3.5" />
+                        Insurance Document Upload History ({documentsHistory.length})
+                    </div>
+                    <div className="space-y-1.5">
+                        {documentsHistory.slice().reverse().map((docItem: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between p-2 rounded border bg-muted/20 text-xs">
+                                <div className="flex items-center gap-2">
+                                    <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                                    <div>
+                                        <p className="font-medium text-foreground">{docItem.fileName || `Insurance Doc #${documentsHistory.length - idx}`}</p>
+                                        <p className="text-[10px] text-muted-foreground">
+                                            Uploaded: {docItem.uploadedAt ? new Date(docItem.uploadedAt).toLocaleDateString() : 'N/A'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-[10px]">
+                                        {docItem.status || 'PROCESSED'}
+                                    </Badge>
+                                    <a
+                                        href={docItem.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline flex items-center gap-1 font-medium"
+                                    >
+                                        <ExternalLink className="w-3 h-3" />
+                                        PDF
+                                    </a>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className={`text-xl font-bold ${complianceScore === 100 ? 'text-green-600' : 'text-yellow-600'}`}>
-                        {complianceScore}%
-                    </span>
-                    <Badge variant={complianceScore === 100 ? "default" : "outline"}>
-                        {complianceScore === 100 ? "Compliant" : "Review"}
-                    </Badge>
-                </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Column 1: Core Legal */}
@@ -182,7 +310,7 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
 
                 {/* Column 2: Insurance */}
                 <div className="space-y-2">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Insurance</h4>
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Insurance Coverage</h4>
                     <CompactItem
                         icon={Shield}
                         label="General Liability"
@@ -220,3 +348,4 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
         </div>
     );
 }
+
