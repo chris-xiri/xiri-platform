@@ -347,19 +347,40 @@ export default function StepServicesAndPricing({
                                                         </div>
                                                     </div>
                                                 )}
-                                                {/* Tax info */}
-                                                {item.locationZip && item.taxRate && !item.taxExempt && (
-                                                    <div className="col-span-12">
-                                                        <p className="text-xs text-muted-foreground">
-                                                            📍 ZIP {item.locationZip} — Tax: {(item.taxRate * 100).toFixed(3)}% = {formatCurrency(item.taxAmount || 0)}/mo
-                                                        </p>
+                                                {/* Sales Tax Selection & Calculation */}
+                                                <div className="col-span-12 flex items-center justify-between text-xs bg-muted/20 p-2 rounded-md border mt-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <Label className="text-xs text-muted-foreground">Sales Tax Jurisdiction:</Label>
+                                                        <select
+                                                            className="h-7 text-xs rounded border border-input bg-background px-2"
+                                                            value={item.taxExempt ? '0' : (item.taxRate?.toString() || '0.08625')}
+                                                            onChange={(e) => {
+                                                                const val = parseFloat(e.target.value);
+                                                                if (val === 0) {
+                                                                    onUpdateLineItem(item.id, { taxExempt: true, taxRate: 0, taxAmount: 0 });
+                                                                } else {
+                                                                    const taxAmt = Math.round((item.clientRate || 0) * val * 100) / 100;
+                                                                    onUpdateLineItem(item.id, { taxExempt: false, taxRate: val, taxAmount: taxAmt });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="0.08625">Nassau County, NY (8.625%) — Default</option>
+                                                            <option value="0.08875">NYC, NY (8.875%)</option>
+                                                            <option value="0.08375">Westchester County, NY (8.375%)</option>
+                                                            <option value="0">Tax Exempt / Resale (0%)</option>
+                                                        </select>
                                                     </div>
-                                                )}
-                                                {item.taxExempt && (
-                                                    <div className="col-span-12">
-                                                        <p className="text-xs text-green-600">✓ Tax exempt{item.taxExemptReason ? ` (${item.taxExemptReason})` : ''}</p>
+                                                    <div className="text-right">
+                                                        {item.taxExempt ? (
+                                                            <span className="text-green-600 font-medium">✓ Tax Exempt ($0.00)</span>
+                                                        ) : (
+                                                            <span>
+                                                                Tax ({((item.taxRate || 0.08625) * 100).toFixed(3)}%): <strong>{formatCurrency(item.taxAmount || Math.round((item.clientRate || 0) * (item.taxRate || 0.08625) * 100) / 100)}</strong>
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                )}
+                                                </div>
+
                                                 <div className="col-span-2 flex justify-end">
                                                     <Button variant="ghost" size="icon" onClick={() => {
                                                         onRemoveLineItem(item.id);

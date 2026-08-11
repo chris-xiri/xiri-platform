@@ -133,16 +133,29 @@ export default function StepTermsAndSubmit({
 
                     <Separator />
 
+                    <div className="space-y-1 pt-1 text-xs">
+                        <div className="flex justify-between text-muted-foreground">
+                            <span>Subtotal</span>
+                            <span>{formatCurrency(totals.subtotalBeforeTax)}</span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground">
+                            <span>Nassau County Sales Tax (8.625%)</span>
+                            <span>{formatCurrency(totals.totalTax > 0 ? totals.totalTax : Math.round(totals.subtotalBeforeTax * 0.08625 * 100) / 100)}</span>
+                        </div>
+                    </div>
+
+                    <Separator />
+
                     {totals.recurringItems.length > 0 && (
                         <div className="flex justify-between">
-                            <span className="font-medium">Monthly Recurring (incl. tax)</span>
-                            <span className="text-xl font-bold text-primary">{formatCurrency(totals.totalMonthly)}/mo</span>
+                            <span className="font-medium">Monthly Recurring Total (incl. tax)</span>
+                            <span className="text-xl font-bold text-primary">{formatCurrency(totals.totalMonthly > 0 ? totals.totalMonthly : totals.recurringSubtotal * 1.08625)}/mo</span>
                         </div>
                     )}
                     {totals.oneTimeItems.length > 0 && (
                         <div className="flex justify-between">
-                            <span className="font-medium">One-Time Charges (incl. tax)</span>
-                            <span className="text-xl font-bold text-amber-600">{formatCurrency(totals.totalOneTime)}</span>
+                            <span className="font-medium font-semibold">Total Invoice Amount (incl. tax)</span>
+                            <span className="text-xl font-bold text-amber-600">{formatCurrency(totals.totalOneTime > 0 ? totals.totalOneTime : totals.oneTimeSubtotal * 1.08625)}</span>
                         </div>
                     )}
                 </CardContent>
@@ -157,30 +170,44 @@ export default function StepTermsAndSubmit({
                         value={contractTenure}
                         onChange={(e) => onContractTenureChange(Number(e.target.value))}
                     >
+                        <option value={0}>No Contract / One-Time Project</option>
+                        <option value={1}>1 Month (Month-to-Month)</option>
+                        <option value={3}>3 Months</option>
                         <option value={6}>6 Months</option>
-                        <option value={12}>12 Months</option>
+                        <option value={12}>12 Months (Standard)</option>
                         <option value={18}>18 Months</option>
                         <option value={24}>24 Months</option>
                         <option value={36}>36 Months</option>
                     </select>
                 </div>
                 <div>
-                    <Label>Payment Due Day</Label>
+                    <Label>Payment Terms</Label>
                     <select
                         className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm mt-1"
                         value={paymentTerms}
                         onChange={(e) => onPaymentTermsChange(e.target.value)}
                     >
-                        <option value="Pay on the 1st">Pay on the 1st</option>
-                        <option value="Pay on the 5th">Pay on the 5th</option>
-                        <option value="Pay on the 10th">Pay on the 10th</option>
-                        <option value="Pay on the 15th">Pay on the 15th</option>
-                        <option value="Pay on the 20th">Pay on the 20th</option>
-                        <option value="Pay on the 25th">Pay on the 25th</option>
-                        <option value="Pay on the last day">Pay on the last day</option>
+                        <optgroup label="Trade & Project Terms">
+                            <option value="Due Upon Completion & Sign-off">Due Upon Completion & Sign-off</option>
+                            <option value="Net 15 Upon Completion">Net 15 Upon Completion & Sign-off</option>
+                            <option value="Net 30 Upon Successful Completion">Net 30 Upon Successful Completion</option>
+                            <option value="50% Deposit / 50% Upon Completion">50% Deposit / 50% Upon Completion</option>
+                            <option value="Due Upon Receipt (Net 0)">Due Upon Receipt (Net 0)</option>
+                            <option value="Net 15">Net 15</option>
+                            <option value="Net 30">Net 30</option>
+                        </optgroup>
+                        <optgroup label="Recurring Monthly Terms">
+                            <option value="Pay on the 1st">Pay on the 1st of Month</option>
+                            <option value="Pay on the 5th">Pay on the 5th of Month</option>
+                            <option value="Pay on the 10th">Pay on the 10th of Month</option>
+                            <option value="Pay on the 15th">Pay on the 15th of Month</option>
+                            <option value="Pay on the 20th">Pay on the 20th of Month</option>
+                            <option value="Pay on the 25th">Pay on the 25th of Month</option>
+                            <option value="Pay on the last day">Pay on the last day of Month</option>
+                        </optgroup>
                     </select>
                     <p className="text-[10px] text-muted-foreground mt-1">
-                        Invoice issued on the 1st of each month, or at service start (pro-rated).
+                        Invoice issued per agreed terms (e.g. upon completion sign-off or recurring monthly billing date).
                     </p>
                 </div>
             </div>

@@ -409,6 +409,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     isCustom: true,
                 }));
 
+                const NASSAU_TAX_RATE = 0.08625; // 8.625% Nassau County Tax
                 const tradeItem: QuoteLineItem = {
                     id: `li_${Date.now()}_trade`,
                     locationId: scope.location.id,
@@ -421,6 +422,8 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     serviceCategory: 'trades',
                     frequency: (scope.frequency as any) || 'one_time',
                     clientRate: totalRate,
+                    taxRate: NASSAU_TAX_RATE,
+                    taxAmount: Math.round(totalRate * NASSAU_TAX_RATE * 100) / 100,
                     unitItems: unitItems,
                     scopeTasks,
                     lineItemStatus: 'pending' as const,
@@ -428,6 +431,9 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     addedByRole: (isFsm ? 'fsm' : 'sales') as 'sales' | 'fsm',
                     isUpsell: false,
                 };
+
+                setContractTenure(0); // No Contract / One-Time Project
+                setPaymentTerms('Due Upon Completion & Sign-off');
 
                 setLineItems(prev => {
                     const nonTrade = prev.filter(li => !li.unitItems && li.serviceCategory !== 'trades');
@@ -451,6 +457,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     return true;
                 });
 
+                const NASSAU_TAX_RATE = 0.08625; // 8.625% Nassau County Tax
                 const janItem: QuoteLineItem = {
                     id: `li_${Date.now()}_jan`,
                     locationId: scope.location.id,
@@ -464,6 +471,8 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     frequency: 'custom_days',
                     daysOfWeek: Array(7).fill(false).map((_, i) => i > 0 && i < 6) as boolean[],
                     clientRate: scope.results.totalPricePerMonth,
+                    taxRate: NASSAU_TAX_RATE,
+                    taxAmount: Math.round(scope.results.totalPricePerMonth * NASSAU_TAX_RATE * 100) / 100,
                     sqft: scope.inputs.sqft,
                     scopeTasks: uniqueTasks,
                     rooms: scope.rooms,
