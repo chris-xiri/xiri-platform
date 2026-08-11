@@ -59,7 +59,7 @@ function shouldEscalateToLlm(scores: Array<{ facilityType: FacilityType; score: 
 
 async function classifyWithGemini(text: string, businessName: string, searchQuery: string, geminiApiKey: string): Promise<FacilityType | undefined> {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.0-flash') });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.5-flash') });
 
     const prompt = `Classify this business into one canonical facility type for commercial cleaning outreach.
 

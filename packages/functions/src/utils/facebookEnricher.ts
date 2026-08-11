@@ -331,7 +331,7 @@ async function extractWithAI(
 ): Promise<Partial<FacebookPageData>> {
     try {
         const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.0-flash') });
+        const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.5-flash') });
 
         // Limit input to save tokens
         const truncated = pageText.substring(0, 12_000);

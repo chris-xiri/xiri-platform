@@ -202,7 +202,7 @@ export async function analyzeWithAI(
     geminiApiKey: string
 ): Promise<AIAnalysisResult> {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
 
     // Build context about pages with friction
     const pageContext = currentMetrics.topPages

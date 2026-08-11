@@ -27,7 +27,7 @@ interface AskAIRequest {
 
 // Request/response callable path prefers non-live models.
 // Use 3.5 Flash first, then fall back to older/other flash variants.
-const AI_MODELS = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"] as const;
+const AI_MODELS = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-flash", "gemini-1.5-flash"] as const;
 
 function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));

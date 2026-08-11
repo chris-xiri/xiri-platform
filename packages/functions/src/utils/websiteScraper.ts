@@ -430,7 +430,7 @@ function mergeContactPages(pages: Partial<ScrapedData>[]): Partial<ScrapedData> 
 async function extractWithAI(html: string, geminiApiKey: string): Promise<Partial<ScrapedData>> {
     try {
         const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.0-flash') });
+        const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.5-flash') });
 
         // Strip HTML to plain text and limit size
         const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').substring(0, 15000);

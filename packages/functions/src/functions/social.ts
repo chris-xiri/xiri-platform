@@ -408,7 +408,7 @@ export const regeneratePostCaption = onCall({
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
     const API_KEY = process.env.GEMINI_API_KEY || "";
     const genAI = new GoogleGenerativeAI(API_KEY);
-    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
 
     const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 

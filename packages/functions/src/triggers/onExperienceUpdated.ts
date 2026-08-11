@@ -59,7 +59,7 @@ export const onExperienceUpdated = onDocumentUpdated({
 
     try {
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY.value());
-        const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.0-flash') });
+        const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.5-flash') });
 
         const prompt = SUMMARY_PROMPT.replace('{RAW_TEXT}', newRaw);
         const result = await model.generateContent(prompt);

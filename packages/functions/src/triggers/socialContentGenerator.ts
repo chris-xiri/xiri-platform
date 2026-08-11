@@ -386,7 +386,7 @@ export async function generateSocialContent(channel: string = "facebook_posts"):
 
     // 6. Generate content for each missing slot
     const genAI = new GoogleGenerativeAI(API_KEY);
-    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+    const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
     const isReels = channel === "facebook_reels";
 
     let slotIndex = 0;

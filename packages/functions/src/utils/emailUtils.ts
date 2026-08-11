@@ -75,7 +75,7 @@ export async function generatePersonalizedEmail(
         const template = await getTemplate(templateId);
         if (!template) return null;
 
-        const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.0-flash") });
+        const model = genAI.getGenerativeModel({ model: resolveGeminiModel("gemini-2.5-flash") });
 
         const FALLBACK = `You are a professional email writer for XIRI Facility Solutions.
 
