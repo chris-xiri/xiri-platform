@@ -302,9 +302,15 @@ export default function StepServicesAndPricing({
                                                                 {item.unitItems.map((u: any, uIdx: number) => (
                                                                     <div key={u.id || uIdx} className="flex items-center justify-between text-xs text-muted-foreground">
                                                                         <span>• {u.description}</span>
-                                                                        <span className="font-mono text-foreground">
-                                                                            {u.quantity} {u.unit} × ${u.unitPrice.toFixed(2)} = <strong>${u.subtotal.toFixed(2)}</strong>
-                                                                        </span>
+                                                                        {u.quantity === 0 ? (
+                                                                            <span className="font-mono text-amber-700 dark:text-amber-300 font-medium">
+                                                                                0 {u.unit} @ ${u.unitPrice.toFixed(2)}/{u.unit} (Rate locked · Billed after completion)
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="font-mono text-foreground">
+                                                                                {u.quantity} {u.unit} × ${u.unitPrice.toFixed(2)} = <strong>${u.subtotal.toFixed(2)}</strong>
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                 ))}
                                                             </div>

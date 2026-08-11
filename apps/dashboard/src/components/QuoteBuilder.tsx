@@ -497,7 +497,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
     const canAdvance = () => {
         if (step === 0) return (selectedLead !== null && !existingQuoteId) || isEditing;
         if (step === 1) return true; // Optional for non-janitorial / trades / custom quotes
-        if (step === 2) return lineItems.length > 0 && lineItems.every(li => li.serviceType && li.clientRate > 0);
+        if (step === 2) return lineItems.length > 0 && lineItems.every(li => !!li.serviceType && (li.clientRate >= 0 || (li.unitItems && li.unitItems.length > 0)));
         return true;
     };
 

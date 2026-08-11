@@ -68,6 +68,7 @@ const UNIT_PRESETS = [
     { label: '+ Carpenter Labor (hrs)', description: 'Skilled Carpenter Labor', unit: 'hours', defaultQty: 4, defaultPrice: 85.00 },
     { label: '+ Materials (flat)', description: 'Lumber & Hardware Supplies', unit: 'flat', defaultQty: 1, defaultPrice: 250.00 },
     { label: '+ Drywall Patch (sqft)', description: 'Drywall Repair & Patching', unit: 'sqft', defaultQty: 25, defaultPrice: 6.00 },
+    { label: '+ Rate Only (0 Qty - Billed After)', description: 'Additional Carpentry / Repairs (Billed Upon Completion)', unit: 'linear_ft', defaultQty: 0, defaultPrice: 8.50 },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -701,7 +702,12 @@ export default function StepBuildingScope({
                                                 />
                                             </div>
                                             <div className="col-span-2 flex items-center justify-end gap-2">
-                                                <span className="font-semibold text-xs">{fmtCurrency(u.subtotal || 0)}</span>
+                                                <div className="text-right">
+                                                    <span className="font-semibold text-xs">{fmtCurrency(u.subtotal || 0)}</span>
+                                                    {u.quantity === 0 && (
+                                                        <span className="block text-[9px] text-amber-600 font-medium">Billed after completion</span>
+                                                    )}
+                                                </div>
                                                 <button
                                                     type="button"
                                                     className="text-destructive/60 hover:text-destructive p-1 rounded hover:bg-destructive/10"
