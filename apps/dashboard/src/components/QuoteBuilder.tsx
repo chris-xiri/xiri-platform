@@ -65,34 +65,57 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
     useEffect(() => {
         async function fetchLeads() {
             try {
-                const [companiesSnap, contactsSnap, leadsSnap] = await Promise.all([
+                const [
+                    companiesResult,
+                    crmCompaniesResult,
+                    leadsResult,
+                    contactsResult,
+                    crmContactsResult,
+                ] = await Promise.allSettled([
                     getDocs(collection(db, 'companies')),
-                    getDocs(collection(db, 'contacts')),
+                    getDocs(collection(db, 'crm_company_rows')),
                     getDocs(collection(db, 'leads')),
+                    getDocs(collection(db, 'contacts')),
+                    getDocs(collection(db, 'crm_contact_rows')),
                 ]);
 
-                // Index contacts by companyId for primary or matching contact info
+                const getDocsSafe = (res: PromiseSettledResult<any>) =>
+                    res.status === 'fulfilled' ? res.value.docs : [];
+
+                const companiesDocs = getDocsSafe(companiesResult);
+                const crmCompaniesDocs = getDocsSafe(crmCompaniesResult);
+                const leadsDocs = getDocsSafe(leadsResult);
+                const contactsDocs = getDocsSafe(contactsResult);
+                const crmContactsDocs = getDocsSafe(crmContactsResult);
+
+                const companyMap = new Map<string, Lead & { id: string }>();
+
+                // Index contacts by companyId for contact info lookup
                 const contactsByCompany = new Map<string, { contactName: string; contactPhone: string; email: string }>();
-                contactsSnap.docs.forEach(d => {
+                [...contactsDocs, ...crmContactsDocs].forEach(d => {
                     const c = d.data();
-                    if (!c.companyId) return;
-                    const name = [c.firstName, c.lastName].filter(Boolean).join(' ');
-                    const existing = contactsByCompany.get(c.companyId);
+                    const companyId = c.companyId;
+                    if (!companyId) return;
+                    const name = [c.firstName || c.contactName, c.lastName].filter(Boolean).join(' ') || c.contactName || c.name || '';
+                    const existing = contactsByCompany.get(companyId);
                     if (!existing || c.isPrimary) {
-                        contactsByCompany.set(c.companyId, {
+                        contactsByCompany.set(companyId, {
                             contactName: name,
-                            contactPhone: c.phone || '',
+                            contactPhone: c.phone || c.contactPhone || '',
                             email: c.email || '',
                         });
                     }
                 });
 
-                const companyList: (Lead & { id: string })[] = companiesSnap.docs.map(d => {
+                // 1. Process 'companies' collection docs
+                companiesDocs.forEach(d => {
                     const data = d.data();
                     const contactInfo = contactsByCompany.get(d.id);
-                    return {
+                    const name = data.businessName || data.name || data.companyName;
+                    if (!name) return;
+                    companyMap.set(d.id, {
                         id: d.id,
-                        businessName: data.businessName || 'Unnamed Company',
+                        businessName: name,
                         facilityType: data.facilityType || 'office_general',
                         contactName: contactInfo?.contactName || data.contactName || '',
                         contactPhone: contactInfo?.contactPhone || data.phone || '',
@@ -106,19 +129,89 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                         status: data.status || 'new',
                         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
                         attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
-                    } as Lead & { id: string };
+                    } as Lead & { id: string });
                 });
 
-                const companyIds = new Set(companyList.map(c => c.id));
-
-                const legacyList: (Lead & { id: string })[] = [];
-                leadsSnap.docs.forEach(d => {
-                    if (!companyIds.has(d.id)) {
-                        legacyList.push({ id: d.id, ...d.data() } as Lead & { id: string });
-                    }
+                // 2. Process 'crm_company_rows' collection docs
+                crmCompaniesDocs.forEach(d => {
+                    const data = d.data();
+                    const cid = data.companyId || d.id;
+                    if (companyMap.has(cid)) return;
+                    const contactInfo = contactsByCompany.get(cid);
+                    const name = data.businessName || data.name || data.companyName;
+                    if (!name) return;
+                    companyMap.set(cid, {
+                        id: cid,
+                        businessName: name,
+                        facilityType: data.facilityType || 'office_general',
+                        contactName: contactInfo?.contactName || data.contactName || '',
+                        contactPhone: contactInfo?.contactPhone || data.phone || '',
+                        email: contactInfo?.email || data.email || '',
+                        zipCode: data.zip || data.zipCode || '',
+                        address: data.address || '',
+                        city: data.city || '',
+                        state: data.state || '',
+                        zip: data.zip || data.zipCode || '',
+                        notes: data.notes || '',
+                        status: data.status || 'new',
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                        attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
+                    } as Lead & { id: string });
                 });
 
-                const combined = [...companyList, ...legacyList].sort((a, b) =>
+                // 3. Process 'leads' collection docs
+                leadsDocs.forEach(d => {
+                    if (companyMap.has(d.id)) return;
+                    const data = d.data();
+                    const name = data.businessName || data.name || data.companyName;
+                    if (!name) return;
+                    companyMap.set(d.id, {
+                        id: d.id,
+                        businessName: name,
+                        facilityType: data.facilityType || 'office_general',
+                        contactName: data.contactName || '',
+                        contactPhone: data.contactPhone || data.phone || '',
+                        email: data.email || '',
+                        zipCode: data.zipCode || data.zip || '',
+                        address: data.address || '',
+                        city: data.city || '',
+                        state: data.state || '',
+                        zip: data.zip || data.zipCode || '',
+                        notes: data.notes || '',
+                        status: data.status || 'new',
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                        attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
+                        locations: data.locations,
+                    } as Lead & { id: string });
+                });
+
+                // 4. Fallback: derive companies from contacts if company doc does not exist
+                [...contactsDocs, ...crmContactsDocs].forEach(d => {
+                    const data = d.data();
+                    const cid = data.companyId || d.id;
+                    if (companyMap.has(cid)) return;
+                    const name = data.companyName || data.businessName;
+                    if (!name) return;
+                    const contactName = [data.firstName, data.lastName].filter(Boolean).join(' ') || data.contactName || '';
+                    companyMap.set(cid, {
+                        id: cid,
+                        businessName: name,
+                        facilityType: data.facilityType || 'office_general',
+                        contactName: contactName,
+                        contactPhone: data.phone || data.contactPhone || '',
+                        email: data.email || '',
+                        zipCode: data.zip || data.zipCode || '',
+                        address: data.address || '',
+                        city: data.city || '',
+                        state: data.state || '',
+                        zip: data.zip || data.zipCode || '',
+                        status: 'new',
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                        attribution: { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
+                    } as Lead & { id: string });
+                });
+
+                const combined = Array.from(companyMap.values()).sort((a, b) =>
                     (a.businessName || '').localeCompare(b.businessName || '')
                 );
 
