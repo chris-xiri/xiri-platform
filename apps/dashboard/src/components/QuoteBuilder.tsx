@@ -12,6 +12,7 @@ import {
 } from '@xiri-facility-solutions/shared';
 
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 
 import {
