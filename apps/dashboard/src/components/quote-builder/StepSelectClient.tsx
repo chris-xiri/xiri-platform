@@ -57,7 +57,7 @@ export default function StepSelectClient({
                                     <div>
                                         <p className="font-medium">{lead.businessName}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            {lead.contactName} • {lead.zipCode}
+                                            {[lead.contactName, lead.city || lead.address || lead.zipCode || lead.zip].filter(Boolean).join(' • ') || 'No details'}
                                         </p>
                                     </div>
                                 </div>

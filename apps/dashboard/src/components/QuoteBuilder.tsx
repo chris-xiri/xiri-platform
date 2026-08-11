@@ -64,19 +64,78 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
     // ─── Data Fetching ─────────────────────────────────────────────────
     useEffect(() => {
         async function fetchLeads() {
-            const snap = await getDocs(query(collection(db, 'leads')));
-            const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Lead & { id: string }));
-            setLeads(data);
-            if (existingQuote) {
-                const match = data.find(l => l.id === existingQuote.leadId);
-                if (match) setSelectedLead(match);
-            } else if (initialData?.leadId) {
-                // Auto-select lead from initialData and skip to step 1
-                const match = data.find(l => l.id === initialData.leadId);
-                if (match) {
-                    handleSelectLead(match);
-                    setStep(1);
+            try {
+                const [companiesSnap, contactsSnap, leadsSnap] = await Promise.all([
+                    getDocs(collection(db, 'companies')),
+                    getDocs(collection(db, 'contacts')),
+                    getDocs(collection(db, 'leads')),
+                ]);
+
+                // Index contacts by companyId for primary or matching contact info
+                const contactsByCompany = new Map<string, { contactName: string; contactPhone: string; email: string }>();
+                contactsSnap.docs.forEach(d => {
+                    const c = d.data();
+                    if (!c.companyId) return;
+                    const name = [c.firstName, c.lastName].filter(Boolean).join(' ');
+                    const existing = contactsByCompany.get(c.companyId);
+                    if (!existing || c.isPrimary) {
+                        contactsByCompany.set(c.companyId, {
+                            contactName: name,
+                            contactPhone: c.phone || '',
+                            email: c.email || '',
+                        });
+                    }
+                });
+
+                const companyList: (Lead & { id: string })[] = companiesSnap.docs.map(d => {
+                    const data = d.data();
+                    const contactInfo = contactsByCompany.get(d.id);
+                    return {
+                        id: d.id,
+                        businessName: data.businessName || 'Unnamed Company',
+                        facilityType: data.facilityType || 'office_general',
+                        contactName: contactInfo?.contactName || data.contactName || '',
+                        contactPhone: contactInfo?.contactPhone || data.phone || '',
+                        email: contactInfo?.email || data.email || '',
+                        zipCode: data.zip || data.zipCode || '',
+                        address: data.address || '',
+                        city: data.city || '',
+                        state: data.state || '',
+                        zip: data.zip || data.zipCode || '',
+                        notes: data.notes || '',
+                        status: data.status || 'new',
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                        attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
+                    } as Lead & { id: string };
+                });
+
+                const companyIds = new Set(companyList.map(c => c.id));
+
+                const legacyList: (Lead & { id: string })[] = [];
+                leadsSnap.docs.forEach(d => {
+                    if (!companyIds.has(d.id)) {
+                        legacyList.push({ id: d.id, ...d.data() } as Lead & { id: string });
+                    }
+                });
+
+                const combined = [...companyList, ...legacyList].sort((a, b) =>
+                    (a.businessName || '').localeCompare(b.businessName || '')
+                );
+
+                setLeads(combined);
+
+                if (existingQuote) {
+                    const match = combined.find(l => l.id === existingQuote.leadId);
+                    if (match) setSelectedLead(match);
+                } else if (initialData?.leadId) {
+                    const match = combined.find(l => l.id === initialData.leadId);
+                    if (match) {
+                        handleSelectLead(match);
+                        setStep(1);
+                    }
                 }
+            } catch (err) {
+                quoteLogger.quoteError('fetchLeads', err);
             }
         }
         fetchLeads();
