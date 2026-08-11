@@ -286,6 +286,31 @@ export default function StepServicesAndPricing({
                                                         />
                                                     </div>
                                                 </div>
+                                                {/* Unit Pricing Breakdown (for items generated from Trades / Unit-Based step) */}
+                                                {item.unitItems && item.unitItems.length > 0 && (
+                                                    <div className="col-span-12">
+                                                        <div className="rounded-lg border bg-blue-50/50 dark:bg-blue-950/20 p-3 space-y-2">
+                                                            <div className="flex items-center justify-between text-xs font-semibold text-blue-900 dark:text-blue-200">
+                                                                <span className="flex items-center gap-1.5">
+                                                                    📐 Unit-Based Item Breakdown ({item.unitItems.length} item{item.unitItems.length !== 1 ? 's' : ''})
+                                                                </span>
+                                                                <span className="font-mono text-primary font-bold">
+                                                                    Total: ${item.clientRate?.toFixed(2) || '0.00'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                {item.unitItems.map((u: any, uIdx: number) => (
+                                                                    <div key={u.id || uIdx} className="flex items-center justify-between text-xs text-muted-foreground">
+                                                                        <span>• {u.description}</span>
+                                                                        <span className="font-mono text-foreground">
+                                                                            {u.quantity} {u.unit} × ${u.unitPrice.toFixed(2)} = <strong>${u.subtotal.toFixed(2)}</strong>
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 {/* Calculator Scope Summary (for items generated from Building Scope step) */}
                                                 {item.rooms && item.rooms.length > 0 && (
                                                     <div className="col-span-12">

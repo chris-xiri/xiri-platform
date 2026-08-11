@@ -35,11 +35,15 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
     const [leads, setLeads] = useState<(Lead & { id: string })[]>([]);
     const [selectedLead, setSelectedLead] = useState<(Lead & { id: string }) | null>(null);
 
-    // Step 1 → Building Scope (calculator-as-scope)
+    // Step 1 → Building Scope (calculator-as-scope or unit-based trade scope)
     const [scope, setScope] = useState<{
-        rooms: RoomScope[];
-        inputs: CalculatorInputs;
-        results: CalculatorResults;
+        mode?: 'janitorial' | 'trades' | 'unit_based';
+        serviceType?: string;
+        frequency?: string;
+        unitItems?: any[];
+        rooms?: RoomScope[];
+        inputs?: CalculatorInputs;
+        results?: CalculatorResults;
         location: Location;
     } | null>(null);
 
@@ -389,60 +393,93 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
     const handleStepChange = (newStep: number) => {
         quoteLogger.stepChange(step, newStep);
 
-        // Auto-generate line items when advancing from Building Scope → Review
+        // Auto-generate line items when advancing from Scope → Review
         if (step === 1 && newStep === 2 && scope) {
-            // Set location from scope
             setLocations([scope.location]);
-            // Generate janitorial line item from calculator scope
             const userId = profile?.uid || profile?.email || 'unknown';
             const isFsm = profile?.roles?.some((r: string) => r === 'fsm');
-            const scopeTasks = scope.rooms.flatMap(room =>
-                room.tasks.map((taskId: string) => {
-                    const taskDef = CLEANING_TASKS.find((t: any) => t.id === taskId);
-                    return {
-                        name: taskDef?.name || taskId,
-                        description: taskDef?.description || '',
-                        required: true,
-                    };
-                })
-            );
-            // Deduplicate tasks by name
-            const seen = new Set<string>();
-            const uniqueTasks = scopeTasks.filter(t => {
-                if (seen.has(t.name)) return false;
-                seen.add(t.name);
-                return true;
-            });
 
-            const janItem: QuoteLineItem = {
-                id: `li_${Date.now()}_jan`,
-                locationId: scope.location.id,
-                locationName: scope.location.name,
-                locationAddress: scope.location.address,
-                locationCity: scope.location.city,
-                locationState: scope.location.state,
-                locationZip: scope.location.zip,
-                serviceType: 'Janitorial',
-                serviceCategory: 'janitorial' as any,
-                frequency: 'custom_days',
-                daysOfWeek: Array(7).fill(false).map((_, i) => i > 0 && i < 6) as boolean[],
-                clientRate: scope.results.totalPricePerMonth,
-                sqft: scope.inputs.sqft,
-                scopeTasks: uniqueTasks,
-                rooms: scope.rooms,
-                calculatorInputs: scope.inputs,
-                calculatorResults: scope.results,
-                lineItemStatus: 'pending' as const,
-                addedBy: userId,
-                addedByRole: (isFsm ? 'fsm' : 'sales') as 'sales' | 'fsm',
-                isUpsell: false,
-            };
+            if (scope.mode === 'trades' || scope.mode === 'unit_based' || (scope.unitItems && scope.unitItems.length > 0)) {
+                const unitItems = scope.unitItems || [];
+                const totalRate = unitItems.reduce((s: number, u: any) => s + (u.subtotal || 0), 0);
+                const scopeTasks = unitItems.map((u: any) => ({
+                    name: `${u.description} (${u.quantity} ${u.unit} @ $${u.unitPrice}/${u.unit})`,
+                    description: `$${(u.subtotal || 0).toFixed(2)} subtotal`,
+                    required: true,
+                    isCustom: true,
+                }));
 
-            // Replace any existing pre-filled janitorial item, keep other line items
-            setLineItems(prev => {
-                const nonJan = prev.filter(li => li.serviceType !== 'Janitorial' || !li.rooms);
-                return [janItem, ...nonJan];
-            });
+                const tradeItem: QuoteLineItem = {
+                    id: `li_${Date.now()}_trade`,
+                    locationId: scope.location.id,
+                    locationName: scope.location.name,
+                    locationAddress: scope.location.address,
+                    locationCity: scope.location.city,
+                    locationState: scope.location.state,
+                    locationZip: scope.location.zip,
+                    serviceType: scope.serviceType || 'Light Carpentry & Woodwork',
+                    serviceCategory: 'trades',
+                    frequency: (scope.frequency as any) || 'one_time',
+                    clientRate: totalRate,
+                    unitItems: unitItems,
+                    scopeTasks,
+                    lineItemStatus: 'pending' as const,
+                    addedBy: userId,
+                    addedByRole: (isFsm ? 'fsm' : 'sales') as 'sales' | 'fsm',
+                    isUpsell: false,
+                };
+
+                setLineItems(prev => {
+                    const nonTrade = prev.filter(li => !li.unitItems && li.serviceCategory !== 'trades');
+                    return [tradeItem, ...nonTrade];
+                });
+            } else if (scope.rooms && scope.rooms.length > 0 && scope.results && scope.inputs) {
+                const scopeTasks = scope.rooms.flatMap(room =>
+                    room.tasks.map((taskId: string) => {
+                        const taskDef = CLEANING_TASKS.find((t: any) => t.id === taskId);
+                        return {
+                            name: taskDef?.name || taskId,
+                            description: taskDef?.description || '',
+                            required: true,
+                        };
+                    })
+                );
+                const seen = new Set<string>();
+                const uniqueTasks = scopeTasks.filter(t => {
+                    if (seen.has(t.name)) return false;
+                    seen.add(t.name);
+                    return true;
+                });
+
+                const janItem: QuoteLineItem = {
+                    id: `li_${Date.now()}_jan`,
+                    locationId: scope.location.id,
+                    locationName: scope.location.name,
+                    locationAddress: scope.location.address,
+                    locationCity: scope.location.city,
+                    locationState: scope.location.state,
+                    locationZip: scope.location.zip,
+                    serviceType: 'Janitorial',
+                    serviceCategory: 'janitorial' as any,
+                    frequency: 'custom_days',
+                    daysOfWeek: Array(7).fill(false).map((_, i) => i > 0 && i < 6) as boolean[],
+                    clientRate: scope.results.totalPricePerMonth,
+                    sqft: scope.inputs.sqft,
+                    scopeTasks: uniqueTasks,
+                    rooms: scope.rooms,
+                    calculatorInputs: scope.inputs,
+                    calculatorResults: scope.results,
+                    lineItemStatus: 'pending' as const,
+                    addedBy: userId,
+                    addedByRole: (isFsm ? 'fsm' : 'sales') as 'sales' | 'fsm',
+                    isUpsell: false,
+                };
+
+                setLineItems(prev => {
+                    const nonJan = prev.filter(li => li.serviceType !== 'Janitorial' || !li.rooms);
+                    return [janItem, ...nonJan];
+                });
+            }
         }
 
         setStep(newStep);

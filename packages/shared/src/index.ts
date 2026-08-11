@@ -1322,6 +1322,15 @@ export interface CheckIn {
 // Quotes
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
 
+export interface UnitPriceItem {
+    id: string;
+    description: string;
+    quantity: number;
+    unit: 'linear_ft' | 'sqft' | 'hours' | 'units' | 'flat' | 'days' | string;
+    unitPrice: number;
+    subtotal: number;
+}
+
 export interface QuoteLineItem {
     id: string;
     locationId: string;
@@ -1331,7 +1340,8 @@ export interface QuoteLineItem {
     locationState?: string;
     locationZip?: string;
     serviceType: string;
-    serviceCategory?: 'janitorial' | 'specialized' | 'consumables' | 'exterior';
+    serviceCategory?: 'janitorial' | 'trades' | 'specialized' | 'consumables' | 'exterior';
+    unitItems?: UnitPriceItem[];
     scopeTemplateId?: string;
     scopeTasks?: { name: string; description?: string; required: boolean; isCustom?: boolean }[];
     description?: string;

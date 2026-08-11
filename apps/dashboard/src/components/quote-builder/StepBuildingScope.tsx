@@ -37,6 +37,7 @@ import { Button } from '@/components/ui/button';
 import {
     Building2, Plus, Trash2, ChevronDown, ChevronRight,
     DollarSign, Clock, MapPin, Pencil, X, Check,
+    Wrench, Hammer, Sparkles,
 } from 'lucide-react';
 
 // ─── Props ────────────────────────────────────────────────────────────
@@ -49,12 +50,25 @@ interface StepBuildingScopeProps {
         facilityType?: string;
     };
     onScopeChange: (scope: {
-        rooms: RoomScope[];
-        inputs: CalculatorInputs;
-        results: CalculatorResults;
+        mode?: 'janitorial' | 'trades' | 'unit_based';
+        serviceType?: string;
+        frequency?: string;
+        unitItems?: UnitPriceItem[];
+        rooms?: RoomScope[];
+        inputs?: CalculatorInputs;
+        results?: CalculatorResults;
         location: Location;
     } | null) => void;
 }
+
+// ─── Unit Presets for Trades & Carpentry ──────────────────────────────
+const UNIT_PRESETS = [
+    { label: '+ Trim & Molding (ft)', description: 'Baseboard & Trim Installation', unit: 'linear_ft', defaultQty: 50, defaultPrice: 8.50 },
+    { label: '+ Door & Frame (unit)', description: 'Door & Frame Repair', unit: 'units', defaultQty: 1, defaultPrice: 175.00 },
+    { label: '+ Carpenter Labor (hrs)', description: 'Skilled Carpenter Labor', unit: 'hours', defaultQty: 4, defaultPrice: 85.00 },
+    { label: '+ Materials (flat)', description: 'Lumber & Hardware Supplies', unit: 'flat', defaultQty: 1, defaultPrice: 250.00 },
+    { label: '+ Drywall Patch (sqft)', description: 'Drywall Repair & Patching', unit: 'sqft', defaultQty: 25, defaultPrice: 6.00 },
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 const fmtCurrency = (n: number) =>
@@ -78,6 +92,22 @@ export default function StepBuildingScope({
     // ─── Company defaults from Firestore ─────────────────────────────
     const companyId = 'xiri-facility-solutions'; // single-tenant
     const companyDefaultsLoaded = useRef(false);
+
+    // ─── Service Category / Mode State ────────────────────────────────
+    const [serviceCategory, setServiceCategory] = useState<'trades' | 'janitorial' | 'custom'>('trades');
+
+    // ─── Trade & Unit Pricing State ───────────────────────────────────
+    const [tradeServiceType, setTradeServiceType] = useState('Light Carpentry & Woodwork');
+    const [tradeFrequency, setTradeFrequency] = useState('one_time');
+    const [unitItems, setUnitItems] = useState<UnitPriceItem[]>([
+        { id: 'unit_1', description: 'Baseboard & Trim Installation', quantity: 50, unit: 'linear_ft', unitPrice: 8.50, subtotal: 425 },
+        { id: 'unit_2', description: 'Custom Door Frame Repair', quantity: 2, unit: 'units', unitPrice: 175.00, subtotal: 350 },
+        { id: 'unit_3', description: 'Skilled Carpenter Labor', quantity: 4, unit: 'hours', unitPrice: 85.00, subtotal: 340 },
+    ]);
+
+    const totalUnitRate = useMemo(() =>
+        unitItems.reduce((sum, u) => sum + (u.subtotal || 0), 0),
+    [unitItems]);
 
     // ─── Derive defaults from the selected lead ──────────────────────
     const leadFacilityType = initialData?.facilityType || selectedLead?.facilityType || '';
@@ -276,11 +306,32 @@ export default function StepBuildingScope({
 
     // ─── Propagate scope changes ─────────────────────────────────────
     const propagate = useCallback(() => {
+        const loc = {
+            id: 'loc_1',
+            name: locationName || selectedLead?.businessName || 'Primary Location',
+            address: locationAddress || selectedLead?.address || '',
+            city: selectedLead?.city || '',
+            state: selectedLead?.state || '',
+            zip: selectedLead?.zipCode || '',
+        };
+
+        if (serviceCategory === 'trades' || serviceCategory === 'custom') {
+            onScopeChange({
+                mode: 'trades',
+                serviceType: tradeServiceType,
+                frequency: tradeFrequency,
+                unitItems: unitItems,
+                location: loc,
+            });
+            return;
+        }
+
         if (!results || rooms.length === 0) {
             onScopeChange(null);
             return;
         }
         onScopeChange({
+            mode: 'janitorial',
             rooms,
             inputs,
             results,
@@ -392,11 +443,305 @@ export default function StepBuildingScope({
 
     return (
         <div className="space-y-6">
-            {/* Non-janitorial / Trades notice */}
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-between text-xs text-blue-900 dark:text-blue-200">
-                <span>🛠️ <strong>Quoting Carpentry, Trades, or Non-Janitorial Work?</strong> Room scope calculations are optional — click <strong>Next →</strong> to configure custom trades, flat fees, or hourly service items directly.</span>
+            {/* ═══ STEP 1: SERVICE CATEGORY SELECTOR ═══ */}
+            <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Service Type First</Label>
+                <div className="grid grid-cols-3 gap-3">
+                    <button
+                        type="button"
+                        className={`p-3.5 rounded-xl border text-left transition-all ${
+                            serviceCategory === 'trades'
+                                ? 'border-primary bg-primary/5 ring-2 ring-primary/20 font-medium'
+                                : 'bg-card hover:bg-accent/50 text-muted-foreground'
+                        }`}
+                        onClick={() => setServiceCategory('trades')}
+                    >
+                        <div className="flex items-center gap-2 mb-1">
+                            <Hammer className={`w-4 h-4 ${serviceCategory === 'trades' ? 'text-primary' : ''}`} />
+                            <span className="text-sm font-semibold text-foreground">Trades & Carpentry</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Price by unit, linear ft, hours, sqft, or flat fee</p>
+                    </button>
+
+                    <button
+                        type="button"
+                        className={`p-3.5 rounded-xl border text-left transition-all ${
+                            serviceCategory === 'janitorial'
+                                ? 'border-primary bg-primary/5 ring-2 ring-primary/20 font-medium'
+                                : 'bg-card hover:bg-accent/50 text-muted-foreground'
+                        }`}
+                        onClick={() => setServiceCategory('janitorial')}
+                    >
+                        <div className="flex items-center gap-2 mb-1">
+                            <Sparkles className={`w-4 h-4 ${serviceCategory === 'janitorial' ? 'text-primary' : ''}`} />
+                            <span className="text-sm font-semibold text-foreground">Recurring Janitorial</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">ISSA production rate & room cleaning calculator</p>
+                    </button>
+
+                    <button
+                        type="button"
+                        className={`p-3.5 rounded-xl border text-left transition-all ${
+                            serviceCategory === 'custom'
+                                ? 'border-primary bg-primary/5 ring-2 ring-primary/20 font-medium'
+                                : 'bg-card hover:bg-accent/50 text-muted-foreground'
+                        }`}
+                        onClick={() => setServiceCategory('custom')}
+                    >
+                        <div className="flex items-center gap-2 mb-1">
+                            <Wrench className={`w-4 h-4 ${serviceCategory === 'custom' ? 'text-primary' : ''}`} />
+                            <span className="text-sm font-semibold text-foreground">Custom / Maintenance</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Custom service items and unit breakdown</p>
+                    </button>
+                </div>
             </div>
-            {/* ═══ PRICING SUMMARY — STICKY AT TOP ═══ */}
+
+            {/* ═══ LOCATION INFO ═══ */}
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4" /> Location
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <Label className="text-xs">Location Name</Label>
+                            <Input
+                                value={locationName}
+                                onChange={e => setLocationName(e.target.value)}
+                                placeholder="Main Site / Building"
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Address</Label>
+                            <Input
+                                value={locationAddress}
+                                onChange={e => setLocationAddress(e.target.value)}
+                                placeholder="123 Main St, City, ST"
+                                className="mt-1"
+                            />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* ═══ MODE A: TRADES & UNIT-BASED ESTIMATOR ═══ */}
+            {(serviceCategory === 'trades' || serviceCategory === 'custom') && (
+                <div className="space-y-4">
+                    {/* Unit Quote Total Header */}
+                    <Card className="border-primary/30 bg-card shadow-sm">
+                        <CardContent className="py-4 px-6 flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Unit-Based Estimate</p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="text-2xl font-bold text-primary">{fmtCurrency(totalUnitRate)}</span>
+                                    <span className="text-xs text-muted-foreground">({unitItems.length} line item{unitItems.length !== 1 ? 's' : ''})</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-lg border">
+                                <span>Units Total: <strong>{unitItems.reduce((s, u) => s + (u.quantity || 0), 0)}</strong></span>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Trade Configuration Card */}
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm flex items-center gap-2">
+                                <Hammer className="w-4 h-4" /> Service Details & Unit Rates
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label className="text-xs">Service Type</Label>
+                                    <select
+                                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm mt-1"
+                                        value={tradeServiceType}
+                                        onChange={(e) => setTradeServiceType(e.target.value)}
+                                    >
+                                        <option value="Light Carpentry & Woodwork">Light Carpentry & Woodwork</option>
+                                        <option value="Handyman & General Repairs">Handyman & General Repairs</option>
+                                        <option value="Drywall & Painting Touch-ups">Drywall & Painting Touch-ups</option>
+                                        <option value="Door & Hardware Maintenance">Door & Hardware Maintenance</option>
+                                        <option value="Minor Plumbing / Fixture Repair">Minor Plumbing / Fixture Repair</option>
+                                        <option value="Minor Electrical / Lighting Repair">Minor Electrical / Lighting Repair</option>
+                                        <option value="Custom Trade Work">Custom Trade Work...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Frequency</Label>
+                                    <select
+                                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm mt-1"
+                                        value={tradeFrequency}
+                                        onChange={(e) => setTradeFrequency(e.target.value)}
+                                    >
+                                        <option value="one_time">Does not repeat (One-Time Project)</option>
+                                        <option value="monthly">Monthly Recurring Maintenance</option>
+                                        <option value="quarterly">Quarterly</option>
+                                        <option value="weekly">Weekly</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {tradeServiceType === 'Custom Trade Work' && (
+                                <div>
+                                    <Label className="text-xs">Custom Job Title</Label>
+                                    <Input
+                                        className="h-9 text-sm mt-1"
+                                        placeholder="e.g. Light Carpentry - Custom Shelving & Frame Repair"
+                                        value={tradeServiceType}
+                                        onChange={(e) => setTradeServiceType(e.target.value)}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Quick Add Presets */}
+                            <div>
+                                <Label className="text-xs text-muted-foreground mb-1.5 block">Quick Add Unit Presets</Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {UNIT_PRESETS.map((preset, pIdx) => (
+                                        <Button
+                                            key={pIdx}
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-7 text-xs gap-1 bg-muted/20 hover:bg-accent"
+                                            onClick={() => {
+                                                const newItem = {
+                                                    id: `unit_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                                    description: preset.description,
+                                                    quantity: preset.defaultQty,
+                                                    unit: preset.unit,
+                                                    unitPrice: preset.defaultPrice,
+                                                    subtotal: preset.defaultQty * preset.defaultPrice,
+                                                };
+                                                setUnitItems(prev => [...prev, newItem]);
+                                            }}
+                                        >
+                                            <Plus className="w-3 h-3" /> {preset.label}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Unit Items Table */}
+                            <div className="space-y-2 border rounded-lg overflow-hidden">
+                                <div className="grid grid-cols-12 gap-2 bg-muted/40 p-2.5 text-xs font-semibold text-muted-foreground border-b">
+                                    <div className="col-span-4">Item / Work Description</div>
+                                    <div className="col-span-2">Qty</div>
+                                    <div className="col-span-2">Unit</div>
+                                    <div className="col-span-2">Unit Rate ($)</div>
+                                    <div className="col-span-2 text-right">Subtotal ($)</div>
+                                </div>
+
+                                {unitItems.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground text-center py-6">
+                                        No unit items added yet. Click &quot;Add Unit Line Item&quot; or use quick presets above.
+                                    </p>
+                                ) : (
+                                    unitItems.map((u, uIdx) => (
+                                        <div key={u.id || uIdx} className="grid grid-cols-12 gap-2 p-2 items-center border-b last:border-b-0 text-xs">
+                                            <div className="col-span-4">
+                                                <Input
+                                                    className="h-8 text-xs"
+                                                    placeholder="e.g. Install trim & baseboard"
+                                                    value={u.description}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setUnitItems(prev => prev.map((item, i) => i === uIdx ? { ...item, description: val } : item));
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="col-span-2">
+                                                <Input
+                                                    type="number"
+                                                    step="any"
+                                                    min="0"
+                                                    className="h-8 text-xs"
+                                                    value={u.quantity}
+                                                    onChange={(e) => {
+                                                        const qty = parseFloat(e.target.value) || 0;
+                                                        setUnitItems(prev => prev.map((item, i) => i === uIdx ? { ...item, quantity: qty, subtotal: Math.round(qty * item.unitPrice * 100) / 100 } : item));
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="col-span-2">
+                                                <select
+                                                    className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs"
+                                                    value={u.unit}
+                                                    onChange={(e) => {
+                                                        const unitVal = e.target.value;
+                                                        setUnitItems(prev => prev.map((item, i) => i === uIdx ? { ...item, unit: unitVal } : item));
+                                                    }}
+                                                >
+                                                    <option value="linear_ft">linear ft (ft)</option>
+                                                    <option value="sqft">sq ft (sqft)</option>
+                                                    <option value="hours">hours (hrs)</option>
+                                                    <option value="units">units (items)</option>
+                                                    <option value="flat">flat fee</option>
+                                                    <option value="days">days</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-span-2 relative">
+                                                <span className="absolute left-2 top-2 text-muted-foreground text-xs">$</span>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    className="h-8 text-xs pl-5"
+                                                    value={u.unitPrice}
+                                                    onChange={(e) => {
+                                                        const price = parseFloat(e.target.value) || 0;
+                                                        setUnitItems(prev => prev.map((item, i) => i === uIdx ? { ...item, unitPrice: price, subtotal: Math.round(item.quantity * price * 100) / 100 } : item));
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="col-span-2 flex items-center justify-end gap-2">
+                                                <span className="font-semibold text-xs">{fmtCurrency(u.subtotal || 0)}</span>
+                                                <button
+                                                    type="button"
+                                                    className="text-destructive/60 hover:text-destructive p-1 rounded hover:bg-destructive/10"
+                                                    onClick={() => setUnitItems(prev => prev.filter((_, i) => i !== uIdx))}
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-xs gap-1.5"
+                                onClick={() => {
+                                    const newItem = {
+                                        id: `unit_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                        description: '',
+                                        quantity: 1,
+                                        unit: 'units',
+                                        unitPrice: 100,
+                                        subtotal: 100,
+                                    };
+                                    setUnitItems(prev => [...prev, newItem]);
+                                }}
+                            >
+                                <Plus className="w-3.5 h-3.5" /> Add Unit Line Item
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* ═══ MODE B: RECURRING JANITORIAL CALCULATOR ═══ */}
+            {serviceCategory === 'janitorial' && (
+                <>
             {results && (() => {
                 const calcPrice = results.totalPricePerMonth;
                 const low = Math.round(calcPrice * 0.8);
@@ -1051,6 +1396,8 @@ export default function StepBuildingScope({
                     </div>
                 </CardContent>
             </Card>
+            </>
+            )}
         </div>
     );
 }
