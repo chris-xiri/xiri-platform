@@ -9,6 +9,14 @@ export const XIRI_SERVICES = [
     { value: 'restroom_sanitation', label: 'Restroom Sanitation', category: 'janitorial' as const },
     { value: 'medical_cleaning', label: 'High-Level Disinfection', category: 'janitorial' as const },
 
+    // ── Trades & General Repairs ─────────────────────────────────────
+    { value: 'light_carpentry', label: 'Light Carpentry & Woodwork', category: 'trades' as const },
+    { value: 'handyman_repairs', label: 'Handyman & General Repairs', category: 'trades' as const },
+    { value: 'drywall_painting', label: 'Drywall & Painting Touch-ups', category: 'trades' as const },
+    { value: 'door_hardware', label: 'Door & Hardware Maintenance', category: 'trades' as const },
+    { value: 'plumbing_minor', label: 'Minor Plumbing / Fixture Repair', category: 'trades' as const },
+    { value: 'electrical_minor', label: 'Minor Electrical / Lighting Repair', category: 'trades' as const },
+
     // ── Specialized Maintenance ─────────────────────────────────────
     { value: 'floor_care', label: 'Floor Care (Strip & Wax)', category: 'specialized' as const },
     { value: 'carpet_cleaning', label: 'Carpet Cleaning', category: 'specialized' as const },
@@ -31,10 +39,11 @@ export const XIRI_SERVICES = [
     { value: 'parking_lot', label: 'Parking Lot Sweeping', category: 'exterior' as const },
 ] as const;
 
-export type ServiceCategory = 'janitorial' | 'specialized' | 'consumables' | 'exterior';
+export type ServiceCategory = 'janitorial' | 'trades' | 'specialized' | 'consumables' | 'exterior';
 
 export const SERVICE_CATEGORIES: Record<ServiceCategory, string> = {
     janitorial: 'Janitorial',
+    trades: 'Trades & General Repairs',
     specialized: 'Specialized Maintenance',
     consumables: 'Consumables',
     exterior: 'Exterior',

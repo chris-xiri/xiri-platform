@@ -234,12 +234,19 @@ export default function StepServicesAndPricing({
                                             </div>
                                             {/* Row 1: Service Type + Rate */}
                                             <div className="grid grid-cols-12 gap-3 items-end">
-                                                <div className="col-span-6">
+                                                <div className="col-span-6 space-y-1">
                                                     <Label className="text-xs text-muted-foreground">Service Type</Label>
                                                     <select
                                                         className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                                                        value={XIRI_SERVICES.find(s => s.label === item.serviceType)?.value || ''}
-                                                        onChange={(e) => handleServiceSelect(item.id, e.target.value)}
+                                                        value={XIRI_SERVICES.find(s => s.label === item.serviceType)?.value || (item.serviceType ? 'custom' : '')}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            if (val === 'custom') {
+                                                                onUpdateLineItem(item.id, { serviceType: item.serviceType || 'Custom Trade Work', serviceCategory: 'trades' });
+                                                            } else {
+                                                                handleServiceSelect(item.id, val);
+                                                            }
+                                                        }}
                                                     >
                                                         <option value="">Select a service...</option>
                                                         {Object.entries(servicesByCategory).map(([cat, services]) => (
@@ -249,7 +256,17 @@ export default function StepServicesAndPricing({
                                                                 ))}
                                                             </optgroup>
                                                         ))}
+                                                        <option value="custom">Custom Service / Trade...</option>
                                                     </select>
+                                                    {(!XIRI_SERVICES.some(s => s.label === item.serviceType) || item.serviceCategory === 'trades') && (
+                                                        <Input
+                                                            type="text"
+                                                            className="h-8 text-xs mt-1"
+                                                            placeholder="Custom job title (e.g. Light Carpentry - Trim & Shelving)"
+                                                            value={item.serviceType || ''}
+                                                            onChange={(e) => onUpdateLineItem(item.id, { serviceType: e.target.value })}
+                                                        />
+                                                    )}
                                                 </div>
                                                 <div className="col-span-4">
                                                     <Label className="text-xs text-muted-foreground">

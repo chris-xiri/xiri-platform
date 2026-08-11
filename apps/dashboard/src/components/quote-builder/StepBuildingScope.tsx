@@ -392,6 +392,10 @@ export default function StepBuildingScope({
 
     return (
         <div className="space-y-6">
+            {/* Non-janitorial / Trades notice */}
+            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-between text-xs text-blue-900 dark:text-blue-200">
+                <span>🛠️ <strong>Quoting Carpentry, Trades, or Non-Janitorial Work?</strong> Room scope calculations are optional — click <strong>Next →</strong> to configure custom trades, flat fees, or hourly service items directly.</span>
+            </div>
             {/* ═══ PRICING SUMMARY — STICKY AT TOP ═══ */}
             {results && (() => {
                 const calcPrice = results.totalPricePerMonth;
