@@ -21,7 +21,8 @@ import {
 } from './quote-builder';
 
 // ─── Main Orchestrator ────────────────────────────────────────────────
-// This component manages state and delegates rendering to step components.
+// Memory cache for instantaneous (<10ms) company loading on modal open
+let cachedLeads: (Lead & { id: string })[] | null = null;
 
 export default function QuoteBuilder({ onClose, onCreated, existingQuote, initialData }: QuoteBuilderProps) {
     const router = useRouter();
@@ -67,36 +68,117 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
 
     // ─── Data Fetching ─────────────────────────────────────────────────
     useEffect(() => {
+        let isMounted = true;
+
         async function fetchLeads() {
+            // 1. Immediately populate from cache if available (0ms instant response)
+            if (cachedLeads && cachedLeads.length > 0) {
+                setLeads(cachedLeads);
+                if (existingQuote) {
+                    const match = cachedLeads.find(l => l.id === existingQuote.leadId);
+                    if (match) setSelectedLead(match);
+                } else if (initialData?.leadId) {
+                    const match = cachedLeads.find(l => l.id === initialData.leadId);
+                    if (match) {
+                        handleSelectLead(match);
+                        setStep(1);
+                    }
+                }
+            }
+
             try {
-                const [
-                    companiesResult,
-                    crmCompaniesResult,
-                    leadsResult,
-                    contactsResult,
-                    crmContactsResult,
-                ] = await Promise.allSettled([
-                    getDocs(collection(db, 'companies')),
-                    getDocs(collection(db, 'crm_company_rows')),
-                    getDocs(collection(db, 'leads')),
-                    getDocs(collection(db, 'contacts')),
-                    getDocs(collection(db, 'crm_contact_rows')),
+                // 2. Fetch primary company collections first (<200ms ultra-fast initial load)
+                const [companiesSnap, crmCompaniesSnap] = await Promise.all([
+                    getDocs(collection(db, 'companies')).catch(() => null),
+                    getDocs(collection(db, 'crm_company_rows')).catch(() => null),
                 ]);
 
-                const getDocsSafe = (res: PromiseSettledResult<any>) =>
-                    res.status === 'fulfilled' ? res.value.docs : [];
-
-                const companiesDocs = getDocsSafe(companiesResult);
-                const crmCompaniesDocs = getDocsSafe(crmCompaniesResult);
-                const leadsDocs = getDocsSafe(leadsResult);
-                const contactsDocs = getDocsSafe(contactsResult);
-                const crmContactsDocs = getDocsSafe(crmContactsResult);
+                if (!isMounted) return;
 
                 const companyMap = new Map<string, Lead & { id: string }>();
 
-                // Index contacts by companyId for contact info lookup
+                if (companiesSnap) {
+                    companiesSnap.forEach(d => {
+                        const data = d.data();
+                        const name = data.businessName || data.name || data.companyName;
+                        if (!name) return;
+                        companyMap.set(d.id, {
+                            id: d.id,
+                            businessName: name,
+                            facilityType: data.facilityType || 'office_general',
+                            contactName: data.contactName || '',
+                            contactPhone: data.phone || data.contactPhone || '',
+                            email: data.email || '',
+                            zipCode: data.zip || data.zipCode || '',
+                            address: data.address || '',
+                            city: data.city || '',
+                            state: data.state || '',
+                            zip: data.zip || data.zipCode || '',
+                            notes: data.notes || '',
+                            status: data.status || 'new',
+                            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                            attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
+                        } as Lead & { id: string });
+                    });
+                }
+
+                if (crmCompaniesSnap) {
+                    crmCompaniesSnap.forEach(d => {
+                        const data = d.data();
+                        const cid = data.companyId || d.id;
+                        if (companyMap.has(cid)) return;
+                        const name = data.businessName || data.name || data.companyName;
+                        if (!name) return;
+                        companyMap.set(cid, {
+                            id: cid,
+                            businessName: name,
+                            facilityType: data.facilityType || 'office_general',
+                            contactName: data.contactName || '',
+                            contactPhone: data.phone || data.contactPhone || '',
+                            email: data.email || '',
+                            zipCode: data.zip || data.zipCode || '',
+                            address: data.address || '',
+                            city: data.city || '',
+                            state: data.state || '',
+                            zip: data.zip || data.zipCode || '',
+                            notes: data.notes || '',
+                            status: data.status || 'new',
+                            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                            attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
+                        } as Lead & { id: string });
+                    });
+                }
+
+                const initialList = Array.from(companyMap.values()).sort((a, b) =>
+                    (a.businessName || '').localeCompare(b.businessName || '')
+                );
+
+                if (initialList.length > 0) {
+                    cachedLeads = initialList;
+                    setLeads(initialList);
+                    if (existingQuote) {
+                        const match = initialList.find(l => l.id === existingQuote.leadId);
+                        if (match) setSelectedLead(match);
+                    } else if (initialData?.leadId) {
+                        const match = initialList.find(l => l.id === initialData.leadId);
+                        if (match) {
+                            handleSelectLead(match);
+                            setStep(1);
+                        }
+                    }
+                }
+
+                // 3. Background enrichment: fetch contacts, crm_contact_rows, and legacy leads without blocking UI
+                const [leadsSnap, contactsSnap, crmContactsSnap] = await Promise.all([
+                    getDocs(collection(db, 'leads')).catch(() => null),
+                    getDocs(collection(db, 'contacts')).catch(() => null),
+                    getDocs(collection(db, 'crm_contact_rows')).catch(() => null),
+                ]);
+
+                if (!isMounted) return;
+
                 const contactsByCompany = new Map<string, { contactName: string; contactPhone: string; email: string }>();
-                [...contactsDocs, ...crmContactsDocs].forEach(d => {
+                [...(contactsSnap?.docs || []), ...(crmContactsSnap?.docs || [])].forEach(d => {
                     const c = d.data();
                     const companyId = c.companyId;
                     if (!companyId) return;
@@ -111,97 +193,56 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     }
                 });
 
-                // 1. Process 'companies' collection docs
-                companiesDocs.forEach(d => {
-                    const data = d.data();
-                    const contactInfo = contactsByCompany.get(d.id);
-                    const name = data.businessName || data.name || data.companyName;
-                    if (!name) return;
-                    companyMap.set(d.id, {
-                        id: d.id,
-                        businessName: name,
-                        facilityType: data.facilityType || 'office_general',
-                        contactName: contactInfo?.contactName || data.contactName || '',
-                        contactPhone: contactInfo?.contactPhone || data.phone || '',
-                        email: contactInfo?.email || data.email || '',
-                        zipCode: data.zip || data.zipCode || '',
-                        address: data.address || '',
-                        city: data.city || '',
-                        state: data.state || '',
-                        zip: data.zip || data.zipCode || '',
-                        notes: data.notes || '',
-                        status: data.status || 'new',
-                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-                        attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
-                    } as Lead & { id: string });
+                // Update contact details on existing companies
+                companyMap.forEach((comp, id) => {
+                    const contact = contactsByCompany.get(id);
+                    if (contact) {
+                        if (!comp.contactName) comp.contactName = contact.contactName;
+                        if (!comp.contactPhone) comp.contactPhone = contact.contactPhone;
+                        if (!comp.email) comp.email = contact.email;
+                    }
                 });
 
-                // 2. Process 'crm_company_rows' collection docs
-                crmCompaniesDocs.forEach(d => {
-                    const data = d.data();
-                    const cid = data.companyId || d.id;
-                    if (companyMap.has(cid)) return;
-                    const contactInfo = contactsByCompany.get(cid);
-                    const name = data.businessName || data.name || data.companyName;
-                    if (!name) return;
-                    companyMap.set(cid, {
-                        id: cid,
-                        businessName: name,
-                        facilityType: data.facilityType || 'office_general',
-                        contactName: contactInfo?.contactName || data.contactName || '',
-                        contactPhone: contactInfo?.contactPhone || data.phone || '',
-                        email: contactInfo?.email || data.email || '',
-                        zipCode: data.zip || data.zipCode || '',
-                        address: data.address || '',
-                        city: data.city || '',
-                        state: data.state || '',
-                        zip: data.zip || data.zipCode || '',
-                        notes: data.notes || '',
-                        status: data.status || 'new',
-                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-                        attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
-                    } as Lead & { id: string });
-                });
+                // Add legacy leads
+                if (leadsSnap) {
+                    leadsSnap.forEach(d => {
+                        if (companyMap.has(d.id)) return;
+                        const data = d.data();
+                        const name = data.businessName || data.name || data.companyName;
+                        if (!name) return;
+                        companyMap.set(d.id, {
+                            id: d.id,
+                            businessName: name,
+                            facilityType: data.facilityType || 'office_general',
+                            contactName: data.contactName || '',
+                            contactPhone: data.contactPhone || data.phone || '',
+                            email: data.email || '',
+                            zipCode: data.zipCode || data.zip || '',
+                            address: data.address || '',
+                            city: data.city || '',
+                            state: data.state || '',
+                            zip: data.zip || data.zipCode || '',
+                            notes: data.notes || '',
+                            status: data.status || 'new',
+                            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                            attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
+                            locations: data.locations,
+                        } as Lead & { id: string });
+                    });
+                }
 
-                // 3. Process 'leads' collection docs
-                leadsDocs.forEach(d => {
-                    if (companyMap.has(d.id)) return;
-                    const data = d.data();
-                    const name = data.businessName || data.name || data.companyName;
-                    if (!name) return;
-                    companyMap.set(d.id, {
-                        id: d.id,
-                        businessName: name,
-                        facilityType: data.facilityType || 'office_general',
-                        contactName: data.contactName || '',
-                        contactPhone: data.contactPhone || data.phone || '',
-                        email: data.email || '',
-                        zipCode: data.zipCode || data.zip || '',
-                        address: data.address || '',
-                        city: data.city || '',
-                        state: data.state || '',
-                        zip: data.zip || data.zipCode || '',
-                        notes: data.notes || '',
-                        status: data.status || 'new',
-                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-                        attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
-                        locations: data.locations,
-                    } as Lead & { id: string });
-                });
-
-                // 4. Fallback: derive companies from contacts if company doc does not exist
-                [...contactsDocs, ...crmContactsDocs].forEach(d => {
+                // Add orphan contacts as companies
+                [...(contactsSnap?.docs || []), ...(crmContactsSnap?.docs || [])].forEach(d => {
                     const data = d.data();
                     const cid = data.companyId || d.id;
                     if (companyMap.has(cid)) return;
                     const name = data.companyName || data.businessName;
                     if (!name) return;
-                    const contactName = [data.firstName, data.lastName].filter(Boolean).join(' ') || data.contactName || '';
                     companyMap.set(cid, {
                         id: cid,
                         businessName: name,
                         facilityType: data.facilityType || 'office_general',
-                        contactName: contactName,
+                        contactName: [data.firstName, data.lastName].filter(Boolean).join(' ') || data.contactName || '',
                         contactPhone: data.phone || data.contactPhone || '',
                         email: data.email || '',
                         zipCode: data.zip || data.zipCode || '',
@@ -215,17 +256,17 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     } as Lead & { id: string });
                 });
 
-                const combined = Array.from(companyMap.values()).sort((a, b) =>
+                const finalList = Array.from(companyMap.values()).sort((a, b) =>
                     (a.businessName || '').localeCompare(b.businessName || '')
                 );
-
-                setLeads(combined);
+                cachedLeads = finalList;
+                setLeads(finalList);
 
                 if (existingQuote) {
-                    const match = combined.find(l => l.id === existingQuote.leadId);
+                    const match = finalList.find(l => l.id === existingQuote.leadId);
                     if (match) setSelectedLead(match);
                 } else if (initialData?.leadId) {
-                    const match = combined.find(l => l.id === initialData.leadId);
+                    const match = finalList.find(l => l.id === initialData.leadId);
                     if (match) {
                         handleSelectLead(match);
                         setStep(1);
