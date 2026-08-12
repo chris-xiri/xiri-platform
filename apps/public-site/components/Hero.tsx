@@ -112,19 +112,19 @@ export function Hero({
 
     return (
         <section className={`relative overflow-hidden border-b ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-gradient-to-br from-sky-50 to-white border-gray-100'}`}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-32">
+                <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
                     {/* Text Content */}
-                    <div className="max-w-xl">
-                        <h1 className={`text-4xl md:text-5xl font-heading font-bold tracking-tight leading-[1.1] mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    <div className="w-full max-w-xl">
+                        <h1 className={`text-3xl sm:text-4xl md:text-5xl font-heading font-bold tracking-tight leading-[1.15] mb-4 sm:mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                             {showBrandEyebrow && (
-                                <span className="block text-sm md:text-base font-semibold tracking-[0.2em] uppercase text-sky-600 mb-3">
+                                <span className="block text-xs sm:text-sm md:text-base font-semibold tracking-[0.2em] uppercase text-sky-600 mb-2 sm:mb-3">
                                     {SITE.name}
                                 </span>
                             )}
                             {title}
                         </h1>
-                        <p className={`text-base md:text-lg mb-8 leading-relaxed max-w-lg ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                        <p className={`text-sm sm:text-base md:text-lg mb-6 sm:mb-8 leading-relaxed max-w-lg text-pretty ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                             {subtitle}
                         </p>
                         <div className="flex flex-col sm:flex-row sm:items-stretch gap-4">
