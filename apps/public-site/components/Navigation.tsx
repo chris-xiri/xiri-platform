@@ -215,6 +215,28 @@ export default function Navigation() {
                                 Solutions
                             </Link>
 
+                            {/* Cost Calculator Link for Buyers */}
+                            <Link
+                                href="/calculator"
+                                className={`text-[15px] font-medium transition-colors hover:text-sky-600 ${
+                                    pathname?.startsWith('/calculator') ? 'text-sky-600' : 'text-gray-600'
+                                }`}
+                                onClick={() => handleNavClick('/calculator', 'Cost Calculator')}
+                            >
+                                Cost Calculator
+                            </Link>
+
+                            {/* Tools Index Link for Buyers */}
+                            <Link
+                                href="/tools"
+                                className={`text-[15px] font-medium transition-colors hover:text-sky-600 ${
+                                    pathname?.startsWith('/tools') ? 'text-sky-600' : 'text-gray-600'
+                                }`}
+                                onClick={() => handleNavClick('/tools', 'Free Tools')}
+                            >
+                                Buyer Tools
+                            </Link>
+
                             {/* For Contractors Dropdown — signup + referrals */}
                             <div
                                 className="relative group"

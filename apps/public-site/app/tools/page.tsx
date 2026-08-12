@@ -23,7 +23,21 @@ export default function ToolsIndexPage() {
       </section>
 
       <section className="py-14">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-3 gap-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Link href="/calculator" className="group bg-white rounded-2xl border border-sky-200 p-7 hover:border-sky-400 hover:shadow-lg transition-all ring-1 ring-sky-100">
+            <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-lg mb-4">$</div>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Janitorial Cost Calculator</h2>
+            <p className="text-slate-600 mb-4">Calculate fair per-sqft and monthly cleaning benchmarks based on facility type, size, and labor market.</p>
+            <span className="inline-flex items-center gap-2 text-sky-700 font-semibold">Calculate Rates <ArrowRight className="w-4 h-4" /></span>
+          </Link>
+
+          <Link href="/tools/janitorial-transition-guide" className="group bg-white rounded-2xl border border-slate-200 p-7 hover:border-sky-300 hover:shadow-md transition-all">
+            <ClipboardList className="w-8 h-8 text-sky-600 mb-4" />
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Vendor Switch Toolkit</h2>
+            <p className="text-slate-600 mb-4">60-day transition timeline and cancellation notice template to switch cleaning providers seamlessly.</p>
+            <span className="inline-flex items-center gap-2 text-sky-700 font-semibold">Open Toolkit <ArrowRight className="w-4 h-4" /></span>
+          </Link>
+
           <Link href="/tools/janitorial-rfp" className="group bg-white rounded-2xl border border-slate-200 p-7 hover:border-sky-300 hover:shadow-md transition-all">
             <ClipboardList className="w-8 h-8 text-indigo-600 mb-4" />
             <h2 className="text-xl font-bold text-slate-900 mb-2">Janitorial RFP Builder</h2>
