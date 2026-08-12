@@ -12,7 +12,6 @@ import {
 } from '@xiri-facility-solutions/shared';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 
 import {
@@ -596,14 +595,14 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
 
     // ─── Render ────────────────────────────────────────────────────────
     return (
-        <Dialog open onOpenChange={() => onClose()}>
-            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+            <div className="bg-background rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b">
                     <div>
-                        <DialogTitle className="text-lg font-semibold">
+                        <h2 className="text-lg font-semibold">
                             {isEditing ? `Edit Quote v${(existingQuote?.version || 1) + 1}` : 'Create New Quote'}
-                        </DialogTitle>
+                        </h2>
                         <p className="text-xs text-muted-foreground">
                             Step {step + 1} of {STEPS.length} — {STEPS[step]}
                         </p>
