@@ -131,21 +131,21 @@ export function Hero({
                             {onCtaClick ? (
                                 <button
                                     onClick={onCtaClick}
-                                    className="inline-flex justify-center items-center text-center min-h-[72px] bg-sky-600 text-white px-8 py-4 rounded-full text-lg font-medium shadow-lg shadow-sky-600/20 hover:bg-sky-700 hover:shadow-xl hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                                    className="w-full sm:w-auto inline-flex justify-center items-center text-center min-h-[60px] sm:min-h-[72px] bg-sky-600 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-base sm:text-lg font-medium shadow-lg shadow-sky-600/20 hover:bg-sky-700 hover:shadow-xl hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
                                 >
                                     <span className="leading-tight">{ctaText}</span>
                                 </button>
                             ) : ctaLink ? (
                                 <a
                                     href={ctaLink}
-                                    className="inline-flex justify-center items-center text-center min-h-[72px] bg-sky-600 text-white px-8 py-4 rounded-full text-lg font-medium shadow-lg shadow-sky-600/20 hover:bg-sky-700 hover:shadow-xl hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                                    className="w-full sm:w-auto inline-flex justify-center items-center text-center min-h-[60px] sm:min-h-[72px] bg-sky-600 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-base sm:text-lg font-medium shadow-lg shadow-sky-600/20 hover:bg-sky-700 hover:shadow-xl hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
                                 >
                                     <span className="leading-tight">{ctaText}</span>
                                 </a>
                             ) : (
                                 <button
                                     onClick={() => setIsModalOpen(true)}
-                                    className="inline-flex justify-center items-center text-center min-h-[72px] bg-sky-600 text-white px-8 py-4 rounded-full text-lg font-medium shadow-lg shadow-sky-600/20 hover:bg-sky-700 hover:shadow-xl hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                                    className="w-full sm:w-auto inline-flex justify-center items-center text-center min-h-[60px] sm:min-h-[72px] bg-sky-600 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-base sm:text-lg font-medium shadow-lg shadow-sky-600/20 hover:bg-sky-700 hover:shadow-xl hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
                                 >
                                     <span className="leading-tight">{ctaText}</span>
                                 </button>
@@ -153,14 +153,14 @@ export function Hero({
                             {secondaryCta ? (
                                 <Link
                                     href={secondaryCta.href}
-                                    className="inline-flex justify-center items-center text-center min-h-[72px] px-8 py-4 rounded-full text-lg font-medium text-sky-600 hover:text-sky-700 hover:bg-sky-50 transition-all duration-300 border border-sky-200"
+                                    className="w-full sm:w-auto inline-flex justify-center items-center text-center min-h-[60px] sm:min-h-[72px] px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-base sm:text-lg font-medium text-sky-600 hover:text-sky-700 hover:bg-sky-50 transition-all duration-300 border border-sky-200"
                                 >
                                     {renderSecondaryCtaLabel(secondaryCta.text)}
                                 </Link>
                             ) : showSecondaryBtn ? (
                                 <Link
                                     href="/contractors"
-                                    className="inline-flex justify-center items-center text-center min-h-[72px] px-8 py-4 rounded-full text-lg font-medium text-gray-600 hover:text-sky-600 hover:bg-sky-50 transition-all duration-300"
+                                    className="w-full sm:w-auto inline-flex justify-center items-center text-center min-h-[60px] sm:min-h-[72px] px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-base sm:text-lg font-medium text-gray-600 hover:text-sky-600 hover:bg-sky-50 transition-all duration-300"
                                 >
                                     For Contractors
                                 </Link>
@@ -168,14 +168,14 @@ export function Hero({
                         </div>
 
                         {/* Mobile Photo Rail */}
-                        <div className="mt-8 lg:hidden -mx-1">
-                            <div className="flex gap-3 overflow-x-auto pb-2 px-1 snap-x snap-mandatory">
+                        <div className="mt-8 lg:hidden max-w-full overflow-hidden">
+                            <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar">
                                 {slides.map((slide, index) => (
                                     <button
                                         key={`${slide.imageSrc}-${index}`}
                                         type="button"
                                         onClick={() => setMediaIndex(index)}
-                                        className={`relative shrink-0 w-[260px] h-[162px] rounded-2xl overflow-hidden border snap-start transition-all duration-300 ${
+                                        className={`relative shrink-0 w-[220px] sm:w-[260px] h-[140px] sm:h-[162px] rounded-2xl overflow-hidden border snap-start transition-all duration-300 ${
                                             index === mediaIndex ? 'border-sky-400 shadow-md shadow-sky-200/60' : 'border-gray-200'
                                         }`}
                                     >
@@ -194,27 +194,27 @@ export function Hero({
                             </div>
                         </div>
 
-                        <div className="mt-8 flex items-center gap-6 text-sm text-gray-500 font-medium">
+                        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-500 font-medium">
                             {features ? (
                                 features.map((feature, i) => (
                                     <div key={i} className="flex items-center gap-2">
                                         {feature.icon || (
-                                            <svg className="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-5 h-5 text-teal-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                             </svg>
                                         )}
-                                        {feature.text}
+                                        <span className="whitespace-nowrap">{feature.text}</span>
                                     </div>
                                 ))
                             ) : (
                                 <>
                                     <div className="flex items-center gap-2">
-                                        <svg className="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                        Nightly Audits
+                                        <svg className="w-5 h-5 text-teal-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                        <span className="whitespace-nowrap">Nightly Audits</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <svg className="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                        100% Insured
+                                        <svg className="w-5 h-5 text-teal-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                        <span className="whitespace-nowrap">100% Insured</span>
                                     </div>
                                 </>
                             )}
