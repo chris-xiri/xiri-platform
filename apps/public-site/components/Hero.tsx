@@ -103,7 +103,7 @@ export function Hero({
     const renderSecondaryCtaLabel = (text: string) => {
         const normalized = text.replace(/\s*[→]\s*$/, '').trim();
         return (
-            <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap">
+            <span className="inline-flex items-center justify-center gap-2 whitespace-normal sm:whitespace-nowrap text-center">
                 <span>{normalized}</span>
                 <span aria-hidden="true">→</span>
             </span>
