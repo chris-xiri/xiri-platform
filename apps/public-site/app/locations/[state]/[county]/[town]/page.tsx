@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props) {
     const townName = location.name.split(',')[0];
     return {
         title: `Commercial & Dental Office Cleaning in ${townName}, ${state.toUpperCase()} | Xiri`,
-        description: `Looking for top-rated commercial or medical/dental cleaning in ${townName}? Xiri Facility Solutions provides expert janitorial, dental office sanitation, and facility maintenance in ${location.region}.`,
+        description: `Looking for top-rated commercial or medical & dental office cleaning in ${townName}? Xiri Facility Solutions provides expert janitorial, dental office sanitation, and facility maintenance in ${location.region}.`,
     };
 }
 

@@ -56,9 +56,21 @@ export const SPOKE_HUBS: Record<string, SpokeHub> = {
         ],
         sidebarCategory: 'institutional',
     },
+    'public-wellness-facilities': {
+        title: 'Public & Wellness Facilities',
+        heroTitle: 'Specialized Cleaning for Public Libraries, Funeral Homes & Wellness Centers',
+        heroSubtitle: 'Board-compliant library maintenance, discreet mortuary sanitization, and high-turnover rehab hygiene — managed by XIRI.',
+        metaDescription: 'Specialized cleaning for public libraries, funeral homes, physical therapy centers, chiropractic clinics, and gyms.',
+        dlpSlugs: [
+            'funeral-home-sanitation-protocols', 'library-community-center-janitorial',
+            'chiropractic-clinic-sanitization', 'physical-therapy-clinic-hygiene',
+            'gym-fitness-facility-sanitization',
+        ],
+        sidebarCategory: 'institutional',
+    },
 };
 
-// ── DLP PAGES (12) ──
+// ── DLP PAGES (17) ──
 export const DLP_SOLUTIONS: Record<string, DLPSolution> = {
     // ─── MEDICAL (4) ───
     'jcaho-survey-ready-disinfection': {
@@ -367,5 +379,108 @@ export const DLP_SOLUTIONS: Record<string, DLPSolution> = {
             { question: 'How do you handle cash room documentation?', answer: 'Every entry is logged with dual-control sign-off, timestamps, camera coordination confirmation, and post-clean verification. Reports are provided to your security team after each service.' },
         ],
         relevantServices: ['commercial-cleaning'],
+    },
+
+    // ─── PUBLIC & WELLNESS (5) ───
+    'funeral-home-sanitation-protocols': {
+        title: 'Funeral Home & Mortuary Sanitation Protocols',
+        heroTitle: 'Funeral Home & Mortuary Sanitation Protocols',
+        heroSubtitle: 'Discreet, high-compliance janitorial services tailored for funeral chapels, embalming suites, and family lounges.',
+        metaDescription: 'Specialized funeral home janitorial services in Nassau, Queens, and Suffolk. OSHA 1910.1030 Bloodborne Pathogen compliant embalming suite sanitization.',
+        sidebarCategory: 'institutional',
+        complianceChecklist: [
+            { item: 'OSHA Bloodborne Pathogen Standard compliance in prep rooms', standard: 'OSHA 29 CFR 1910.1030' },
+            { item: 'EPA List N hospital-grade disinfectant usage logs', standard: 'EPA Regulations' },
+            { item: 'Flexible shift scheduling locked to visitation hours', standard: 'XIRI Funeral Protocol' },
+            { item: 'Chapel carpet and upholstery micro-cleaning', standard: 'IICRC Standards' },
+        ],
+        sections: [
+            { title: 'Discreet Operations for Funeral Homes', content: 'Funeral homes demand absolute discretion, schedule flexibility, and strict biohazard compliance. XIRI deploys uniform-clad, background-checked personnel who execute night cleans around evening visitation schedules — ensuring chapels and family lounges are spotless for morning services.' },
+            { title: 'Preparation Suite OSHA Compliance', content: 'Embalming preparation suites require the same environmental safety rigor as clinical operating rooms. XIRI crews are trained in bloodborne pathogen containment, surface disinfection dwell times, and proper PPE protocols.' },
+        ],
+        faqs: [
+            { question: 'Do you adjust cleaning hours during extended evening wakes?', answer: 'Yes. Our site managers lock shift times to your visitation schedule weekly, ensuring cleaning crews never interrupt family services.' },
+            { question: 'Are prep room cleaning logs archived for state health board reviews?', answer: 'Yes. All shift logs, chemical SDS sheets, and audit photos are digitally archived and instantly accessible.' },
+        ],
+        relevantServices: ['commercial-cleaning', 'disinfecting-services', 'carpet-upholstery'],
+    },
+    'library-community-center-janitorial': {
+        title: 'Public Library & Community Center Janitorial',
+        heroTitle: 'Public Library & Community Center Janitorial Standards',
+        heroSubtitle: 'High-dusting for book stacks, low-VOC green cleaning for children areas, and public restroom audit logs.',
+        metaDescription: 'Municipal public library and community center janitorial services in Nassau County and NYC. Green Seal certified cleaning, stack dust control, and board-ready reports.',
+        sidebarCategory: 'institutional',
+        complianceChecklist: [
+            { item: 'HEPA-filtered high book stack dust control', standard: 'IAQ Standards' },
+            { item: 'Green Seal GS-37 eco-certified chemicals', standard: 'NYS Executive Order 4' },
+            { item: 'Public employee background vetting', standard: 'DCJS Standards' },
+            { item: 'Public restroom hourly audit logs', standard: 'NYS DOH Hygiene Code' },
+        ],
+        sections: [
+            { title: 'Maintaining Public Trust & High Traffic Hygiene', content: 'Public libraries like the Great Neck Library system and local community centers accommodate thousands of visitors weekly across book stacks, children sections, meeting rooms, and computer labs. Standard janitorial fails to address book stack dust accumulation and non-toxic child safety needs.' },
+            { title: 'Board-Ready Digital Auditing', content: 'Library trustees and municipal directors require verifiable audit trails. XIRI provides timestamped digital reports covering restroom sanitization, floor extraction, and stack maintenance after every shift.' },
+        ],
+        faqs: [
+            { question: 'Do your products comply with NYS Executive Order 4 for green cleaning?', answer: 'Yes. All chemicals used in public library and civic facility contracts are 100% Green Seal (GS-37/GS-40) certified and low-VOC.' },
+            { question: 'How do you clean high book stacks without damaging collection items?', answer: 'We utilize micro-fiber pole tools equipped with HEPA vacuum suction that capture dust without disbursing particulates or disturbing shelved volumes.' },
+        ],
+        relevantServices: ['commercial-cleaning', 'carpet-upholstery', 'floor-care'],
+    },
+    'chiropractic-clinic-sanitization': {
+        title: 'Chiropractic Clinic & Wellness Suite Sanitization',
+        heroTitle: 'Chiropractic Clinic & Wellness Suite Sanitization',
+        heroSubtitle: 'High-turnover adjustment table disinfection using non-corrosive, vinyl-safe EPA registered products.',
+        metaDescription: 'Chiropractic clinic cleaning and wellness suite sanitization. Vinyl-safe table disinfection, HIPAA privacy compliance, and low-VOC indoor air quality.',
+        sidebarCategory: 'medical',
+        complianceChecklist: [
+            { item: 'Vinyl & leather table compatible disinfection', standard: 'Manufacturer Guidelines' },
+            { item: 'HIPAA Environmental Privacy BAA execution', standard: '45 CFR 164.502(e)' },
+            { item: 'Low-VOC non-irritating air quality control', standard: 'NYS Part 226' },
+        ],
+        sections: [
+            { title: 'Preserving Practice Equipment While Eliminating Pathogens', content: 'Chiropractic practices feature heavy patient contact with adjustment tables and therapy cushions. Harsh chemical cleaners break down expensive vinyl and leather seams. XIRI specifies neutral pH, non-alcohol EPA disinfectants that eliminate 99.99% of bacteria without degrading equipment.' },
+        ],
+        faqs: [
+            { question: 'Will cleaning chemicals degrade vinyl adjustment tables?', answer: 'No. We use manufacturer-approved neutral disinfectants specifically engineered for healthcare vinyl and leather.' },
+        ],
+        relevantServices: ['medical-office-cleaning', 'disinfecting-services'],
+    },
+    'physical-therapy-clinic-hygiene': {
+        title: 'Physical Therapy & Sports Rehab Facility Hygiene',
+        heroTitle: 'Physical Therapy & Sports Rehab Facility Hygiene',
+        heroSubtitle: 'Sanitization for athletic turf, treatment mats, weight stations, and hydrotherapy wet rooms.',
+        metaDescription: 'Physical therapy and sports rehab facility cleaning in Long Island and NYC. Synthetic turf extraction, non-slip floor safety, and rehab equipment disinfection.',
+        sidebarCategory: 'medical',
+        complianceChecklist: [
+            { item: 'Static coefficient of friction non-slip floor verification', standard: 'ASTM D2047' },
+            { item: 'Synthetic turf & rubber mat antimicrobial extraction', standard: 'ISSA Sports Code' },
+            { item: 'Hydrotherapy anti-fungal treatment', standard: 'CDC Sanitation Standards' },
+        ],
+        sections: [
+            { title: 'Safety & Hygiene in Rehabilitation Environments', content: 'Patients recovering from surgery or athletic injury require clean equipment and non-slip floor safety. XIRI maintains strict floor slip-coefficient logs and performs deep antimicrobial extraction on synthetic turf and rubber rehab mats.' },
+        ],
+        faqs: [
+            { question: 'How do you sanitize athletic turf and rubber gym floors?', answer: 'We use specialized low-moisture antimicrobial extraction units designed to lift sweat, skin oils, and bacteria without soaking subfloors.' },
+        ],
+        relevantServices: ['medical-office-cleaning', 'floor-care', 'disinfecting-services'],
+    },
+    'gym-fitness-facility-sanitization': {
+        title: 'Gym & Health Club Locker Room Sanitization',
+        heroTitle: 'Gym & Health Club Locker Room & Facility Sanitization',
+        heroSubtitle: 'Deep locker room tile scrub, shower descaling, cardio touchscreen wiping, and bio-enzymatic odor control.',
+        metaDescription: 'Gym and health club cleaning services in NYC and Long Island. Shower descaling, sauna sanitization, cardio equipment wipe-down, and locker room odor control.',
+        sidebarCategory: 'institutional',
+        complianceChecklist: [
+            { item: 'Locker room shower descaling & fungicidal scrub', standard: 'EPA Fungicidal Standard' },
+            { item: 'Bio-enzymatic drain treatment for odor elimination', standard: 'XIRI Bio-Clean' },
+            { item: 'Hardwood studio floor maintenance', standard: 'MFMA Code' },
+        ],
+        sections: [
+            { title: 'Solving Locker Room Odors & Shower Scaling', content: 'High member volume creates severe humidity, hard water scaling, and odor challenges in health club locker rooms. XIRI combines daily acid-free descaling with bio-enzymatic drain dosing to eradicate root odor sources.' },
+        ],
+        faqs: [
+            { question: 'How do you prevent member complaints about locker room odors?', answer: 'Our daily 3-stage protocol clears shower scale, sanitizes tile grout, and doses floor drains with active bio-enzymes every night.' },
+        ],
+        relevantServices: ['commercial-cleaning', 'floor-care', 'disinfecting-services'],
     },
 };

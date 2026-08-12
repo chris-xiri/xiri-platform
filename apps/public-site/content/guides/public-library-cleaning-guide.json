@@ -1,0 +1,39 @@
+{
+  "title": "Public Library & Community Center Janitorial Standards Guide",
+  "heroTitle": "Public Library & Community Center Janitorial & Facility Guide",
+  "heroSubtitle": "A comprehensive maintenance guide for library trustees, municipal directors, and public facility managers.",
+  "metaDescription": "Complete guide to public library cleaning standards, book stack dust control, Green Seal eco-cleaning compliance, and municipal audit logs.",
+  "datePublished": "2026-03-10",
+  "dateModified": "2026-03-10",
+  "sections": [
+    {
+      "title": "Unique Challenges of Public Library Facility Management",
+      "content": "Public library systems like the Great Neck Library system accommodate thousands of daily patrons across reading rooms, stacks, computer labs, and children's sections. Maintaining indoor air quality while protecting rare collections and high-traffic public areas requires specialized janitorial protocols."
+    },
+    {
+      "title": "Book Stack & Shelving High-Dusting Protocols",
+      "content": "Dust accumulation on upper book shelves degrades book bindings and triggers respiratory discomfort for patrons. Standard dusting disburses dust into the air. Library maintenance standards dictate HEPA-vacuum micro-fiber capture tools that isolate dust without disturbing shelved volumes."
+    },
+    {
+      "title": "Green Seal Eco-Cleaning & Non-Toxic Children's Sections",
+      "content": "Under NYS Executive Order 4, public facilities are required to use Green Seal (GS-37/GS-40) certified cleaning chemicals. Children's sections, play furniture, and interactive screens require non-toxic, chemical-odorless sanitization that protects young patrons."
+    },
+    {
+      "title": "Digital Proof-of-Performance & Board Audit Readiness",
+      "content": "Library trustees and municipal budget directors demand verifiable audit records. XIRI's managed model provides timestamped digital reports for every cleaning shift, capturing restroom sanitization logs and floor maintenance completion."
+    }
+  ],
+  "calloutTitle": "Municipal & Library Board Standard",
+  "calloutContent": "Download our customizable Public Library Janitorial RFP Template to establish clear, board-compliant vendor specifications.",
+  "relatedServices": ["commercial-cleaning", "carpet-upholstery", "floor-care"],
+  "faqs": [
+    {
+      "question": "How often should library carpets be extracted?",
+      "answer": "High-traffic stack aisles and entrance lobbies require quarterly hot-water extraction, while quiet reading rooms should be deep-cleaned semi-annually."
+    },
+    {
+      "question": "Does XIRI provide green cleaning products compliant with NYS regulations?",
+      "answer": "Yes. All products meet Green Seal GS-37 standards and conform to NYS Executive Order 4 for public buildings."
+    }
+  ]
+}

@@ -105,7 +105,7 @@ const dentalFaqs: ServiceFaqIntelligence = {
   slugs: ['dental-offices'],
   qualityFaq: (townName, medianWage, premiumPct, areaTitle, minWage) => ({
     question: `Why does dental office cleaning require specialists in ${townName}?`,
-    answer: `Dental offices generate aerosols, amalgam waste, and sharps that standard janitorial crews aren't trained to handle. The median janitorial wage in ${areaTitle} is $${medianWage.toFixed(2)}/hr — ${premiumPct}% above minimum wage (BLS OES). But dental cleaning demands OSHA Bloodborne Pathogen compliance (29 CFR 1910.1030), proper amalgam waste handling per EPA's dental effluent guidelines, and disinfection protocols calibrated to the procedure room's risk level. We pay above market rate specifically to retain cleaners experienced in dental environments.`,
+    answer: `Dental offices generate aerosols, amalgam waste, and sharps that standard janitorial crews aren't trained to handle. The median janitorial wage in ${areaTitle} is $${medianWage.toFixed(2)}/hr — ${premiumPct}% above minimum wage (BLS OES). But dental office sanitization demands OSHA Bloodborne Pathogen compliance (29 CFR 1910.1030), proper amalgam waste handling per EPA's dental effluent guidelines, and disinfection protocols calibrated to the procedure room's risk level. We pay above market rate specifically to retain cleaners experienced in dental environments.`,
     sources: [SRC.BLS_OES, SRC.OSHA_BBP, SRC.EPA_DENTAL_EFFLUENT],
   }),
   competitorFaq: (townName, region, competitorCount) => ({
@@ -115,7 +115,7 @@ const dentalFaqs: ServiceFaqIntelligence = {
   }),
   pricingFaq: (townName, serviceName) => ({
     question: `What does dental office cleaning cost in ${townName}?`,
-    answer: `Dental cleaning falls in the healthcare premium range of $0.14–$0.35/sq ft for routine maintenance (ISSA benchmarks), potentially higher for operatory-level disinfection. Variables include number of operatories, procedure types (general vs. surgical), and whether you need amalgam waste coordination. Get a precise estimate with our free cost calculator, or schedule a complimentary walk-through.`,
+    answer: `Dental office janitorial falls in the healthcare premium range of $0.14–$0.35/sq ft for routine maintenance (ISSA benchmarks), potentially higher for operatory-level disinfection. Variables include number of operatories, procedure types (general vs. surgical), and whether you need amalgam waste coordination. Get a precise estimate with our free cost calculator, or schedule a complimentary walk-through.`,
     sources: [SRC.ISSA_CIMS],
   }),
   complianceFaq: (townName) => ({

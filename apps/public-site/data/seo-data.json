@@ -767,6 +767,32 @@
           "answer": "Yes, we use 100% Green Seal certified, low-VOC products safe for high public traffic and delicate archives."
         }
       ]
+    },
+    {
+      "slug": "funeral-homes",
+      "name": "Funeral Homes & Mortuaries",
+      "heroTitle": "Funeral Home & Mortuary Cleaning Services",
+      "heroSubtitle": "Discreet, OSHA 1910.1030 compliant janitorial services for funeral chapels, embalming suites, and family lounges.",
+      "coreServices": [
+        "Embalming Prep Suite Disinfection",
+        "Viewing Chapel Carpet & Seating Care",
+        "Family Lounge Sanitation"
+      ],
+      "specializedServices": [
+        "OSHA Bloodborne Pathogen Protocol",
+        "Flexible Visitation Schedule Shift Locks"
+      ],
+      "benefits": [
+        "Discreet Uniformed Personnel",
+        "EPA Hospital-Grade Disinfectants",
+        "Nightly Audit Verification"
+      ],
+      "faqs": [
+        {
+          "question": "Are your cleaning crews trained in bloodborne pathogen protocols?",
+          "answer": "Yes, all crews assigned to funeral home facilities complete OSHA 29 CFR 1910.1030 training and wear mandatory PPE when servicing preparation suites."
+        }
+      ]
     }
   ],
   "services": [

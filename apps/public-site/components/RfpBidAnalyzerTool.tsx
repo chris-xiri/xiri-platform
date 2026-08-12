@@ -21,19 +21,25 @@ const DEFAULT_INPUT: RfpInput = {
     incumbentPainPoints: ['Inconsistent quality control', 'No verifiable proof-of-cleaning'],
 };
 
+
 function formatWithCommas(value: number): string {
     const digits = String(Math.max(0, Math.floor(value || 0)));
     return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-export default function RfpBidAnalyzerTool() {
+interface RfpBidAnalyzerToolProps {
+    initialInput?: Partial<RfpInput>;
+}
+
+export default function RfpBidAnalyzerTool({ initialInput }: RfpBidAnalyzerToolProps = {}) {
+    const mergedDefault: RfpInput = { ...DEFAULT_INPUT, ...(initialInput || {}) };
     const [brief, setBrief] = useState('');
-    const [input, setInput] = useState<RfpInput>(DEFAULT_INPUT);
+    const [input, setInput] = useState<RfpInput>(mergedDefault);
     const [rfpDraft, setRfpDraft] = useState<RfpDocument | null>(null);
     const [showRfpPreview, setShowRfpPreview] = useState(false);
     const [isParsing, setIsParsing] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [sqftInput, setSqftInput] = useState(formatWithCommas(DEFAULT_INPUT.estimatedSqft));
+    const [sqftInput, setSqftInput] = useState(formatWithCommas(mergedDefault.estimatedSqft));
     const [showComprehensiveBriefHelp, setShowComprehensiveBriefHelp] = useState(false);
     const [rfpActionStatus, setRfpActionStatus] = useState('');
     const [showEmailOptions, setShowEmailOptions] = useState(false);

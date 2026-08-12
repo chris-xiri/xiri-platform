@@ -7,6 +7,7 @@ import { LOCATIONS } from '@/lib/locations';
 import { INDUSTRY_PILLARS, getPillarForIndustry } from '@/lib/industry-pillars';
 import { BLOG_POSTS } from '@/data/blog-posts';
 import { COMPARISON_PAGES } from '@/data/dlp-comparisons';
+import { getAllFacilityRfpPresetSlugs } from '@/lib/rfp-facility-presets';
 import { SITE } from '@/lib/constants';
 import { SITEMAP_CONTRACTOR_TRADE_SLUGS, SITEMAP_LEAD_SERVICE_SLUGS, SITEMAP_STATIC_ROUTES } from '@/lib/seo-rules';
 
@@ -101,6 +102,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
                 priority: 0.95,
             });
         });
+        // Town Provider Comparison Page
+        sitemapEntries.push({ url: `${BASE_URL}/locations/${stateSlug}/${countySlug}/${townSlug}/compare`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 });
     });
 
     // 4b. Research Reports (Programmatic Link Building Engine)
@@ -154,9 +157,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
         });
     });
 
-    // 12. Free Tools (supporting assets, lower transactional intent)
+    // 12. Free Tools & Facility RFP Generators
     ['janitorial-rfp', 'compliance-checker', 'sds-lookup'].forEach((tool) => {
         sitemapEntries.push({ url: `${BASE_URL}/tools/${tool}`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.45 });
+    });
+    getAllFacilityRfpPresetSlugs().forEach((facilitySlug) => {
+        sitemapEntries.push({ url: `${BASE_URL}/tools/janitorial-rfp/${facilitySlug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.75 });
     });
 
     // 13. Comparison / Alternative Pages (AI citation magnets)

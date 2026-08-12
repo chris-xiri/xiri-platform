@@ -10,7 +10,7 @@ category: "Compliance"
 
 Aerosols from drills. Amalgam waste from fillings. Sterilization areas that can't share a mop with the waiting room. Dental practices have cleaning requirements that most commercial janitorial companies have never been trained on.
 
-## OSHA Requirements for Dental Cleaning
+## OSHA Requirements for Dental Office Sanitization
 
 1. **Operatory surfaces** — Disinfect with EPA-registered product between every patient
 2. **Sterilization area** — Clean counters and floors daily; separate from general areas
@@ -32,4 +32,4 @@ Aerosols from drills. Amalgam waste from fillings. Sterilization areas that can'
 
 Don't wait for an OSHA inspection or a patient complaint to find out if your current cleaners are cutting corners. No matter where your practice is located in the US, you can get a free, custom compliance scope built for your facility.
 
-[**Start Your Free Dental Cleaning Audit →**](/calculator)
+[**Start Your Free Dental Office Audit →**](/calculator)

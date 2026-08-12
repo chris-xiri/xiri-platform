@@ -1,0 +1,27 @@
+{
+  "title": "Physical Therapy & Sports Rehab Cleaning Standards Guide",
+  "heroTitle": "Physical Therapy & Sports Rehab Facility Cleaning Guide",
+  "heroSubtitle": "Sanitization protocols for athletic turf, treatment mats, weight stations, and hydrotherapy wet rooms.",
+  "metaDescription": "Guide to physical therapy facility cleaning, synthetic turf antimicrobial extraction, non-slip floor safety (ASTM D2047), and equipment disinfection.",
+  "datePublished": "2026-03-10",
+  "dateModified": "2026-03-10",
+  "sections": [
+    {
+      "title": "Infection Control in Rehabilitation Environments",
+      "content": "Physical therapy patients are frequently recovering from joint replacement or orthopedic surgery. High-touch rehab equipment, exercise mats, and turf surfaces must be sanitized daily to prevent healthcare-associated infections."
+    },
+    {
+      "title": "Non-Slip Hard Flooring & Patient Fall Prevention",
+      "content": "Rehab facility floors must maintain high slip resistance under ASTM D2047 standards. Cleaning products must remove sweat and moisture without leaving slick residues that pose fall hazards for patients."
+    }
+  ],
+  "calloutTitle": "Rehab & Sports Medicine Standard",
+  "calloutContent": "Learn how XIRI maintains slip-coefficient logs and antimicrobial turf extraction for physical therapy clinics.",
+  "relatedServices": ["medical-office-cleaning", "floor-care", "disinfecting-services"],
+  "faqs": [
+    {
+      "question": "How often should athletic turf be extracted in a physical therapy clinic?",
+      "answer": "Low-moisture antimicrobial extraction should be performed 2x per week in high-traffic rehab zones to eliminate sweat and bacterial buildup."
+    }
+  ]
+}
