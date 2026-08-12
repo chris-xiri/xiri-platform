@@ -75,7 +75,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="overflow-x-hidden max-w-[100vw]">
       {/* Resource hints — load fonts and Firebase faster */}
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -83,7 +83,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
       </head>
-      <BodyClassProvider className={`${inter.variable} ${outfit.variable} font-sans antialiased text-gray-900 bg-white pt-[112px]`}>
+      <BodyClassProvider className={`${inter.variable} ${outfit.variable} font-sans antialiased text-gray-900 bg-white pt-[112px] overflow-x-hidden max-w-[100vw]`}>
         {/* Fallback for users with JavaScript disabled */}
         <noscript>
           <div className="noscript-overlay">
@@ -99,18 +99,22 @@ export default function RootLayout({
           </div>
         </noscript>
         <TrackingProvider>
-          <MarketingShell>
-            <Navigation />
-          </MarketingShell>
-          {children}
-          <MarketingShell>
-            <ConditionalFooter>
-              <Footer />
-            </ConditionalFooter>
+          <div className="w-full max-w-[100vw] overflow-x-hidden relative flex flex-col min-h-screen">
+            <MarketingShell>
+              <Navigation />
+            </MarketingShell>
+            <main className="flex-1 w-full max-w-[100vw] overflow-x-hidden">
+              {children}
+            </main>
+            <MarketingShell>
+              <ConditionalFooter>
+                <Footer />
+              </ConditionalFooter>
 
-            <StickyMobileCTA />
-            <AskAIWidget />
-          </MarketingShell>
+              <StickyMobileCTA />
+              <AskAIWidget />
+            </MarketingShell>
+          </div>
         </TrackingProvider>
         {process.env.NEXT_PUBLIC_GA_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
