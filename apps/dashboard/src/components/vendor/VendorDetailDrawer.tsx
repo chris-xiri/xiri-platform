@@ -28,7 +28,7 @@ import VendorFinancials from '@/components/vendor/VendorFinancials';
 import VendorCompliance from '@/components/vendor/VendorCompliance';
 import EditVendorDialog from '@/components/vendor/EditVendorDialog';
 import VendorStatusTimeline from '@/components/vendor/VendorStatusTimeline';
-import { getInsuranceStatusInfo, getVendorInsuranceDocs } from '../VendorList/utils';
+import { getInsuranceStatusInfo, getVendorInsuranceDocs, getInsurancePolicySummary } from '../VendorList/utils';
 import VendorActivityFeed from '@/components/vendor/VendorActivityFeed';
 import ScheduleFollowUpDialog from '@/components/vendor/ScheduleFollowUpDialog';
 import CapabilityPicker from '@/components/vendor/CapabilityPicker';
@@ -507,9 +507,11 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                 </button>
                                             </CardTitle>
                                         </CardHeader>
-                                        <CardContent className="pt-0 space-y-2">
+                                        <CardContent className="pt-0 space-y-2.5">
                                             {(() => {
                                                 const docs = getVendorInsuranceDocs(vendor);
+                                                const polSummary = getInsurancePolicySummary(vendor);
+
                                                 if (docs.length === 0) {
                                                     return (
                                                         <div className="p-3 text-center border border-dashed rounded-md bg-background/50">
@@ -520,29 +522,39 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                         </div>
                                                     );
                                                 }
-                                                return docs.map((docItem, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg border bg-background text-xs shadow-2xs">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <div className="w-7 h-7 rounded bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0">
-                                                                📄
+                                                return (
+                                                    <div className="space-y-2">
+                                                        <div className="p-2.5 rounded-lg border bg-background text-xs space-y-1.5 shadow-2xs">
+                                                            <div className="flex items-center justify-between font-semibold">
+                                                                <span className="text-foreground flex items-center gap-1">
+                                                                    <span>🛡️</span> GL: {polSummary.glLimit} | WC: {polSummary.wcLimit}
+                                                                </span>
+                                                                <Badge className={polSummary.statusBadgeClass}>
+                                                                    {polSummary.statusLabel}
+                                                                </Badge>
                                                             </div>
-                                                            <div>
-                                                                <p className="font-semibold text-foreground">{docItem.title}</p>
-                                                                {docItem.uploadedAt && (
-                                                                    <p className="text-[10px] text-muted-foreground">Uploaded: {new Date(docItem.uploadedAt).toLocaleDateString()}</p>
-                                                                )}
-                                                            </div>
+                                                            <p className="text-[11px] text-muted-foreground">
+                                                                Expiration Date: <strong className={polSummary.isExpired ? 'text-amber-700 font-bold' : 'text-emerald-700 font-bold'}>{polSummary.expirationDateStr}</strong>
+                                                            </p>
                                                         </div>
-                                                        <a
-                                                            href={docItem.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors"
-                                                        >
-                                                            View PDF <ExternalLink className="w-3 h-3 ml-0.5" />
-                                                        </a>
+                                                        {docs.map((docItem, idx) => (
+                                                            <div key={idx} className="flex items-center justify-between p-2 rounded-md border bg-background text-xs">
+                                                                <div className="flex items-center gap-2">
+                                                                    <FileText className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                                                                    <span className="font-medium truncate">{docItem.title}</span>
+                                                                </div>
+                                                                <a
+                                                                    href={docItem.url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] transition-colors shrink-0"
+                                                                >
+                                                                    View PDF <ExternalLink className="w-2.5 h-2.5 ml-0.5" />
+                                                                </a>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ));
+                                                );
                                             })()}
                                         </CardContent>
                                     </Card>

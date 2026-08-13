@@ -14,7 +14,7 @@ import {
 import { db, storage } from '@/lib/firebase';
 import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { getInsuranceStatusInfo } from '../VendorList/utils';
+import { getInsuranceStatusInfo, getInsurancePolicySummary } from '../VendorList/utils';
 
 interface VendorComplianceProps {
     vendor: Vendor;
@@ -27,6 +27,7 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
     const [uploadMessage, setUploadMessage] = useState<string | null>(null);
 
     const insuranceInfo = getInsuranceStatusInfo(vendor);
+    const policySummary = getInsurancePolicySummary(vendor);
 
     if (!compliance) {
         return (
@@ -128,17 +129,26 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
     const wcStatus = getInsuranceStatus(compliance.workersComp, acordExtracted?.wcActive);
     const autoStatus = getInsuranceStatus(compliance.autoInsurance, acordExtracted?.autoActive);
 
-    const CompactItem = ({ icon: Icon, label, value, verified, notFound, required }: any) => (
-        <div className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors text-sm">
+    const CompactItem = ({ icon: Icon, label, value, verified, notFound, required, subtext }: any) => (
+        <div className="flex items-center justify-between p-2.5 rounded-md border bg-card hover:bg-accent/50 transition-colors text-sm">
             <div className="flex items-center gap-2">
                 <div className={`p-1.5 rounded-full ${value ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     <Icon className="w-3.5 h-3.5" />
                 </div>
-                <span className="font-medium text-foreground">{label}</span>
-                {required && <span className="text-[10px] text-red-500 font-semibold">*</span>}
+                <div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="font-medium text-foreground">{label}</span>
+                        {required && <span className="text-[10px] text-red-500 font-semibold">*</span>}
+                    </div>
+                    {subtext && <p className="text-[10px] text-muted-foreground">{subtext}</p>}
+                </div>
             </div>
             <div className="flex items-center gap-2">
-                {verified !== undefined && (
+                {subtext ? (
+                    <Badge variant="outline" className={`text-[10px] h-5 px-1.5 font-semibold ${value ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-slate-700'}`}>
+                        {subtext}
+                    </Badge>
+                ) : verified !== undefined && (
                     <Badge
                         variant={verified && value ? "outline" : "secondary"}
                         className={`text-[10px] h-5 px-1.5 font-normal ${
@@ -146,7 +156,7 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
                             verified && value ? 'bg-green-100 text-green-700 border-green-200' : ''
                         }`}
                     >
-                        {notFound ? "Not Found" : verified ? "Verified" : "Pending"}
+                        {notFound ? "Not Found" : verified && value ? "Verified" : "Uploaded"}
                     </Badge>
                 )}
                 {value ? (
@@ -172,7 +182,7 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
                         </div>
                         <div>
                             <p className="text-sm font-bold text-emerald-950">Fully Insured & Active Status</p>
-                            <p className="text-xs text-emerald-800">Verified active COI on file. This vendor is eligible for immediate job dispatch.</p>
+                            <p className="text-xs text-emerald-800">Verified active COI on file. General Liability: {policySummary.glLimit} | Workers' Comp: {policySummary.wcLimit} | Expiration: {policySummary.expirationDateStr}</p>
                         </div>
                     </div>
                     <Badge className="bg-emerald-600 text-white font-bold px-3 py-1 text-xs shrink-0">🛡️ Fully Insured (Green)</Badge>
@@ -186,7 +196,8 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
                         <div>
                             <p className="text-sm font-bold text-amber-950">Insurance Policy Expired — Re-activation Action Required</p>
                             <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
-                                This vendor previously had insurance, but their policy expired {insuranceInfo.expirationDate ? `on ${new Date(insuranceInfo.expirationDate).toLocaleDateString()}` : ''}.
+                                Policy expired on <strong className="text-amber-950">{policySummary.expirationDateStr}</strong>. 
+                                GL Limit: {policySummary.glLimit} | WC Limit: {policySummary.wcLimit}.
                                 <strong className="block mt-1 text-amber-950">To restore to Fully Insured (Green) status:</strong> Upload an updated COI document below.
                             </p>
                         </div>
@@ -221,6 +232,41 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
                     <Badge variant="destructive" className="font-bold px-3 py-1 text-xs shrink-0">⛔ Blocked</Badge>
                 </div>
             ) : null}
+
+            {/* Detailed Policy Limits & Expiration Card */}
+            {policySummary.hasPolicy && (
+                <div className="p-4 rounded-xl border bg-card shadow-xs space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                        <div className="flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-emerald-600" />
+                            <h4 className="font-bold text-sm text-foreground">Active Policy Limits &amp; Expiration Summary</h4>
+                        </div>
+                        <Badge className={policySummary.statusBadgeClass}>
+                            {policySummary.statusLabel}
+                        </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        <div className="p-2 rounded bg-muted/30 border">
+                            <p className="text-[10px] text-muted-foreground uppercase font-medium">General Liability Limit</p>
+                            <p className="font-bold text-foreground text-sm mt-0.5">{policySummary.glLimit}</p>
+                        </div>
+                        <div className="p-2 rounded bg-muted/30 border">
+                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Workers' Comp Limit</p>
+                            <p className="font-bold text-foreground text-sm mt-0.5">{policySummary.wcLimit}</p>
+                        </div>
+                        <div className="p-2 rounded bg-muted/30 border">
+                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Aggregate Limit</p>
+                            <p className="font-bold text-foreground text-sm mt-0.5">{policySummary.aggregateLimit}</p>
+                        </div>
+                        <div className="p-2 rounded bg-muted/30 border">
+                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Policy Expiration</p>
+                            <p className={`font-bold text-sm mt-0.5 ${policySummary.isExpired ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                {policySummary.expirationDateStr}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Header / Actions & Score */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-muted/30 p-3 rounded-lg border gap-3">

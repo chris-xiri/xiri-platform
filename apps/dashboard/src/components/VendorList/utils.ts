@@ -270,3 +270,87 @@ export function getInsuranceStatusInfo(vendor: Vendor): InsuranceStatusInfo {
     };
 }
 
+export interface PolicySummary {
+    hasPolicy: boolean;
+    glLimit: string;
+    wcLimit: string;
+    autoLimit: string;
+    aggregateLimit: string;
+    expirationDateStr: string;
+    isExpired: boolean;
+    insuredName: string;
+    statusLabel: string;
+    statusBadgeClass: string;
+}
+
+/**
+ * Extracts policy limits ($1M GL, $1M WC, etc.) and expiration date from a vendor record.
+ */
+export function getInsurancePolicySummary(vendor: Vendor): PolicySummary {
+    if (!vendor) {
+        return {
+            hasPolicy: false,
+            glLimit: 'Not Specified',
+            wcLimit: 'Not Specified',
+            autoLimit: 'Not Specified',
+            aggregateLimit: 'Not Specified',
+            expirationDateStr: 'N/A',
+            isExpired: false,
+            insuredName: 'Unknown',
+            statusLabel: 'No Policy',
+            statusBadgeClass: 'bg-slate-100 text-slate-700'
+        };
+    }
+
+    const comp = (vendor.compliance as any) || {};
+    const acord = comp.acord25 || {};
+    const extracted = acord.extractedData || {};
+
+    const glLimit = extracted.glLimit || comp.generalLiability?.limit || comp.generalLiabilityLimit || '$1,000,000';
+    const wcLimit = extracted.wcLimit || comp.workersComp?.limit || comp.workersCompLimit || '$1,000,000';
+    const autoLimit = extracted.autoLimit || comp.autoInsurance?.limit || '$1,000,000';
+    const aggregateLimit = extracted.aggregateLimit || comp.generalLiability?.aggregateLimit || '$2,000,000';
+
+    const expDate = acord.policyExpirationDate || extracted.expirationDate || comp.policyExpirationDate || comp.generalLiability?.expirationDate || comp.workersComp?.expirationDate;
+
+    let isExpired = (acord.status || '').toUpperCase() === 'EXPIRED';
+    let expirationDateStr = 'On File';
+
+    if (expDate) {
+        const d = new Date(expDate);
+        if (!isNaN(d.getTime())) {
+            expirationDateStr = d.toLocaleDateString();
+            if (d.getTime() < Date.now()) {
+                isExpired = true;
+            }
+        }
+    }
+
+    const hasDoc = !!(acord.url || comp.coiUrl || (Array.isArray(comp.documentsHistory) && comp.documentsHistory.length > 0) || (vendor as any).coiUrl);
+
+    let statusLabel = 'Active Policy';
+    let statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold';
+
+    if (isExpired) {
+        statusLabel = `Expired (${expirationDateStr})`;
+        statusBadgeClass = 'bg-amber-100 text-amber-900 border-amber-300 font-semibold';
+    } else if (hasDoc) {
+        statusLabel = `Active (Expires ${expirationDateStr})`;
+        statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold';
+    }
+
+    return {
+        hasPolicy: hasDoc,
+        glLimit,
+        wcLimit,
+        autoLimit,
+        aggregateLimit,
+        expirationDateStr,
+        isExpired,
+        insuredName: extracted.insuredName || vendor.businessName || 'Insured Vendor',
+        statusLabel,
+        statusBadgeClass
+    };
+}
+
+
