@@ -96,6 +96,81 @@ export interface InsuranceStatusInfo {
     expirationDate?: string;
 }
 
+export interface VendorDocRef {
+    title: string;
+    url: string;
+    type: 'ACORD25' | 'COI' | 'WORKERS_COMP' | 'GENERAL_LIABILITY' | 'OTHER';
+    uploadedAt?: string;
+    status?: string;
+}
+
+/**
+ * Extracts all valid insurance policy PDF/image URLs for a vendor across all Firestore fields.
+ */
+export function getVendorInsuranceDocs(vendor: Vendor): VendorDocRef[] {
+    if (!vendor) return [];
+    const docs: VendorDocRef[] = [];
+    const seen = new Set<string>();
+
+    const addDoc = (url: string | undefined, title: string, type: VendorDocRef['type'], uploadedAt?: string, status?: string) => {
+        if (!url || typeof url !== 'string' || !url.startsWith('http') || seen.has(url)) return;
+        seen.add(url);
+        docs.push({ title, url, type, uploadedAt, status });
+    };
+
+    const comp = (vendor.compliance as any) || {};
+
+    // 1. Primary ACORD 25 Document
+    if (comp.acord25?.url) {
+        addDoc(
+            comp.acord25.url,
+            comp.acord25.fileName || 'ACORD 25 Certificate of Insurance',
+            'ACORD25',
+            comp.acord25.uploadedAt?.toDate ? comp.acord25.uploadedAt.toDate().toISOString() : undefined,
+            comp.acord25.status || 'VERIFIED'
+        );
+    }
+
+    // 2. Compliance Document History Array
+    if (Array.isArray(comp.documentsHistory)) {
+        comp.documentsHistory.forEach((d: any, idx: number) => {
+            addDoc(
+                d.url,
+                d.fileName || `Insurance Document #${comp.documentsHistory.length - idx}`,
+                'COI',
+                d.uploadedAt,
+                d.status
+            );
+        });
+    }
+
+    // 3. Specific Coverage Policy URLs
+    addDoc(comp.generalLiability?.policyUrl || comp.generalLiability?.url, 'General Liability Policy (COI)', 'GENERAL_LIABILITY');
+    addDoc(comp.workersComp?.policyUrl || comp.workersComp?.url, 'Workers Comp Policy (COI)', 'WORKERS_COMP');
+    addDoc(comp.autoInsurance?.policyUrl || comp.autoInsurance?.url, 'Auto Insurance Policy', 'OTHER');
+
+    // 4. Standalone vendor level URL fields
+    addDoc((vendor as any).coiUrl || (vendor as any).insuranceUrl || (vendor as any).coiFile, 'Certificate of Insurance (COI)', 'COI');
+
+    // 5. Onboarding responses COI URL
+    const ob = (vendor as any).onboardingAnswers || (vendor as any).onboarding || {};
+    addDoc(ob.coiUrl || ob.insuranceUrl || ob.insuranceDocumentUrl, 'Onboarding COI Document', 'COI');
+
+    // 6. Generic vendor.documents array or map
+    const genericDocs = (vendor as any).documents;
+    if (Array.isArray(genericDocs)) {
+        genericDocs.forEach((d: any, idx: number) => {
+            if (typeof d === 'string') {
+                addDoc(d, `Document #${idx + 1}`, 'OTHER');
+            } else if (d?.url) {
+                addDoc(d.url, d.name || d.fileName || `Document #${idx + 1}`, 'OTHER', d.uploadedAt, d.status);
+            }
+        });
+    }
+
+    return docs;
+}
+
 /**
  * Derives comprehensive insurance compliance status for a vendor.
  * Categories:

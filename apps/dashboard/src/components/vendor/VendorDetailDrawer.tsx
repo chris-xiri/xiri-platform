@@ -17,7 +17,7 @@ import {
     LayoutDashboard, Briefcase,
     ShieldCheck, Activity, Phone, Mail, MapPin, Globe,
     Copy, Check, Rocket, AlertTriangle, Pencil, X, Plus, MoreHorizontal, Save, Loader2,
-    StickyNote, ClipboardList, Users as UsersIcon, Clock, DollarSign as DollarIcon, MapPinned, Award, FileText
+    StickyNote, ClipboardList, Users as UsersIcon, Clock, DollarSign as DollarIcon, MapPinned, Award, FileText, ExternalLink
 } from 'lucide-react';
 
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -28,6 +28,7 @@ import VendorFinancials from '@/components/vendor/VendorFinancials';
 import VendorCompliance from '@/components/vendor/VendorCompliance';
 import EditVendorDialog from '@/components/vendor/EditVendorDialog';
 import VendorStatusTimeline from '@/components/vendor/VendorStatusTimeline';
+import { getInsuranceStatusInfo, getVendorInsuranceDocs } from '../VendorList/utils';
 import VendorActivityFeed from '@/components/vendor/VendorActivityFeed';
 import ScheduleFollowUpDialog from '@/components/vendor/ScheduleFollowUpDialog';
 import CapabilityPicker from '@/components/vendor/CapabilityPicker';
@@ -266,93 +267,126 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                     <>
                         {/* Header */}
                         <div className="sticky top-0 bg-card border-b px-5 py-4 z-10">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
-                                    {vendor.businessName?.charAt(0) || '?'}
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <SheetTitle className="text-lg truncate">{vendor.businessName}</SheetTitle>
-                                        <LanguageBadge lang={vendor.preferredLanguage} />
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        <select
-                                            value={vendor.status}
-                                            onChange={async (e) => {
-                                                try { await updateDoc(doc(db, 'vendors', vendor.id!), { status: e.target.value, updatedAt: new Date() }); }
-                                                catch (err) { console.error('Failed:', err); }
-                                            }}
-                                            className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                        >
-                                            <option value="pending_review">Sourced</option>
-                                            <option value="qualified">Qualified</option>
-                                            <option value="awaiting_onboarding">Awaiting Form</option>
-                                            <option value="compliance_review">Compliance Review</option>
-                                            <option value="pending_verification">Verifying Docs</option>
-                                            <option value="onboarding_scheduled">Onboarding Call</option>
-                                            <option value="ready_for_assignment">✅ Ready</option>
-                                            <option value="active">Active</option>
-                                            <option value="suspended">⚠️ Suspended</option>
-                                            <option value="dismissed">🚫 Dismissed</option>
-                                        </select>
-                                        {vendor.outreachStatus && (
-                                            <Badge variant="outline" className={
-                                                vendor.outreachStatus === 'SENT' ? 'border-green-400 text-green-600' :
-                                                    vendor.outreachStatus === 'FAILED' ? 'border-red-500 text-red-600' :
-                                                        vendor.outreachStatus === 'PENDING' ? 'border-purple-400 text-purple-600' :
-                                                            vendor.outreachStatus === 'NEEDS_CONTACT' ? 'border-amber-400 text-amber-600' :
-                                                                vendor.outreachStatus === 'ENRICHING' ? 'border-blue-400 text-blue-600' : ''
-                                            }>
-                                                {vendor.outreachStatus === 'SENT' && 'Outreach Sent'}
-                                                {vendor.outreachStatus === 'FAILED' && <><AlertTriangle className="w-3 h-3 mr-1" /> Failed</>}
-                                                {vendor.outreachStatus === 'PENDING' && 'Queued'}
-                                                {vendor.outreachStatus === 'NEEDS_CONTACT' && <><AlertTriangle className="w-3 h-3 mr-1" /> Needs Contact</>}
-                                                {vendor.outreachStatus === 'ENRICHING' && 'Enriching...'}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Quick actions */}
-                            <div className="flex gap-2 flex-wrap">
-                                {vendor.status === 'pending_review' && (
+                            {(() => {
+                                const insuranceInfo = getInsuranceStatusInfo(vendor);
+                                const insuranceDocs = getVendorInsuranceDocs(vendor);
+                                return (
                                     <>
-                                        <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700"
-                                            onClick={async () => { await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'qualified', updatedAt: new Date() }); }}>
-                                            <Check className="w-3 h-3 mr-1" /> Qualify
-                                        </Button>
-                                        <Button size="sm" variant="outline" className="h-7 text-xs border-red-300 text-red-600 hover:bg-red-50"
-                                            onClick={async () => { await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'dismissed', updatedAt: new Date() }); }}>
-                                            Dismiss
-                                        </Button>
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
+                                                {vendor.businessName?.charAt(0) || '?'}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <SheetTitle className="text-lg truncate">{vendor.businessName}</SheetTitle>
+                                                    <LanguageBadge lang={vendor.preferredLanguage} />
+                                                    {insuranceInfo.isBlocked ? (
+                                                        <Badge variant="destructive" className="px-1.5 py-0.5 text-[10px] font-bold">
+                                                            ⛔ Blocked
+                                                        </Badge>
+                                                    ) : insuranceInfo.isExpired ? (
+                                                        <Badge variant="outline" className="bg-amber-100 text-amber-900 border-amber-300 px-1.5 py-0.5 text-[10px] font-bold">
+                                                            ⚠️ Insurance Expired
+                                                        </Badge>
+                                                    ) : insuranceInfo.isFullyInsured ? (
+                                                        <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 px-1.5 py-0.5 text-[10px] font-bold">
+                                                            🛡️ Fully Insured (Green)
+                                                        </Badge>
+                                                    ) : null}
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <select
+                                                        value={vendor.status}
+                                                        onChange={async (e) => {
+                                                            try { await updateDoc(doc(db, 'vendors', vendor.id!), { status: e.target.value, updatedAt: new Date() }); }
+                                                            catch (err) { console.error('Failed:', err); }
+                                                        }}
+                                                        className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                    >
+                                                        <option value="pending_review">Sourced</option>
+                                                        <option value="qualified">Qualified</option>
+                                                        <option value="awaiting_onboarding">Awaiting Form</option>
+                                                        <option value="compliance_review">Compliance Review</option>
+                                                        <option value="pending_verification">Verifying Docs</option>
+                                                        <option value="onboarding_scheduled">Onboarding Call</option>
+                                                        <option value="ready_for_assignment">✅ Ready</option>
+                                                        <option value="active">Active</option>
+                                                        <option value="suspended">⚠️ Suspended</option>
+                                                        <option value="dismissed">🚫 Dismissed</option>
+                                                    </select>
+                                                    {vendor.outreachStatus && (
+                                                        <Badge variant="outline" className={
+                                                            vendor.outreachStatus === 'SENT' ? 'border-green-400 text-green-600' :
+                                                                vendor.outreachStatus === 'FAILED' ? 'border-red-500 text-red-600' :
+                                                                    vendor.outreachStatus === 'PENDING' ? 'border-purple-400 text-purple-600' :
+                                                                        vendor.outreachStatus === 'NEEDS_CONTACT' ? 'border-amber-400 text-amber-600' :
+                                                                            vendor.outreachStatus === 'ENRICHING' ? 'border-blue-400 text-blue-600' : ''
+                                                        }>
+                                                            {vendor.outreachStatus === 'SENT' && 'Outreach Sent'}
+                                                            {vendor.outreachStatus === 'FAILED' && <><AlertTriangle className="w-3 h-3 mr-1" /> Failed</>}
+                                                            {vendor.outreachStatus === 'PENDING' && 'Queued'}
+                                                            {vendor.outreachStatus === 'NEEDS_CONTACT' && <><AlertTriangle className="w-3 h-3 mr-1" /> Needs Contact</>}
+                                                            {vendor.outreachStatus === 'ENRICHING' && 'Enriching...'}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Quick actions */}
+                                        <div className="flex gap-2 flex-wrap items-center">
+                                            {insuranceDocs.length > 0 && (
+                                                <a
+                                                    href={insuranceDocs[0].url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs"
+                                                >
+                                                    <FileText className="w-3 h-3" />
+                                                    View COI PDF
+                                                    <ExternalLink className="w-2.5 h-2.5 ml-0.5 opacity-80" />
+                                                </a>
+                                            )}
+                                            {vendor.status === 'pending_review' && (
+                                                <>
+                                                    <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                                                        onClick={async () => { await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'qualified', updatedAt: new Date() }); }}>
+                                                        <Check className="w-3 h-3 mr-1" /> Qualify
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" className="h-7 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                                        onClick={async () => { await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'dismissed', updatedAt: new Date() }); }}>
+                                                        Dismiss
+                                                    </Button>
+                                                </>
+                                            )}
+                                            {vendor.status === 'qualified' && vendor.email && (
+                                                <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700" disabled={startingSequence}
+                                                    onClick={async () => {
+                                                        setStartingSequence(true);
+                                                        try {
+                                                            const ref = doc(db, 'vendors', vendor.id!);
+                                                            await updateDoc(ref, { status: 'pending_review', outreachStatus: null });
+                                                            setTimeout(async () => { await updateDoc(ref, { status: 'qualified' }); setStartingSequence(false); }, 500);
+                                                        } catch { setStartingSequence(false); }
+                                                    }}>
+                                                    <Rocket className="w-3 h-3 mr-1" /> {startingSequence ? 'Starting...' : 'Send Outreach'}
+                                                </Button>
+                                            )}
+                                            {vendor.status === 'awaiting_onboarding' && (
+                                                <Button variant="outline" size="sm" className="h-7 text-xs"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(`${ONBOARDING_BASE_URL}/onboarding/${vendor.id}`);
+                                                        setCopied(true); setTimeout(() => setCopied(false), 2000);
+                                                    }}>
+                                                    {copied ? <><Check className="w-3 h-3 mr-1 text-green-600" /> Copied!</> : <><Copy className="w-3 h-3 mr-1" /> Onboarding Link</>}
+                                                </Button>
+                                            )}
+                                            <EditVendorDialog vendor={vendor} />
+                                            <ScheduleFollowUpDialog vendorId={vendor.id} entityName={vendor.businessName} />
+                                        </div>
                                     </>
-                                )}
-                                {vendor.status === 'qualified' && vendor.email && (
-                                    <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700" disabled={startingSequence}
-                                        onClick={async () => {
-                                            setStartingSequence(true);
-                                            try {
-                                                const ref = doc(db, 'vendors', vendor.id!);
-                                                await updateDoc(ref, { status: 'pending_review', outreachStatus: null });
-                                                setTimeout(async () => { await updateDoc(ref, { status: 'qualified' }); setStartingSequence(false); }, 500);
-                                            } catch { setStartingSequence(false); }
-                                        }}>
-                                        <Rocket className="w-3 h-3 mr-1" /> {startingSequence ? 'Starting...' : 'Send Outreach'}
-                                    </Button>
-                                )}
-                                {vendor.status === 'awaiting_onboarding' && (
-                                    <Button variant="outline" size="sm" className="h-7 text-xs"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(`${ONBOARDING_BASE_URL}/onboarding/${vendor.id}`);
-                                            setCopied(true); setTimeout(() => setCopied(false), 2000);
-                                        }}>
-                                        {copied ? <><Check className="w-3 h-3 mr-1 text-green-600" /> Copied!</> : <><Copy className="w-3 h-3 mr-1" /> Onboarding Link</>}
-                                    </Button>
-                                )}
-                                <EditVendorDialog vendor={vendor} />
-                                <ScheduleFollowUpDialog vendorId={vendor.id} entityName={vendor.businessName} />
-                            </div>
+                                );
+                            })()}
                         </div>
 
                         {/* Content */}
@@ -457,6 +491,59 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                     )}
                                                 </div>
                                             </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Insurance & COI Documents Quick Access Card */}
+                                    <Card className="border-emerald-200/80 bg-emerald-50/20">
+                                        <CardHeader className="py-3">
+                                            <CardTitle className="text-sm flex items-center justify-between">
+                                                <span className="flex items-center gap-1.5 text-emerald-950 font-bold">
+                                                    <FileText className="w-4 h-4 text-emerald-700" />
+                                                    Insurance Policies &amp; COI Documents
+                                                </span>
+                                                <button onClick={() => setActiveTab('compliance')} className="text-xs text-primary font-semibold hover:underline">
+                                                    Manage Compliance →
+                                                </button>
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="pt-0 space-y-2">
+                                            {(() => {
+                                                const docs = getVendorInsuranceDocs(vendor);
+                                                if (docs.length === 0) {
+                                                    return (
+                                                        <div className="p-3 text-center border border-dashed rounded-md bg-background/50">
+                                                            <p className="text-xs text-muted-foreground italic">No insurance documents uploaded yet.</p>
+                                                            <button onClick={() => setActiveTab('compliance')} className="mt-1.5 text-xs text-primary font-semibold hover:underline">
+                                                                + Upload Insurance Policy (COI)
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                }
+                                                return docs.map((docItem, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg border bg-background text-xs shadow-2xs">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="w-7 h-7 rounded bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0">
+                                                                📄
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-semibold text-foreground">{docItem.title}</p>
+                                                                {docItem.uploadedAt && (
+                                                                    <p className="text-[10px] text-muted-foreground">Uploaded: {new Date(docItem.uploadedAt).toLocaleDateString()}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <a
+                                                            href={docItem.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors"
+                                                        >
+                                                            View PDF <ExternalLink className="w-3 h-3 ml-0.5" />
+                                                        </a>
+                                                    </div>
+                                                ));
+                                            })()}
                                         </CardContent>
                                     </Card>
 

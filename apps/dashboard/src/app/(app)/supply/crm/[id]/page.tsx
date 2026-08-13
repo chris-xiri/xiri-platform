@@ -14,9 +14,10 @@ import {
     LayoutDashboard, Users, Briefcase, DollarSign,
     ShieldCheck, Activity, ArrowLeft, MoreHorizontal,
     Phone, Mail, MapPin, Globe, Copy, Check, Rocket, AlertTriangle,
-    Pencil, X, Plus
+    Pencil, X, Plus, ExternalLink, FileText
 } from 'lucide-react';
 import Link from 'next/link';
+import { getInsuranceStatusInfo, getVendorInsuranceDocs } from '@/components/VendorList/utils';
 
 // Import Sub-components
 import VendorContacts from '@/components/vendor/VendorContacts';
@@ -155,6 +156,8 @@ export default function CRMDetailPage(props: PageProps) {
 
     const isDispatchBlocked = (vendor as any).dispatchBlocked || (vendor.compliance as any)?.acord25?.status === 'FLAGGED' || (vendor.compliance as any)?.acord25?.status === 'REJECTED';
     const blockReason = (vendor as any).dispatchBlockReason || (vendor.compliance as any)?.acord25?.aiAnalysis?.reasoning;
+    const insuranceInfo = getInsuranceStatusInfo(vendor);
+    const insuranceDocs = getVendorInsuranceDocs(vendor);
 
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-background">
@@ -179,20 +182,28 @@ export default function CRMDetailPage(props: PageProps) {
                         <ArrowLeft className="w-4 h-4 mr-1" /> Back to CRM
                     </Link>
                 </div>
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start flex-wrap gap-4">
                     <div className="flex items-center gap-3">
                         <div className="h-12 w-12 rounded bg-primary/10 flex items-center justify-center text-xl font-bold text-primary">
                             {vendor.businessName?.charAt(0) || '?'}
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                                 <h1 className="text-2xl font-bold tracking-tight">{vendor.businessName}</h1>
                                 <LanguageBadge lang={vendor.preferredLanguage} />
-                                {isDispatchBlocked && (
-                                    <Badge variant="destructive" className="gap-1 text-xs py-0.5">
-                                        ⛔ Insurance Blocked
+                                {insuranceInfo.isBlocked ? (
+                                    <Badge variant="destructive" className="gap-1 text-xs py-0.5 font-bold">
+                                        ⛔ Blocked
                                     </Badge>
-                                )}
+                                ) : insuranceInfo.isExpired ? (
+                                    <Badge variant="outline" className="bg-amber-100 text-amber-900 border-amber-300 gap-1 text-xs py-0.5 font-bold">
+                                        ⚠️ Insurance Expired
+                                    </Badge>
+                                ) : insuranceInfo.isFullyInsured ? (
+                                    <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 gap-1 text-xs py-0.5 font-bold">
+                                        🛡️ Fully Insured (Green)
+                                    </Badge>
+                                ) : null}
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                                 <select
@@ -472,6 +483,59 @@ export default function CRMDetailPage(props: PageProps) {
                                                 </div>
                                             </div>
                                         </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Insurance Policies & COI Documents Quick Access Card */}
+                                <Card className="border-emerald-200/80 bg-emerald-50/20">
+                                    <CardHeader className="py-3">
+                                        <CardTitle className="text-sm flex items-center justify-between">
+                                            <span className="flex items-center gap-1.5 text-emerald-950 font-bold">
+                                                <FileText className="w-4 h-4 text-emerald-700" />
+                                                Insurance Policies &amp; COI Documents
+                                            </span>
+                                            <button onClick={() => handleDetailTabChange('compliance')} className="text-xs text-primary font-semibold hover:underline">
+                                                Manage Compliance →
+                                            </button>
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pt-0 space-y-2">
+                                        {(() => {
+                                            const docs = getVendorInsuranceDocs(vendor);
+                                            if (docs.length === 0) {
+                                                return (
+                                                    <div className="p-3 text-center border border-dashed rounded-md bg-background/50">
+                                                        <p className="text-xs text-muted-foreground italic">No insurance documents uploaded yet.</p>
+                                                        <button onClick={() => handleDetailTabChange('compliance')} className="mt-1.5 text-xs text-primary font-semibold hover:underline">
+                                                            + Upload Insurance Policy (COI)
+                                                        </button>
+                                                    </div>
+                                                );
+                                            }
+                                            return docs.map((docItem, idx) => (
+                                                <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg border bg-background text-xs shadow-2xs">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-7 h-7 rounded bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0">
+                                                            📄
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-foreground">{docItem.title}</p>
+                                                            {docItem.uploadedAt && (
+                                                                <p className="text-[10px] text-muted-foreground">Uploaded: {new Date(docItem.uploadedAt).toLocaleDateString()}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <a
+                                                        href={docItem.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors"
+                                                    >
+                                                        View PDF <ExternalLink className="w-3 h-3 ml-0.5" />
+                                                    </a>
+                                                </div>
+                                            ));
+                                        })()}
                                     </CardContent>
                                 </Card>
 
