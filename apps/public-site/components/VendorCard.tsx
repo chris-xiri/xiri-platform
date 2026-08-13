@@ -60,10 +60,12 @@ export function VendorCard({ vendor }: VendorCardProps) {
       </div>
 
       <div className="vendor-card__compliance">
-        {vendor.hasGeneralLiability && (
-          <span className="vendor-card__compliance-badge">✅ Insured</span>
-        )}
-        {vendor.hasWorkersComp && (
+        {vendor.hasGeneralLiability && vendor.hasWorkersComp ? (
+          <span className="vendor-card__compliance-badge vendor-card__compliance-badge--green">🛡️ Fully Insured</span>
+        ) : vendor.hasGeneralLiability ? (
+          <span className="vendor-card__compliance-badge">✅ General Liability</span>
+        ) : null}
+        {vendor.hasWorkersComp && !vendor.hasGeneralLiability && (
           <span className="vendor-card__compliance-badge">✅ Workers' Comp</span>
         )}
         {vendor.hasBackgroundCheck && (

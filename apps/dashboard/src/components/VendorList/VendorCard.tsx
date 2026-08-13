@@ -5,7 +5,7 @@ import { Vendor } from "@xiri-facility-solutions/shared";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
-import { getStatusColor, getScoreColor } from "./utils";
+import { getStatusColor, getScoreColor, getInsuranceStatusInfo } from "./utils";
 
 interface VendorCardProps {
     vendor: Vendor;
@@ -16,6 +16,8 @@ interface VendorCardProps {
 }
 
 export function VendorCard({ vendor, index, isRecruitmentMode = false, isSelected, onSelectChange }: VendorCardProps) {
+    const insuranceInfo = getInsuranceStatusInfo(vendor);
+
     return (
         <div className="border border-border rounded-lg p-3 space-y-3 bg-card shadow-sm">
             <div className="flex items-start justify-between">
@@ -31,6 +33,21 @@ export function VendorCard({ vendor, index, isRecruitmentMode = false, isSelecte
                     )}
                     <span className="text-muted-foreground font-medium text-xs mt-0.5">#{index + 1}</span>
                     <div>
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                            {insuranceInfo.isBlocked ? (
+                                <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 px-1 py-0 h-4 text-[9px] font-bold">
+                                    ⛔ Blocked
+                                </Badge>
+                            ) : insuranceInfo.isExpired ? (
+                                <Badge variant="outline" className="bg-amber-100 text-amber-900 border-amber-300 px-1 py-0 h-4 text-[9px] font-bold" title="Insurance policy has expired. Upload updated policy to restore Fully Insured status.">
+                                    ⚠️ Expired Policy
+                                </Badge>
+                            ) : insuranceInfo.isFullyInsured ? (
+                                <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 px-1 py-0 h-4 text-[9px] font-bold">
+                                    🛡️ Fully Insured
+                                </Badge>
+                            ) : null}
+                        </div>
                         <Link href={isRecruitmentMode ? `/supply/recruitment/${vendor.id}` : `/supply/crm/${vendor.id}`} className="hover:opacity-80 transition-opacity">
                             <h3 className="font-medium text-foreground hover:text-primary transition-colors">{vendor.businessName}</h3>
                         </Link>

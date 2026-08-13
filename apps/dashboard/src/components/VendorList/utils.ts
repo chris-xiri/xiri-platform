@@ -81,3 +81,117 @@ export const formatCapability = (cap: string): string => {
         .replace(/([a-z])([A-Z])/g, '$1 $2')  // camelCase → spaces
         .replace(/\b\w/g, c => c.toUpperCase()); // capitalize first letter of each word
 };
+
+export type VendorInsuranceState = 'BLOCKED' | 'FULLY_INSURED' | 'EXPIRED' | 'PENDING' | 'UNINSURED';
+
+export interface InsuranceStatusInfo {
+    state: VendorInsuranceState;
+    label: string;
+    badgeClass: string;
+    icon: string;
+    description: string;
+    isFullyInsured: boolean;
+    isExpired: boolean;
+    isBlocked: boolean;
+    expirationDate?: string;
+}
+
+/**
+ * Derives comprehensive insurance compliance status for a vendor.
+ * Categories:
+ * - BLOCKED: Explicitly blocked or rejected/flagged ACORD 25
+ * - EXPIRED: Formerly insured, but COI policy expiration date has passed
+ * - FULLY_INSURED: Active, verified insurance coverage (Emerald Green)
+ * - PENDING: COI uploaded and pending verification
+ * - UNINSURED: No COI policy on file
+ */
+export function getInsuranceStatusInfo(vendor: Vendor): InsuranceStatusInfo {
+    const isBlocked = (vendor as any).dispatchBlocked || 
+                      (vendor.compliance as any)?.acord25?.status === 'FLAGGED' || 
+                      (vendor.compliance as any)?.acord25?.status === 'REJECTED';
+
+    if (isBlocked) {
+        return {
+            state: 'BLOCKED',
+            label: '⛔ Blocked',
+            badgeClass: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900',
+            icon: '⛔',
+            description: 'Vendor is blocked from dispatch due to compliance issues.',
+            isFullyInsured: false,
+            isExpired: false,
+            isBlocked: true
+        };
+    }
+
+    const acord = (vendor.compliance as any)?.acord25;
+    const acordStatus = (acord?.status || '').toUpperCase();
+    const extracted = acord?.extractedData;
+    const expirationDate = acord?.policyExpirationDate || extracted?.expirationDate || (vendor.compliance as any)?.policyExpirationDate;
+
+    // Check expiration: status is EXPIRED or expirationDate is in the past
+    let isExpired = acordStatus === 'EXPIRED';
+    if (!isExpired && expirationDate) {
+        const exp = new Date(expirationDate);
+        if (!isNaN(exp.getTime()) && exp.getTime() < Date.now()) {
+            isExpired = true;
+        }
+    }
+
+    if (isExpired) {
+        return {
+            state: 'EXPIRED',
+            label: '⚠️ Insurance Expired',
+            badgeClass: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 font-semibold',
+            icon: '⚠️',
+            description: 'Insurance policy has expired. Upload updated COI policy to reactivate to Fully Insured status.',
+            isFullyInsured: false,
+            isExpired: true,
+            isBlocked: false,
+            expirationDate
+        };
+    }
+
+    // Check Fully Insured (Green)
+    const glActive = extracted?.glActive ?? vendor.compliance?.generalLiability?.hasInsurance;
+    const wcActive = extracted?.wcActive ?? vendor.compliance?.workersComp?.hasInsurance;
+    const hasActiveCoverage = (glActive || wcActive) && acordStatus !== 'REJECTED' && acordStatus !== 'FLAGGED';
+
+    if (hasActiveCoverage || acordStatus === 'VERIFIED') {
+        return {
+            state: 'FULLY_INSURED',
+            label: '🛡️ Fully Insured',
+            badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 font-semibold',
+            icon: '🛡️',
+            description: 'Vendor has verified, active insurance coverage.',
+            isFullyInsured: true,
+            isExpired: false,
+            isBlocked: false,
+            expirationDate
+        };
+    }
+
+    if (acordStatus === 'PENDING' || vendor.compliance?.status === 'compliance_review') {
+        return {
+            state: 'PENDING',
+            label: '⏳ Insurance Pending',
+            badgeClass: 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800',
+            icon: '⏳',
+            description: 'Insurance document uploaded and pending verification.',
+            isFullyInsured: false,
+            isExpired: false,
+            isBlocked: false
+        };
+    }
+
+    return {
+        state: 'UNINSURED',
+        label: 'Uninsured',
+        badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+        icon: '📄',
+        description: 'No active COI policy on file.',
+        isFullyInsured: false,
+        isExpired: false,
+        isBlocked: false
+    };
+}
+

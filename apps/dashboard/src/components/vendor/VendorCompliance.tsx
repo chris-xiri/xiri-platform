@@ -14,6 +14,7 @@ import {
 import { db, storage } from '@/lib/firebase';
 import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { getInsuranceStatusInfo } from '../VendorList/utils';
 
 interface VendorComplianceProps {
     vendor: Vendor;
@@ -24,6 +25,8 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+
+    const insuranceInfo = getInsuranceStatusInfo(vendor);
 
     if (!compliance) {
         return (
@@ -160,6 +163,65 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
 
     return (
         <div className="space-y-4">
+            {/* Dedicated Insurance Health & Re-activation Banner */}
+            {insuranceInfo.isFullyInsured ? (
+                <div className="p-3.5 rounded-xl border bg-emerald-50/90 border-emerald-200 text-emerald-900 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shrink-0 font-bold text-base">
+                            🛡️
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-emerald-950">Fully Insured & Active Status</p>
+                            <p className="text-xs text-emerald-800">Verified active COI on file. This vendor is eligible for immediate job dispatch.</p>
+                        </div>
+                    </div>
+                    <Badge className="bg-emerald-600 text-white font-bold px-3 py-1 text-xs shrink-0">🛡️ Fully Insured (Green)</Badge>
+                </div>
+            ) : insuranceInfo.isExpired ? (
+                <div className="p-4 rounded-xl border bg-amber-50 border-amber-300 text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                    <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0 font-bold text-base mt-0.5">
+                            ⚠️
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-amber-950">Insurance Policy Expired — Re-activation Action Required</p>
+                            <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                                This vendor previously had insurance, but their policy expired {insuranceInfo.expirationDate ? `on ${new Date(insuranceInfo.expirationDate).toLocaleDateString()}` : ''}.
+                                <strong className="block mt-1 text-amber-950">To restore to Fully Insured (Green) status:</strong> Upload an updated COI document below.
+                            </p>
+                        </div>
+                    </div>
+                    <label className="cursor-pointer shrink-0">
+                        <input
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            disabled={uploading}
+                        />
+                        <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 h-9 px-4 text-xs shadow-md" disabled={uploading} asChild>
+                            <span>
+                                {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                Upload COI to Restore Green
+                            </span>
+                        </Button>
+                    </label>
+                </div>
+            ) : insuranceInfo.isBlocked ? (
+                <div className="p-3.5 rounded-xl border bg-red-50 border-red-200 text-red-900 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-red-100 border border-red-300 flex items-center justify-center text-red-700 shrink-0 font-bold text-base">
+                            ⛔
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-red-950">Dispatch Blocked</p>
+                            <p className="text-xs text-red-800">Compliance failure or rejected COI document prevents dispatch assignments.</p>
+                        </div>
+                    </div>
+                    <Badge variant="destructive" className="font-bold px-3 py-1 text-xs shrink-0">⛔ Blocked</Badge>
+                </div>
+            ) : null}
+
             {/* Header / Actions & Score */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-muted/30 p-3 rounded-lg border gap-3">
                 <div>

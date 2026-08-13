@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, X, Eye, Briefcase, Zap, Send, Phone, Mail, MousePointerClick, MailOpen, MailCheck, AlertTriangle, Ban, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { getStatusColor, getScoreColor, getStatusLabel, formatCapability } from "./utils";
+import { getStatusColor, getScoreColor, getStatusLabel, formatCapability, getInsuranceStatusInfo } from "./utils";
 import { useState } from "react";
 
 export type VendorColumnKey = 'vendor' | 'location' | 'score' | 'status' | 'actions';
@@ -73,6 +73,8 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
     const isNeedsContact = vendor.outreachStatus === 'NEEDS_CONTACT' && (vendor.status === 'qualified' || vendor.status === 'QUALIFIED');
     const isBounced = vendor.outreachStatus === 'FAILED' && vendor.status === 'awaiting_onboarding';
     const showEditEmail = isNeedsContact || isBounced;
+
+    const insuranceInfo = getInsuranceStatusInfo(vendor);
 
     // Parse location — merge city/state/zip into single string
     const locationParts = [
@@ -142,12 +144,20 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                 <TableCell className="py-2">
                     <Link href={detailLink} onClick={handleRowClick} className="block group cursor-pointer">
                         <div className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-1.5">
-                                {((vendor as any).dispatchBlocked || (vendor.compliance as any)?.acord25?.status === 'FLAGGED' || (vendor.compliance as any)?.acord25?.status === 'REJECTED') && (
-                                    <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 px-1 py-0 h-4 text-[9px] font-bold gap-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                {insuranceInfo.isBlocked ? (
+                                    <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 px-1.5 py-0.5 h-5 text-[10px] font-bold gap-0.5">
                                         ⛔ Blocked
                                     </Badge>
-                                )}
+                                ) : insuranceInfo.isExpired ? (
+                                    <Badge variant="outline" className="bg-amber-100 text-amber-900 border-amber-300 px-1.5 py-0.5 h-5 text-[10px] font-bold gap-0.5" title="Insurance policy has expired. Upload updated policy to reactivate to Fully Insured status.">
+                                        ⚠️ Expired Policy
+                                    </Badge>
+                                ) : insuranceInfo.isFullyInsured ? (
+                                    <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 px-1.5 py-0.5 h-5 text-[10px] font-bold gap-0.5">
+                                        🛡️ Fully Insured
+                                    </Badge>
+                                ) : null}
                                 {/* "New" badge for organic/SEO entries */}
                                 {((vendor.status || '').toLowerCase() === 'new_lead' ||
                                     ((vendor.status || 'pending_review').toLowerCase() === 'pending_review' && !vendor.outreachStatus)) && (
