@@ -598,8 +598,8 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     updatedAt: new Date(),
                 };
 
-                await updateDoc(doc(db, 'quotes', existingQuote.quoteId), {
-                    lineItems: stripUndefined(lineItems),
+                await updateDoc(doc(db, 'quotes', existingQuote.quoteId), stripUndefined({
+                    lineItems,
                     totalMonthlyRate: totals.totalMonthly,
                     oneTimeCharges: totals.totalOneTime,
                     subtotalBeforeTax: totals.subtotalBeforeTax,
@@ -611,7 +611,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     assignedTo: assignedTo || profile.uid || 'unassigned',
                     version: newVersion,
                     updatedAt: serverTimestamp(),
-                });
+                }));
 
                 const quoteRef = doc(db, 'quotes', existingQuote.quoteId);
                 const quoteDoc = await getDoc(quoteRef);
@@ -627,26 +627,44 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                 onCreated(existingQuote.quoteId);
             } else {
                 if (!selectedLead) return;
-                const docRef = await addDoc(collection(db, 'quotes'), {
-                    leadId: selectedLead.id, leadBusinessName: selectedLead.businessName,
-                    lineItems: stripUndefined(lineItems),
-                    totalMonthlyRate: totals.totalMonthly, oneTimeCharges: totals.totalOneTime,
-                    subtotalBeforeTax: totals.subtotalBeforeTax, totalTax: totals.totalTax,
-                    contractTenure, paymentTerms, exitClause, notes,
-                    // Calculator scope snapshot (if available)
-                    ...(scope ? {
+                const newQuoteData = stripUndefined({
+                    leadId: selectedLead.id,
+                    leadBusinessName: selectedLead.businessName,
+                    lineItems,
+                    totalMonthlyRate: totals.totalMonthly,
+                    oneTimeCharges: totals.totalOneTime,
+                    subtotalBeforeTax: totals.subtotalBeforeTax,
+                    totalTax: totals.totalTax,
+                    contractTenure,
+                    paymentTerms,
+                    exitClause,
+                    notes,
+                    // Calculator scope snapshot (if janitorial rooms exist)
+                    ...(scope?.rooms && scope.rooms.length > 0 ? {
                         buildingScope: {
                             rooms: scope.rooms,
                             inputs: scope.inputs,
                             results: scope.results,
                         },
                     } : {}),
+                    // Trade scope snapshot (if trade unitItems exist)
+                    ...(scope?.unitItems && scope.unitItems.length > 0 ? {
+                        tradeScope: {
+                            serviceType: scope.serviceType,
+                            frequency: scope.frequency,
+                            unitItems: scope.unitItems,
+                        },
+                    } : {}),
                     // Proposal T&C (if edited)
                     ...(proposalTerms ? { proposalTerms } : {}),
-                    version: 1, status: 'draft',
+                    version: 1,
+                    status: 'draft',
                     assignedTo: assignedTo || profile.uid || 'unassigned',
-                    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
                 });
+
+                const docRef = await addDoc(collection(db, 'quotes'), newQuoteData);
 
                 await addDoc(collection(db, 'activity_logs'), {
                     type: 'QUOTE_CREATED', quoteId: docRef.id,

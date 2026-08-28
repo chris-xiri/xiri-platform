@@ -8,15 +8,18 @@ const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /** Strip undefined values recursively before Firestore writes */
 export function stripUndefined(obj: any): any {
-    if (Array.isArray(obj)) return obj.map(stripUndefined);
-    if (obj !== null && typeof obj === 'object' && !(obj instanceof Date) && typeof obj.toDate !== 'function') {
-        return Object.fromEntries(
-            Object.entries(obj)
-                .filter(([, v]) => v !== undefined)
-                .map(([k, v]) => [k, stripUndefined(v)])
-        );
-    }
-    return obj;
+    if (obj === undefined) return undefined;
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (obj instanceof Date || typeof obj.toDate === 'function') return obj;
+    // Preserve Firestore FieldValue sentinels (serverTimestamp, deleteField, arrayUnion, etc.)
+    if ('_methodName' in obj || obj.constructor?.name === 'FieldValue') return obj;
+    if (Array.isArray(obj)) return obj.map(stripUndefined).filter(v => v !== undefined);
+
+    return Object.fromEntries(
+        Object.entries(obj)
+            .filter(([, v]) => v !== undefined)
+            .map(([k, v]) => [k, stripUndefined(v)])
+    );
 }
 
 /** Get ordinal suffix for a number (1st, 2nd, 3rd, 4th, etc.) */
