@@ -1454,6 +1454,11 @@ export interface Quote {
     };
     proposalTerms?: ProposalTerms;    // Per-quote T&C (defaults from company, editable per deal)
     paymentMethodPreference?: 'ach_check' | 'credit_card'; // Client payment preference (ACH/Check cash vs Credit Card +3%)
+
+    // Executed / Signed SOW Document (DocuSign / BreezeDoc / Manual Upload)
+    signedSowUrl?: string;
+    signedSowName?: string;
+    signedSowUploadedAt?: any;
 }
 
 /**

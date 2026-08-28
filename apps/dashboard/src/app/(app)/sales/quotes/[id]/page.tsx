@@ -3,8 +3,9 @@
 import { use, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Quote, QuoteLineItem, QuoteRevision, ROOM_TYPES, CLEANING_TASKS, computeDualPricing, getCreditPrice } from '@xiri-facility-solutions/shared';
 import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
@@ -20,7 +21,7 @@ import {
     ArrowLeft, Check, X, Printer, FileText, MapPin, Plus,
     DollarSign, Calendar, Clock, Building2, AlertTriangle,
     Send, Eye, MessageSquare, Mail, UserRoundCheck, RotateCcw, History,
-    CreditCard, Landmark, FileCheck, Layers
+    CreditCard, Landmark, FileCheck, Layers, Upload, ExternalLink, Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -68,6 +69,12 @@ export default function QuoteDetailPage({ params }: PageProps) {
     // Work orders state
     const [workOrders, setWorkOrders] = useState<any[]>([]);
     const fsmDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Signed SOW upload state
+    const [uploadingSow, setUploadingSow] = useState(false);
+    const [sowProgress, setSowProgress] = useState(0);
+    const sowFileInputRef = useRef<HTMLInputElement>(null);
+    const sowAutoAcceptInputRef = useRef<HTMLInputElement>(null);
 
     // Click outside to close FSM dropdown
     useEffect(() => {
@@ -198,6 +205,77 @@ export default function QuoteDetailPage({ params }: PageProps) {
             }
         } catch (e) {
             console.warn('Could not update lead/company:', e);
+        }
+    };
+
+    const handleUploadSowFile = async (e: React.ChangeEvent<HTMLInputElement>, autoAccept: boolean = false) => {
+        const file = e.target.files?.[0];
+        if (!file || !quote) return;
+        setUploadingSow(true);
+        try {
+            const storagePath = `signed_sow_documents/${quote.id}/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, storagePath);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on(
+                'state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setSowProgress(Math.round(progress));
+                },
+                (err) => {
+                    console.error('SOW Upload failed:', err);
+                    alert('Failed to upload signed SOW file.');
+                    setUploadingSow(false);
+                },
+                async () => {
+                    const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                    const now = new Date();
+                    await updateDoc(doc(db, 'quotes', quote.id), {
+                        signedSowUrl: downloadUrl,
+                        signedSowName: file.name,
+                        signedSowUploadedAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                    });
+
+                    setQuote(prev => prev ? ({
+                        ...prev,
+                        signedSowUrl: downloadUrl,
+                        signedSowName: file.name,
+                        signedSowUploadedAt: now,
+                    } as any) : null);
+
+                    setUploadingSow(false);
+                    setSowProgress(0);
+
+                    if (autoAccept && (quote.status === 'draft' || quote.status === 'sent')) {
+                        await handleAccept();
+                    }
+                }
+            );
+        } catch (err) {
+            console.error('Error uploading SOW:', err);
+            setUploadingSow(false);
+        }
+    };
+
+    const handleRemoveSow = async () => {
+        if (!quote || !confirm('Are you sure you want to remove this attached SOW document?')) return;
+        try {
+            await updateDoc(doc(db, 'quotes', quote.id), {
+                signedSowUrl: null,
+                signedSowName: null,
+                signedSowUploadedAt: null,
+                updatedAt: serverTimestamp(),
+            });
+            setQuote(prev => prev ? ({
+                ...prev,
+                signedSowUrl: undefined,
+                signedSowName: undefined,
+                signedSowUploadedAt: undefined,
+            } as any) : null);
+        } catch (err) {
+            console.error('Error removing SOW:', err);
         }
     };
 
@@ -423,6 +501,9 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     status: 'active',
                     assignedFsmId: quote.assignedFsmId || null,
                     assignedFsmName: quote.assignedFsmName || null,
+                    signedSowUrl: (quote as any).signedSowUrl || null,
+                    signedSowName: (quote as any).signedSowName || null,
+                    signedSowUploadedAt: (quote as any).signedSowUploadedAt || null,
                     createdBy: userId,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
@@ -494,6 +575,9 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     status: 'pending_assignment',
                     assignedFsmId: quote.assignedFsmId || null,
                     serviceStartDate: item.serviceDate || null,
+                    sowDocumentUrl: (quote as any).signedSowUrl || null,
+                    sowDocumentName: (quote as any).signedSowName || null,
+                    sowUploadedAt: (quote as any).signedSowUploadedAt || null,
                     createdBy: userId,
                     notes: '',
                     createdAt: serverTimestamp(),
@@ -753,6 +837,16 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     {(quote.status === 'draft' || quote.status === 'sent' || quote.status === 'rejected' || quote.status === 'accepted') && (
                         <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={handleRevise} disabled={revising}>
                             <RotateCcw className="w-4 h-4" /> {revising ? 'Revising...' : 'Revise Quote'}
+                        </Button>
+                    )}
+                    {(quote as any).signedSowUrl && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 font-semibold border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100"
+                            onClick={() => window.open((quote as any).signedSowUrl, '_blank')}
+                        >
+                            <FileCheck className="w-4 h-4 text-emerald-600" /> Signed SOW (PDF)
                         </Button>
                     )}
                     <Button variant="outline" size="sm" className="gap-2 font-medium" onClick={() => window.print()}>
@@ -1258,6 +1352,134 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     </Card>
                 </div>
             )}
+
+            {/* Executed / Signed Scope of Work (DocuSign / External Upload) */}
+            <Card className="print:hidden border-slate-300 dark:border-slate-800 shadow-xs">
+                <CardHeader className="pb-3 border-b bg-slate-50/60 dark:bg-slate-900/30">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <FileCheck className="w-5 h-5 text-blue-600" />
+                                Executed / Signed SOW (DocuSign & External)
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                Attach your signed DocuSign agreement, scanned SOW, or client authorization PDF for records and operations dispatch.
+                            </CardDescription>
+                        </div>
+                        {(quote as any).signedSowUrl && (
+                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-medium">
+                                <Check className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Document Attached
+                            </Badge>
+                        )}
+                    </div>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3">
+                    {/* Hidden file inputs */}
+                    <input
+                        type="file"
+                        ref={sowFileInputRef}
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        className="hidden"
+                        onChange={(e) => handleUploadSowFile(e, false)}
+                    />
+                    <input
+                        type="file"
+                        ref={sowAutoAcceptInputRef}
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        className="hidden"
+                        onChange={(e) => handleUploadSowFile(e, true)}
+                    />
+
+                    {uploadingSow && (
+                        <div className="p-3 rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 text-xs space-y-2">
+                            <div className="flex justify-between font-semibold text-blue-900 dark:text-blue-200">
+                                <span>Uploading signed SOW document to secure storage...</span>
+                                <span>{sowProgress}%</span>
+                            </div>
+                            <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                                <div className="bg-blue-600 h-2 transition-all duration-300" style={{ width: `${sowProgress}%` }} />
+                            </div>
+                        </div>
+                    )}
+
+                    {(quote as any).signedSowUrl ? (
+                        <div className="flex items-center justify-between p-3 rounded-lg border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/10 flex-wrap gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700">
+                                    <FileText className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-200">
+                                        {(quote as any).signedSowName || 'Signed_Statement_of_Work.pdf'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Attached {(quote as any).signedSowUploadedAt?.toDate?.()?.toLocaleDateString() || 'Recently'} • Available to Operations & Field Managers
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    className="gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs"
+                                    onClick={() => window.open((quote as any).signedSowUrl, '_blank')}
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" /> View Signed SOW (PDF)
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5 text-xs text-slate-700"
+                                    disabled={uploadingSow}
+                                    onClick={() => sowFileInputRef.current?.click()}
+                                >
+                                    <Upload className="w-3.5 h-3.5" /> Replace
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs text-destructive hover:bg-destructive/10"
+                                    onClick={handleRemoveSow}
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg p-5 text-center space-y-3 bg-slate-50/40 dark:bg-slate-900/20">
+                            <div className="mx-auto w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950 flex items-center justify-center text-blue-600">
+                                <Upload className="w-5 h-5" />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-sm font-semibold">Have a signed DocuSign or offline agreement?</p>
+                                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                                    Upload the executed PDF to permanently link the legal document to this quote, active contract, and dispatched work orders.
+                                </p>
+                            </div>
+                            <div className="flex items-center justify-center gap-3 flex-wrap pt-1">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2 font-medium"
+                                    disabled={uploadingSow}
+                                    onClick={() => sowFileInputRef.current?.click()}
+                                >
+                                    <Upload className="w-4 h-4 text-blue-600" /> Upload Signed SOW (PDF)
+                                </Button>
+                                {(quote.status === 'draft' || quote.status === 'sent') && (
+                                    <Button
+                                        size="sm"
+                                        className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                                        disabled={uploadingSow || converting}
+                                        onClick={() => sowAutoAcceptInputRef.current?.click()}
+                                    >
+                                        <Check className="w-4 h-4" /> Upload & Mark Quote Accepted
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
             {/* Conversion Actions (hidden in print) */}
             {quote.status === 'accepted' && (
