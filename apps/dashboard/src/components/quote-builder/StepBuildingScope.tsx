@@ -363,7 +363,10 @@ export default function StepBuildingScope({
                 zip: selectedLead?.zipCode || '',
             },
         });
-    }, [results, rooms, inputs, locationName, locationAddress, onScopeChange]);
+    }, [
+        results, rooms, inputs, locationName, locationAddress, onScopeChange,
+        serviceCategory, tradeServiceType, tradeFrequency, unitItems, selectedLead,
+    ]);
 
     useEffect(() => { propagate(); }, [propagate]);
 
