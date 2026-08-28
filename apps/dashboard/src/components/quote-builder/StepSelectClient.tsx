@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useDeferredValue, useMemo } from 'react';
 import { Lead } from '@xiri-facility-solutions/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Building2, Check } from 'lucide-react';
+import { Building2, Check, Search, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface StepSelectClientProps {
@@ -15,31 +15,54 @@ interface StepSelectClientProps {
     onSelectLead: (lead: Lead & { id: string }) => void;
     existingQuoteId: string | null;
     onClose: () => void;
+    loading?: boolean;
 }
 
 export default function StepSelectClient({
-    leads, selectedLead, onSelectLead, existingQuoteId, onClose,
+    leads, selectedLead, onSelectLead, existingQuoteId, onClose, loading = false,
 }: StepSelectClientProps) {
     const router = useRouter();
     const [leadSearch, setLeadSearch] = useState('');
+    const deferredSearch = useDeferredValue(leadSearch);
 
-    const filteredLeads = leads.filter(l =>
-        l.businessName?.toLowerCase().includes(leadSearch.toLowerCase()) ||
-        l.contactName?.toLowerCase().includes(leadSearch.toLowerCase())
-    );
+    const filteredLeads = useMemo(() => {
+        const query = deferredSearch.trim().toLowerCase();
+        if (!query) return leads.slice(0, 60);
+
+        const terms = query.split(/\s+/).filter(Boolean);
+        const matches = leads.filter(l => {
+            const bName = (l.businessName || '').toLowerCase();
+            const cName = (l.contactName || '').toLowerCase();
+            const city = (l.city || '').toLowerCase();
+            const addr = (l.address || '').toLowerCase();
+            return terms.every(term =>
+                bName.includes(term) || cName.includes(term) || city.includes(term) || addr.includes(term)
+            );
+        });
+        return matches.slice(0, 60);
+    }, [leads, deferredSearch]);
 
     return (
         <div className="space-y-4">
-            <Input
-                placeholder="Search clients by name..."
-                value={leadSearch}
-                onChange={(e) => setLeadSearch(e.target.value)}
-                className="mb-2"
-            />
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {filteredLeads.length === 0 ? (
+            <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-muted-foreground pointer-events-none" />
+                <Input
+                    placeholder="Search clients by company name, contact, city..."
+                    value={leadSearch}
+                    onChange={(e) => setLeadSearch(e.target.value)}
+                    className="pl-9 h-10"
+                    autoFocus
+                />
+            </div>
+            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                {loading && leads.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                        <p className="text-xs">Loading client directory...</p>
+                    </div>
+                ) : filteredLeads.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                        No leads found. Create a lead in the Sales CRM first.
+                        {leadSearch.trim() ? `No clients matching "${leadSearch}"` : 'No leads found. Create a lead in the Sales CRM first.'}
                     </p>
                 ) : (
                     filteredLeads.map((lead) => (

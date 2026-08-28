@@ -33,7 +33,8 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
     const [existingQuoteId, setExistingQuoteId] = useState<string | null>(null);
 
     // Step 1: Client selection
-    const [leads, setLeads] = useState<(Lead & { id: string })[]>([]);
+    const [leads, setLeads] = useState<(Lead & { id: string })[]>(cachedLeads || []);
+    const [leadsLoading, setLeadsLoading] = useState(!cachedLeads || cachedLeads.length === 0);
     const [selectedLead, setSelectedLead] = useState<(Lead & { id: string }) | null>(null);
 
     // Step 1 → Building Scope (calculator-as-scope or unit-based trade scope)
@@ -70,10 +71,41 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
     useEffect(() => {
         let isMounted = true;
 
+        // Instant direct fetch if initialData.leadId is present (bypasses waiting for full directory download)
+        if (initialData?.leadId) {
+            getDoc(doc(db, 'companies', initialData.leadId)).then(snap => {
+                if (snap.exists() && isMounted) {
+                    const data = snap.data();
+                    const leadObj = {
+                        id: snap.id,
+                        businessName: data.businessName || data.name || data.companyName || 'Company',
+                        facilityType: data.facilityType || 'office_general',
+                        contactName: data.contactName || '',
+                        contactPhone: data.phone || data.contactPhone || '',
+                        email: data.email || '',
+                        zipCode: data.zip || data.zipCode || '',
+                        address: data.address || '',
+                        city: data.city || '',
+                        state: data.state || '',
+                        zip: data.zip || data.zipCode || '',
+                        notes: data.notes || '',
+                        status: data.status || 'new',
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                        attribution: data.attribution || { source: 'manual', medium: 'manual', campaign: '', landingPage: '' },
+                        locations: data.locations,
+                    } as Lead & { id: string };
+                    setSelectedLead(leadObj);
+                    checkExistingQuote(leadObj.id);
+                    setStep(1);
+                }
+            }).catch(() => {});
+        }
+
         async function fetchLeads() {
             // 1. Immediately populate from cache if available (0ms instant response)
             if (cachedLeads && cachedLeads.length > 0) {
                 setLeads(cachedLeads);
+                setLeadsLoading(false);
                 if (existingQuote) {
                     const match = cachedLeads.find(l => l.id === existingQuote.leadId);
                     if (match) setSelectedLead(match);
@@ -261,6 +293,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                 );
                 cachedLeads = finalList;
                 setLeads(finalList);
+                setLeadsLoading(false);
 
                 if (existingQuote) {
                     const match = finalList.find(l => l.id === existingQuote.leadId);
@@ -671,6 +704,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                             onSelectLead={handleSelectLead}
                             existingQuoteId={existingQuoteId}
                             onClose={onClose}
+                            loading={leadsLoading}
                         />
                     )}
                     {step === 1 && (
