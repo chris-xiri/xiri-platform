@@ -1447,7 +1447,50 @@ export interface Quote {
         inputs: CalculatorInputs;
         results: CalculatorResults;
     };
+    tradeScope?: {
+        serviceType?: string;
+        frequency?: string;
+        unitItems?: UnitPriceItem[];
+    };
     proposalTerms?: ProposalTerms;    // Per-quote T&C (defaults from company, editable per deal)
+    paymentMethodPreference?: 'ach_check' | 'credit_card'; // Client payment preference (ACH/Check cash vs Credit Card +3%)
+}
+
+/**
+ * Dual Pricing (Cash vs Credit Card +3% Surcharge)
+ */
+export interface DualPricingSummary {
+    cashSubtotal: number;
+    cashTax: number;
+    cashTotal: number;
+    creditSubtotal: number;
+    creditTax: number;
+    creditTotal: number;
+    creditSurchargeRate: number; // 0.03 (3%)
+}
+
+export function computeDualPricing(subtotal: number, taxRate: number = 0.08625): DualPricingSummary {
+    const cashSubtotal = Math.round(subtotal * 100) / 100;
+    const cashTax = Math.round(cashSubtotal * taxRate * 100) / 100;
+    const cashTotal = Math.round((cashSubtotal + cashTax) * 100) / 100;
+
+    const creditSubtotal = Math.round(cashSubtotal * 1.03 * 100) / 100;
+    const creditTax = Math.round(creditSubtotal * taxRate * 100) / 100;
+    const creditTotal = Math.round((creditSubtotal + creditTax) * 100) / 100;
+
+    return {
+        cashSubtotal,
+        cashTax,
+        cashTotal,
+        creditSubtotal,
+        creditTax,
+        creditTotal,
+        creditSurchargeRate: 0.03,
+    };
+}
+
+export function getCreditPrice(cashPrice: number): number {
+    return Math.round(cashPrice * 1.03 * 100) / 100;
 }
 
 

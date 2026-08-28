@@ -188,7 +188,7 @@ export const respondToQuote = onCall({
         "https://www.xiri.ai",
     ],
 }, async (request) => {
-    const { reviewToken, action, notes } = request.data;
+    const { reviewToken, action, notes, paymentMethod } = request.data;
 
     if (!reviewToken || !action) {
         throw new HttpsError("invalid-argument", "Missing reviewToken or action");
@@ -231,6 +231,7 @@ export const respondToQuote = onCall({
             startDate: now,
             endDate: new Date(Date.now() + (quote.contractTenure * 30 * 24 * 60 * 60 * 1000)),
             paymentTerms: quote.paymentTerms,
+            paymentMethodPreference: paymentMethod || "ach_check",
             exitClause: quote.exitClause || "30-day written notice",
             status: "active",
             createdBy: "client_accepted",
@@ -273,6 +274,7 @@ export const respondToQuote = onCall({
         await quoteDoc.ref.update({
             status: "accepted",
             acceptedAt: now,
+            paymentMethodPreference: paymentMethod || "ach_check",
             clientResponseAt: now,
             clientResponseNotes: notes || null,
             updatedAt: now,

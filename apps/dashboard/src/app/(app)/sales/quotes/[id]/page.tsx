@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
-import { useAuth } from '@/contexts/AuthContext';
-import { Quote, QuoteLineItem, QuoteRevision, ROOM_TYPES, CLEANING_TASKS } from '@xiri-facility-solutions/shared';
+import { Quote, QuoteLineItem, QuoteRevision, ROOM_TYPES, CLEANING_TASKS, computeDualPricing, getCreditPrice } from '@xiri-facility-solutions/shared';
 import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
 import QuoteBuilder from '@/components/QuoteBuilder';
 
@@ -19,7 +18,8 @@ import { Separator } from '@/components/ui/separator';
 import {
     ArrowLeft, Check, X, Printer, FileText, MapPin, Plus,
     DollarSign, Calendar, Clock, Building2, AlertTriangle,
-    Send, Eye, MessageSquare, Mail, UserRoundCheck, RotateCcw, History
+    Send, Eye, MessageSquare, Mail, UserRoundCheck, RotateCcw, History,
+    CreditCard, Landmark, FileCheck, Layers
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -62,6 +62,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
     // Revision state
     const [revising, setRevising] = useState(false);
     const [showReviseBuilder, setShowReviseBuilder] = useState(false);
+    const [viewMode, setViewMode] = useState<'sow' | 'standard'>('sow');
 
     // Work orders state
     const [workOrders, setWorkOrders] = useState<any[]>([]);
@@ -633,10 +634,42 @@ export default function QuoteDetailPage({ params }: PageProps) {
         locationMap.set(item.locationId, existing);
     });
 
+    const rawSubtotal = quote.subtotalBeforeTax || quote.totalMonthlyRate || (quote.lineItems?.reduce((s, li) => s + (li.clientRate || 0), 0) || 0);
+    const taxRate = (quote.totalTax && quote.subtotalBeforeTax) ? (quote.totalTax / quote.subtotalBeforeTax) : 0.08625;
+    const dual = computeDualPricing(rawSubtotal, taxRate);
+
+    // Extract all unit items or line items for the SOW breakdown
+    const allUnitItems: { id: string; description: string; quantity: number; unit: string; unitPrice: number; subtotal: number }[] = [];
+    (quote.lineItems || []).forEach(li => {
+        if (li.unitItems && li.unitItems.length > 0) {
+            li.unitItems.forEach(u => allUnitItems.push(u));
+        } else {
+            allUnitItems.push({
+                id: li.id,
+                description: li.serviceType + (li.description ? ` — ${li.description}` : ''),
+                quantity: 1,
+                unit: li.frequency === 'one_time' ? 'flat' : 'month',
+                unitPrice: li.clientRate,
+                subtotal: li.clientRate,
+            });
+        }
+    });
+
+    // Extract scope tasks
+    const allScopeTasks: { name: string; description?: string }[] = [];
+    (quote.lineItems || []).forEach(li => {
+        if (li.scopeTasks && li.scopeTasks.length > 0) {
+            li.scopeTasks.forEach(st => allScopeTasks.push(st));
+        }
+    });
+
+    const primaryLocation = quote.lineItems?.[0];
+    const quoteDateStr = quote.createdAt?.toDate?.()?.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <Link href="/sales/quotes" className="text-muted-foreground hover:text-foreground">
                         <ArrowLeft className="w-5 h-5" />
@@ -647,13 +680,31 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             <Badge variant={badge.variant}>{badge.label}</Badge>
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            Created {quote.createdAt?.toDate?.()?.toLocaleDateString() || '—'}
+                            Created {quoteDateStr}
                         </p>
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 items-center">
+                {/* Actions & View Switcher */}
+                <div className="flex gap-2 items-center flex-wrap">
+                    {/* SOW / Standard View Toggle */}
+                    <div className="flex bg-muted/80 p-1 rounded-lg border text-xs mr-1 print:hidden">
+                        <button
+                            type="button"
+                            className={`px-3 py-1 rounded-md font-semibold transition-all ${viewMode === 'sow' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
+                            onClick={() => setViewMode('sow')}
+                        >
+                            <FileCheck className="w-3.5 h-3.5 inline mr-1.5 text-blue-600" /> SOW View
+                        </button>
+                        <button
+                            type="button"
+                            className={`px-3 py-1 rounded-md font-semibold transition-all ${viewMode === 'standard' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
+                            onClick={() => setViewMode('standard')}
+                        >
+                            <Layers className="w-3.5 h-3.5 inline mr-1.5 text-slate-600" /> Standard View
+                        </button>
+                    </div>
+
                     {(quote.status === 'draft' || quote.status === 'sent') && (
                         <>
                             <Button
@@ -679,8 +730,8 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             <RotateCcw className="w-4 h-4" /> {revising ? 'Revising...' : 'Revise Quote'}
                         </Button>
                     )}
-                    <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
-                        <Printer className="w-4 h-4" /> Print
+                    <Button variant="outline" size="sm" className="gap-2 font-medium" onClick={() => window.print()}>
+                        <Printer className="w-4 h-4" /> Print SOW
                     </Button>
                     {quote.version > 1 && (
                         <Badge variant="secondary" className="text-xs">v{quote.version}</Badge>
@@ -691,7 +742,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
             {/* Status Timeline + FSM Assignment */}
             <Card className="print:hidden">
                 <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
                         {/* Timeline */}
                         <div className="flex items-center gap-6 text-sm">
                             <div className="flex items-center gap-2">
@@ -759,7 +810,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             <Mail className="w-3.5 h-3.5" /> Sent to {quote.clientEmail}
                             {quote.clientResponseNotes && (
                                 <span className="ml-4 flex items-center gap-1">
-                                    <MessageSquare className="w-3.5 h-3.5" /> Client notes: "{quote.clientResponseNotes}"
+                                    <MessageSquare className="w-3.5 h-3.5" /> Client notes: &quot;{quote.clientResponseNotes}&quot;
                                 </span>
                             )}
                         </div>
@@ -767,163 +818,421 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 </CardContent>
             </Card>
 
-            {/* Quote Content (Print-friendly) */}
-            <div className="print:shadow-none" id="quote-printable">
-                {/* Company Header for print */}
-                <div className="hidden print:block mb-8 border-b pb-4">
-                    <h1 className="text-3xl font-bold text-sky-700">XIRI FACILITY SOLUTIONS</h1>
-                    <p className="text-sm text-gray-600">Professional Facility Management</p>
-                </div>
-
-                {/* Client Info */}
-                <Card className="print:border print:shadow-none">
-                    <CardContent className="p-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Prepared For</p>
-                                <p className="text-lg font-bold">{quote.leadBusinessName}</p>
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {/* VIEW MODE 1: STATEMENT OF WORK (SOW) & WORK AUTHORIZATION          */}
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {viewMode === 'sow' ? (
+                <div className="bg-white text-slate-900 border rounded-xl shadow-xs p-6 md:p-8 space-y-6 print:border-0 print:shadow-none print:p-0" id="quote-printable">
+                    {/* SOW Top Header */}
+                    <div className="flex items-start justify-between border-b pb-4">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl font-black tracking-tight text-sky-700 font-sans">XIRI</span>
+                                <span className="text-lg font-light tracking-wide text-slate-600 uppercase">FACILITY SOLUTIONS</span>
                             </div>
-                            <div className="text-right">
-                                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Quote Total</p>
-                                <p className="text-3xl font-bold text-primary">{formatCurrency(quote.totalMonthlyRate)}<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
-                            </div>
+                            <p className="text-xs text-slate-500 font-normal mt-0.5">
+                                XIRI Group LLC | New Hyde Park, NY | Facility Solutions & Commercial Services
+                            </p>
                         </div>
-                    </CardContent>
-                </Card>
+                        <div className="text-right">
+                            <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                DATE: {quoteDateStr}
+                            </p>
+                        </div>
+                    </div>
 
-                {/* Building Scope Summary (ISSA Calculator) */}
-                {(quote as any).buildingScope && (
-                    <Card className="print:border print:shadow-none">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm flex items-center gap-2">
-                                🏢 Building Scope (ISSA Calculator)
-                            </CardTitle>
-                            <CardDescription className="text-xs">
-                                {(quote as any).buildingScope.inputs?.sqft?.toLocaleString() || '—'} sq ft
-                                {' · '}
-                                {(quote as any).buildingScope.rooms?.length || 0} room{(quote as any).buildingScope.rooms?.length !== 1 ? 's' : ''}
-                                {(quote as any).buildingScope.results?.hoursPerVisit &&
-                                    ` · ${(quote as any).buildingScope.results.hoursPerVisit.toFixed(1)} hrs/visit`
-                                }
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {(quote as any).buildingScope.rooms?.map((room: any) => {
-                                    const rt = ROOM_TYPES.find(r => r.id === room.roomTypeId);
-                                    return (
-                                        <div key={room.id} className="rounded-lg border p-2">
-                                            <p className="text-xs font-medium">{room.customName || rt?.name || room.roomTypeId}</p>
-                                            <p className="text-[10px] text-muted-foreground">
-                                                {room.tasks?.length || 0} tasks
-                                                {room.sqft ? ` · ${room.sqft} sqft` : ''}
-                                            </p>
+                    {/* Blue Title Banner */}
+                    <div className="border-b-2 border-sky-700 pb-2">
+                        <h2 className="text-lg font-bold text-sky-800 tracking-wide uppercase">
+                            STATEMENT OF WORK & WORK AUTHORIZATION
+                        </h2>
+                    </div>
+
+                    {/* Metadata Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-y-2 gap-x-4 text-xs">
+                        <div className="md:col-span-2 font-bold text-slate-700 uppercase">CLIENT:</div>
+                        <div className="md:col-span-10 font-semibold text-slate-900">{quote.leadBusinessName}</div>
+
+                        <div className="md:col-span-2 font-bold text-slate-700 uppercase">ATTN:</div>
+                        <div className="md:col-span-10 text-slate-800">
+                            {quote.clientEmail ? `${quote.clientEmail}` : quote.leadBusinessName}
+                        </div>
+
+                        <div className="md:col-span-2 font-bold text-slate-700 uppercase">BILLING:</div>
+                        <div className="md:col-span-10 text-slate-800">
+                            {primaryLocation?.locationAddress
+                                ? `${primaryLocation.locationAddress}, ${primaryLocation.locationCity || ''} ${primaryLocation.locationState || ''} ${primaryLocation.locationZip || ''}`.trim()
+                                : 'On file with corporate accounts payable'}
+                        </div>
+
+                        <div className="md:col-span-2 font-bold text-slate-700 uppercase">LOCATION:</div>
+                        <div className="md:col-span-10 text-slate-800 font-medium">
+                            {primaryLocation?.locationName || quote.leadBusinessName} — {primaryLocation?.locationAddress || 'Primary Site'}
+                        </div>
+
+                        <div className="md:col-span-2 font-bold text-slate-700 uppercase">PROJECT:</div>
+                        <div className="md:col-span-10 text-slate-900 font-semibold">
+                            {quote.proposalTerms?.projectTitle || primaryLocation?.serviceType || 'Commercial Restroom & Facility Services'}
+                        </div>
+                    </div>
+
+                    {/* Scope of Work Section with Blue Left Border */}
+                    <div className="space-y-3 pt-2">
+                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                            SCOPE OF WORK
+                        </h3>
+                        <div className="border-l-4 border-sky-700 pl-4 space-y-2 text-xs text-slate-800 leading-relaxed">
+                            {allScopeTasks.length > 0 ? (
+                                allScopeTasks.map((t, idx) => (
+                                    <div key={idx} className="flex items-start gap-1.5">
+                                        <span className="font-bold text-slate-900 min-w-[18px]">{idx + 1}.</span>
+                                        <div>
+                                            <strong className="text-slate-900">{t.name}:</strong>{' '}
+                                            <span className="text-slate-700">{t.description || 'Completed to industry standard specifications and site safety guidelines.'}</span>
                                         </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <>
+                                    <div className="flex items-start gap-1.5">
+                                        <span className="font-bold text-slate-900 min-w-[18px]">1.</span>
+                                        <div>
+                                            <strong className="text-slate-900">Work Preparation & Staging:</strong>{' '}
+                                            <span>Unmount and prep designated hardware and fixtures across all specified service locations.</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-1.5">
+                                        <span className="font-bold text-slate-900 min-w-[18px]">2.</span>
+                                        <div>
+                                            <strong className="text-slate-900">Support & Structure Clearance:</strong>{' '}
+                                            <span>Clear and adjust obstructions directly beneath fixtures for full clearance; re-secure undermount hardware.</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-1.5">
+                                        <span className="font-bold text-slate-900 min-w-[18px]">3.</span>
+                                        <div>
+                                            <strong className="text-slate-900">Precision Installation & Re-Assembly:</strong>{' '}
+                                            <span>Precision-mount and secure components flush across all designated site locations.</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-1.5">
+                                        <span className="font-bold text-slate-900 min-w-[18px]">4.</span>
+                                        <div>
+                                            <strong className="text-slate-900">Insurance & Compliance:</strong>{' '}
+                                            <span>Issuance of site-specific Certificate of Insurance (COI) naming client as Additional Insured.</span>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Dual-Pricing Line Items Table */}
+                    <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full text-xs">
+                            <thead className="bg-slate-50 border-b text-slate-700 font-bold">
+                                <tr>
+                                    <th className="text-left py-2.5 px-3">Item / Scope Description</th>
+                                    <th className="text-center py-2.5 px-3 w-16">Qty</th>
+                                    <th className="text-right py-2.5 px-3 font-semibold text-slate-900">
+                                        Payment Method 1: ACH / Check
+                                    </th>
+                                    <th className="text-right py-2.5 px-3 font-semibold text-blue-800">
+                                        Payment Method 2: Credit Card (+3%)
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {allUnitItems.map((item, i) => {
+                                    const cashUnitPrice = item.unitPrice || 0;
+                                    const cashSubtotal = item.subtotal || (cashUnitPrice * (item.quantity || 1));
+                                    const creditUnitPrice = getCreditPrice(cashUnitPrice);
+                                    const creditSubtotal = getCreditPrice(cashSubtotal);
+
+                                    return (
+                                        <tr key={item.id || i} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="py-3 px-3 font-medium text-slate-900">
+                                                {item.description}
+                                            </td>
+                                            <td className="py-3 px-3 text-center text-slate-600 font-mono">
+                                                {item.quantity}
+                                            </td>
+                                            <td className="py-3 px-3 text-right">
+                                                <div className="font-semibold text-slate-900 font-mono">
+                                                    ${cashUnitPrice.toFixed(2)}{item.unit !== 'flat' && item.unit !== 'month' ? ` / ${item.unit}` : ''}
+                                                </div>
+                                                <div className="text-[11px] text-slate-500 font-mono">
+                                                    (${cashSubtotal.toFixed(2)})
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-3 text-right bg-blue-50/30">
+                                                <div className="font-semibold text-blue-900 font-mono">
+                                                    ${creditUnitPrice.toFixed(2)}{item.unit !== 'flat' && item.unit !== 'month' ? ` / ${item.unit}` : ''}
+                                                </div>
+                                                <div className="text-[11px] text-blue-700 font-mono">
+                                                    (${creditSubtotal.toFixed(2)})
+                                                </div>
+                                            </td>
+                                        </tr>
                                     );
                                 })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* ═══ SIDE-BY-SIDE DUAL PAYMENT SUMMARY BOXES ═══ */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        {/* Box 1: ACH / Wire / Check (Cash Price) */}
+                        <div className="border border-sky-200 bg-sky-50/50 rounded-lg overflow-hidden shadow-2xs">
+                            <div className="bg-sky-100/80 px-4 py-2 border-b border-sky-200">
+                                <h4 className="text-xs font-bold text-sky-900 tracking-wider uppercase flex items-center gap-1.5">
+                                    <Landmark className="w-3.5 h-3.5 text-sky-700" />
+                                    PAYMENT METHOD 1: ACH / CHECK
+                                </h4>
                             </div>
-                            {(quote as any).buildingScope.results && (
-                                <div className="flex gap-4 text-[10px] text-muted-foreground pt-2 border-t border-dashed">
-                                    <span>Labor: {formatCurrency((quote as any).buildingScope.results.laborCostPerMonth)}/mo</span>
-                                    <span>Overhead: {formatCurrency((quote as any).buildingScope.results.overheadCost)}/mo</span>
-                                    <span>Price/Visit: {formatCurrency((quote as any).buildingScope.results.pricePerVisit)}</span>
-                                    <span>Rate: {formatCurrency((quote as any).buildingScope.results.effectiveHourlyRate)}/hr</span>
+                            <div className="p-4 space-y-1.5 text-xs">
+                                <div className="flex justify-between text-slate-700">
+                                    <span>Labor / Services Subtotal:</span>
+                                    <span className="font-mono font-medium">{formatCurrency(dual.cashSubtotal)}</span>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Service Breakdown by Location */}
-                {Array.from(locationMap.entries()).map(([locId, items]) => (
-                    <Card key={locId} className="print:border print:shadow-none">
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-muted-foreground" />
-                                <CardTitle className="text-base">{items[0]?.locationName}</CardTitle>
+                                <div className="flex justify-between text-slate-700">
+                                    <span>Sales Tax (8.625%):</span>
+                                    <span className="font-mono font-medium">{formatCurrency(dual.cashTax)}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t border-sky-200 font-bold text-sm text-sky-950">
+                                    <span>TOTAL (ACH / Wire / Check):</span>
+                                    <span className="font-mono text-base text-sky-800 font-bold">{formatCurrency(dual.cashTotal)}</span>
+                                </div>
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b text-xs text-muted-foreground uppercase">
-                                        <th className="text-left py-2 font-medium">Service</th>
-                                        <th className="text-left py-2 font-medium">Frequency</th>
-                                        <th className="text-left py-2 font-medium">Status</th>
-                                        <th className="text-right py-2 font-medium">Monthly Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {items.map((item) => (
-                                        <tr key={item.id} className="border-b last:border-0">
-                                            <td className="py-3">
-                                                <span className="font-medium">{item.serviceType}</span>
-                                                {item.description && <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>}
-                                                {item.isUpsell && <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Upsell</span>}
-                                            </td>
-                                            <td className="py-3 text-sm">{formatFrequency(item.frequency, item.daysOfWeek)}</td>
-                                            <td className="py-3 text-sm">
-                                                {item.lineItemStatus === 'accepted' ? (
-                                                    <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded text-xs font-medium">
-                                                        <Check className="w-3 h-3" /> Accepted
-                                                    </span>
-                                                ) : item.lineItemStatus === 'rejected' ? (
-                                                    <span className="inline-flex items-center gap-1 text-red-700 bg-red-50 px-2 py-0.5 rounded text-xs font-medium">
-                                                        <X className="w-3 h-3" /> Rejected
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-xs font-medium">
-                                                        <Clock className="w-3 h-3" /> Pending
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="py-3 text-right font-medium">{formatCurrency(item.clientRate)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="border-t">
-                                        <td colSpan={3} className="py-3 font-medium text-sm">Location Subtotal</td>
-                                        <td className="py-3 text-right font-bold">
-                                            {formatCurrency(items.reduce((s, i) => s + i.clientRate, 0))}
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </CardContent>
-                    </Card>
-                ))}
+                        </div>
 
-                {/* Terms */}
-                <Card className="print:border print:shadow-none">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Contract Terms</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                            <p className="text-xs text-muted-foreground uppercase mb-1">Tenure</p>
-                            <p className="font-medium flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {quote.contractTenure} Months</p>
+                        {/* Box 2: Credit Card (+3% Surcharge) */}
+                        <div className="border border-blue-300 bg-blue-50/50 rounded-lg overflow-hidden shadow-2xs">
+                            <div className="bg-blue-100/80 px-4 py-2 border-b border-blue-200">
+                                <h4 className="text-xs font-bold text-blue-900 tracking-wider uppercase flex items-center gap-1.5">
+                                    <CreditCard className="w-3.5 h-3.5 text-blue-700" />
+                                    PAYMENT METHOD 2: CREDIT CARD
+                                </h4>
+                            </div>
+                            <div className="p-4 space-y-1.5 text-xs">
+                                <div className="flex justify-between text-slate-700">
+                                    <span>Credit Card Subtotal (+3%):</span>
+                                    <span className="font-mono font-medium">{formatCurrency(dual.creditSubtotal)}</span>
+                                </div>
+                                <div className="flex justify-between text-slate-700">
+                                    <span>Sales Tax (8.625%):</span>
+                                    <span className="font-mono font-medium">{formatCurrency(dual.creditTax)}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t border-blue-200 font-bold text-sm text-blue-950">
+                                    <span>TOTAL (Credit Card):</span>
+                                    <span className="font-mono text-base text-blue-800 font-bold">{formatCurrency(dual.creditTotal)}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-xs text-muted-foreground uppercase mb-1">Payment Terms</p>
-                            <p className="font-medium">{quote.paymentTerms}</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-muted-foreground uppercase mb-1">Exit Clause</p>
-                            <p className="font-medium">{quote.exitClause || 'N/A'}</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                    </div>
 
-                {quote.notes && (
+                    {/* Terms & Conditions (1-9 Clauses) */}
+                    <div className="space-y-2 pt-3 border-t border-slate-200 text-[11px] text-slate-700 leading-relaxed">
+                        <h4 className="text-xs font-bold text-slate-900 uppercase">TERMS & CONDITIONS</h4>
+                        <ol className="space-y-1.5 list-none pl-0">
+                            <li>
+                                <strong>1. Binding Authorization & Invoicing:</strong> Execution authorizes XIRI Group LLC to perform the work without requiring a separate purchase order. Invoiced upon completion, due Net 15 days via ACH/Check ({formatCurrency(dual.cashTotal)}) or Credit Card ({formatCurrency(dual.creditTotal)}).
+                            </li>
+                            <li>
+                                <strong>2. Site Access & Housekeeping:</strong> Client/Venue will provide unhindered facility access during the scheduled window. Work areas will be handed over broom-clean, with daily trade debris disposed of in designated on-site receptacles.
+                            </li>
+                            <li>
+                                <strong>3. Completion & Acceptance:</strong> Client or its designated on-site representative shall inspect and sign off on completed work. In the absence of a written punch list delivered within forty-eight (48) hours of job completion, the work shall be deemed fully accepted and approved for invoicing.
+                            </li>
+                            <li>
+                                <strong>4. Change Orders & Contingencies:</strong> Any additional work, scope adjustments, or contingency line items require written confirmation (including email) prior to execution.
+                            </li>
+                            <li>
+                                <strong>5. Workmanship Warranty:</strong> XIRI Group LLC warrants installation labor for ninety (90) days following completion. Defective workmanship will be corrected promptly at no cost. Hardware components remain warranted solely by the manufacturer.
+                            </li>
+                            <li>
+                                <strong>6. Insurance & COI:</strong> XIRI Group LLC maintains Commercial General Liability ($1,000,000 occurrence / $2,000,000 aggregate) and will provide a site-specific COI naming client and location as Additional Insureds prior to work commencing.
+                            </li>
+                            <li>
+                                <strong>7. Mutual Indemnification:</strong> Each party agrees to defend, indemnify, and hold harmless the other party from third-party claims, liabilities, or damages arising out of the indemnifying party&apos;s gross negligence, willful misconduct, or material breach.
+                            </li>
+                            <li>
+                                <strong>8. Limitation of Liability & Force Majeure:</strong> Except for gross negligence or indemnification obligations, neither party is liable for consequential or indirect damages. Total aggregate liability is capped at the total fees paid under this SOW.
+                            </li>
+                            <li>
+                                <strong>9. Governing Law & Entire Agreement:</strong> Governed by the laws of the State of New York (Nassau County jurisdiction). This SOW constitutes the entire agreement between the parties regarding this project scope.
+                            </li>
+                        </ol>
+                    </div>
+
+                    {/* Dual Signatures Block */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-6 border-t border-slate-300 text-xs">
+                        <div className="space-y-4">
+                            <p className="font-bold text-slate-900 uppercase">ACCEPTED & AUTHORIZED BY:</p>
+                            <p className="font-semibold text-slate-800">{quote.leadBusinessName}</p>
+                            <div className="border-b-2 border-slate-400 pt-6"></div>
+                            <div className="space-y-1 text-slate-600">
+                                <p>Authorized Signature: _______________________</p>
+                                <p>Printed Name: {quote.clientEmail ? quote.clientEmail.split('@')[0] : 'Authorized Representative'}</p>
+                                <p>Title: Director of Facilities / Operations</p>
+                                <p>Date: {quoteDateStr}</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <p className="font-bold text-slate-900 uppercase">SUBMITTED & CONFIRMED BY:</p>
+                            <p className="font-semibold text-slate-800">XIRI Group LLC</p>
+                            <div className="border-b-2 border-slate-400 pt-6"></div>
+                            <div className="space-y-1 text-slate-600">
+                                <p>Authorized Signature: <span className="font-serif italic font-bold text-sky-900">Christopher Leung</span></p>
+                                <p>Printed Name: Christopher Leung</p>
+                                <p>Title: Managing Member</p>
+                                <p>Date: {quoteDateStr}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                /* ═══════════════════════════════════════════════════════════════ */
+                /* VIEW MODE 2: STANDARD QUOTE PROPOSAL VIEW                       */
+                /* ═══════════════════════════════════════════════════════════════ */
+                <div className="print:shadow-none space-y-6" id="quote-printable">
+                    {/* Client Info */}
                     <Card className="print:border print:shadow-none">
                         <CardContent className="p-6">
-                            <p className="text-xs text-muted-foreground uppercase mb-1">Notes</p>
-                            <p className="text-sm">{quote.notes}</p>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Prepared For</p>
+                                    <p className="text-lg font-bold">{quote.leadBusinessName}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Quote Total (Cash / ACH)</p>
+                                    <p className="text-3xl font-bold text-primary">{formatCurrency(dual.cashTotal)}</p>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
-                )}
-            </div>
+
+                    {/* Dual Pricing Side-by-Side Cards (Standard View) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Card className="border-sky-200 bg-sky-50/40">
+                            <CardHeader className="py-3 px-4 border-b border-sky-100">
+                                <CardTitle className="text-xs font-bold text-sky-900 flex items-center gap-1.5">
+                                    <Landmark className="w-4 h-4 text-sky-700" />
+                                    OPTION 1: ACH / WIRE / CHECK
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 space-y-1.5 text-xs">
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Subtotal:</span>
+                                    <span className="font-mono font-medium">{formatCurrency(dual.cashSubtotal)}</span>
+                                </div>
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Sales Tax (8.625%):</span>
+                                    <span className="font-mono font-medium">{formatCurrency(dual.cashTax)}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t font-bold text-sm text-foreground">
+                                    <span>Total (ACH / Check):</span>
+                                    <span className="font-mono text-base text-sky-700 font-bold">{formatCurrency(dual.cashTotal)}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-blue-200 bg-blue-50/40">
+                            <CardHeader className="py-3 px-4 border-b border-blue-100">
+                                <CardTitle className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                                    <CreditCard className="w-4 h-4 text-blue-700" />
+                                    OPTION 2: CREDIT CARD (+3%)
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 space-y-1.5 text-xs">
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Subtotal (+3%):</span>
+                                    <span className="font-mono font-medium">{formatCurrency(dual.creditSubtotal)}</span>
+                                </div>
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Sales Tax (8.625%):</span>
+                                    <span className="font-mono font-medium">{formatCurrency(dual.creditTax)}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t font-bold text-sm text-foreground">
+                                    <span>Total (Credit Card):</span>
+                                    <span className="font-mono text-base text-blue-700 font-bold">{formatCurrency(dual.creditTotal)}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Service Breakdown by Location */}
+                    {Array.from(locationMap.entries()).map(([locId, items]) => (
+                        <Card key={locId} className="print:border print:shadow-none">
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center gap-2">
+                                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                                    <CardTitle className="text-base">{items[0]?.locationName}</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b text-xs text-muted-foreground uppercase">
+                                            <th className="text-left py-2 font-medium">Service</th>
+                                            <th className="text-left py-2 font-medium">Frequency</th>
+                                            <th className="text-left py-2 font-medium">Status</th>
+                                            <th className="text-right py-2 font-medium">ACH Rate</th>
+                                            <th className="text-right py-2 font-medium">Credit Rate (+3%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {items.map((item) => (
+                                            <tr key={item.id} className="border-b last:border-0">
+                                                <td className="py-3">
+                                                    <span className="font-medium">{item.serviceType}</span>
+                                                    {item.description && <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>}
+                                                </td>
+                                                <td className="py-3 text-sm">{formatFrequency(item.frequency, item.daysOfWeek)}</td>
+                                                <td className="py-3 text-sm">
+                                                    {item.lineItemStatus === 'accepted' ? (
+                                                        <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded text-xs font-medium">
+                                                            <Check className="w-3 h-3" /> Accepted
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-xs font-medium">
+                                                            <Clock className="w-3 h-3" /> Pending
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 text-right font-medium font-mono">{formatCurrency(item.clientRate)}</td>
+                                                <td className="py-3 text-right font-medium font-mono text-blue-700">{formatCurrency(getCreditPrice(item.clientRate))}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </CardContent>
+                        </Card>
+                    ))}
+
+                    {/* Terms */}
+                    <Card className="print:border print:shadow-none">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base">Contract Terms</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <p className="text-xs text-muted-foreground uppercase mb-1">Tenure</p>
+                                <p className="font-medium flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {quote.contractTenure} Months</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground uppercase mb-1">Payment Terms</p>
+                                <p className="font-medium">{quote.paymentTerms}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground uppercase mb-1">Exit Clause</p>
+                                <p className="font-medium">{quote.exitClause || 'N/A'}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             {/* Conversion Actions (hidden in print) */}
             {quote.status === 'accepted' && (

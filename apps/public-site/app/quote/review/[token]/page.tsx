@@ -49,6 +49,7 @@ export default function QuoteReviewPage() {
     const [notes, setNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [showChangesForm, setShowChangesForm] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'ach_check' | 'credit_card'>('ach_check');
 
     useEffect(() => {
         async function fetchQuote() {
@@ -59,24 +60,14 @@ export default function QuoteReviewPage() {
 
                 if (snap.empty) {
                     setError('This quote link is invalid or has expired.');
-                    return;
+                } else {
+                    const docData = snap.docs[0].data();
+                    setQuote({ id: snap.docs[0].id, ...docData } as QuoteData);
+                    if (docData.status === 'accepted') {
+                        setResponded(true);
+                        setResponseType('accepted');
+                    }
                 }
-
-                const doc = snap.docs[0];
-                const data = doc.data();
-
-                if (data.status !== 'sent') {
-                    setResponded(true);
-                    setResponseType(data.status === 'accepted' ? 'accepted' : 'changes_requested');
-                }
-
-                setQuote({ id: doc.id, ...data } as QuoteData);
-
-                // Mark as viewed
-                if (!data.viewedAt) {
-                    await updateDoc(doc.ref, { viewedAt: new Date() });
-                }
-                trackEvent('quote_review_view', { quote_id: doc.id, business: data.leadBusinessName || '' });
             } catch (err) {
                 console.error('Error loading quote:', err);
                 setError('Unable to load this quote. Please try again later.');
@@ -91,11 +82,11 @@ export default function QuoteReviewPage() {
         setSubmitting(true);
         try {
             const respondToQuoteFn = httpsCallable(functions, 'respondToQuote');
-            trackEvent('quote_accept', { token });
-            await respondToQuoteFn({ reviewToken: token, action: 'accept', notes: '' });
+            trackEvent('quote_accept', { token, paymentMethod });
+            await respondToQuoteFn({ reviewToken: token, action: 'accept', notes: '', paymentMethod });
             setResponded(true);
             setResponseType('accepted');
-            trackEvent('quote_response_success', { action: 'accept', token });
+            trackEvent('quote_response_success', { action: 'accept', token, paymentMethod });
         } catch (err) {
             console.error('Error accepting quote:', err);
             alert('Something went wrong. Please try again or contact us.');
@@ -112,7 +103,7 @@ export default function QuoteReviewPage() {
             await respondToQuoteFn({ reviewToken: token, action: 'request_changes', notes });
             setResponded(true);
             setResponseType('changes_requested');
-            trackEvent('quote_response_success', { action: 'request_changes', token });
+            trackEvent('quote_response_success', { action: 'changes_requested', token });
         } catch (err) {
             console.error('Error requesting changes:', err);
             alert('Something went wrong. Please try again or contact us.');
@@ -122,7 +113,7 @@ export default function QuoteReviewPage() {
     };
 
     const formatCurrency = (n: number) =>
-        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
 
     if (loading) {
         return (
@@ -154,6 +145,14 @@ export default function QuoteReviewPage() {
 
     if (!quote) return null;
 
+    const cashSubtotal = quote.totalMonthlyRate || 0;
+    const cashTax = Math.round(cashSubtotal * 0.08625 * 100) / 100;
+    const cashTotal = Math.round((cashSubtotal + cashTax) * 100) / 100;
+
+    const creditSubtotal = Math.round(cashSubtotal * 1.03 * 100) / 100;
+    const creditTax = Math.round(creditSubtotal * 0.08625 * 100) / 100;
+    const creditTotal = Math.round((creditSubtotal + creditTax) * 100) / 100;
+
     // Success states
     if (responded) {
         return (
@@ -167,7 +166,12 @@ export default function QuoteReviewPage() {
                                 </svg>
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">Proposal Accepted!</h2>
-                            <p className="text-gray-500">Thank you for choosing XIRI Facility Solutions. Your dedicated Facility Solutions Manager will be in touch shortly to coordinate getting started.</p>
+                            <p className="text-gray-500 text-sm">
+                                Thank you for choosing XIRI Facility Solutions. You selected <strong>{paymentMethod === 'credit_card' ? 'Payment Method 2: Credit Card' : 'Payment Method 1: ACH / Wire / Check'}</strong> ({paymentMethod === 'credit_card' ? formatCurrency(creditTotal) : formatCurrency(cashTotal)}).
+                            </p>
+                            <p className="text-gray-500 text-sm mt-2">
+                                Your dedicated Facility Solutions Manager will be in touch shortly to coordinate onboarding and next steps.
+                            </p>
                         </>
                     ) : (
                         <>
@@ -191,7 +195,7 @@ export default function QuoteReviewPage() {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-gradient-to-r from-sky-700 to-sky-600 text-white">
+            <div className="bg-gradient-to-r from-sky-800 to-sky-700 text-white">
                 <div className="max-w-3xl mx-auto px-6 py-8">
                     <div className="flex items-center justify-between">
                         <div>
@@ -199,57 +203,136 @@ export default function QuoteReviewPage() {
                             <p className="text-sky-200 text-xs uppercase tracking-[3px] mt-0.5">Facility Solutions</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-sky-200 uppercase tracking-wider">Service Proposal</p>
-                            <p className="text-2xl font-bold mt-1">{formatCurrency(quote.totalMonthlyRate)}<span className="text-sm font-normal text-sky-200">/month</span></p>
+                            <p className="text-xs text-sky-200 uppercase tracking-wider">Statement of Work</p>
+                            <p className="text-2xl font-bold mt-1 font-mono">{formatCurrency(paymentMethod === 'credit_card' ? creditTotal : cashTotal)}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Content */}
-            <div className="max-w-3xl mx-auto px-6 -mt-4">
+            <div className="max-w-3xl mx-auto px-6 -mt-4 space-y-4">
                 {/* Client Info */}
-                <div className="bg-white rounded-xl shadow-sm border p-6 mb-4">
+                <div className="bg-white rounded-xl shadow-xs border p-6">
                     <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Prepared For</p>
                     <p className="text-xl font-bold text-gray-900">{quote.leadBusinessName}</p>
                     <p className="text-sm text-gray-500 mt-1">{quote.contractTenure}-month agreement • {quote.paymentTerms}</p>
                 </div>
 
+                {/* ═══ DUAL PAYMENT METHOD COMPARISON / SELECTION ═══ */}
+                <div className="space-y-2">
+                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wider px-1">
+                        Select Authorized Payment Method
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Option 1: ACH / Wire / Check */}
+                        <div
+                            onClick={() => setPaymentMethod('ach_check')}
+                            className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${paymentMethod === 'ach_check' ? 'border-sky-600 bg-sky-50/70 shadow-sm ring-2 ring-sky-500/20' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold uppercase tracking-wide text-sky-900">
+                                    Method 1: ACH / Wire / Check
+                                </span>
+                                <input
+                                    type="radio"
+                                    name="paymentMethod"
+                                    checked={paymentMethod === 'ach_check'}
+                                    onChange={() => setPaymentMethod('ach_check')}
+                                    className="h-4 w-4 text-sky-600 accent-sky-600"
+                                />
+                            </div>
+                            <div className="space-y-1 text-xs text-gray-600">
+                                <div className="flex justify-between">
+                                    <span>Labor / Services:</span>
+                                    <span className="font-mono">{formatCurrency(cashSubtotal)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Sales Tax (8.625%):</span>
+                                    <span className="font-mono">{formatCurrency(cashTax)}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t font-bold text-sm text-gray-900">
+                                    <span>Total (Cash Rate):</span>
+                                    <span className="font-mono text-base text-sky-700 font-bold">{formatCurrency(cashTotal)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Option 2: Credit Card */}
+                        <div
+                            onClick={() => setPaymentMethod('credit_card')}
+                            className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${paymentMethod === 'credit_card' ? 'border-blue-600 bg-blue-50/70 shadow-sm ring-2 ring-blue-500/20' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold uppercase tracking-wide text-blue-900">
+                                    Method 2: Credit Card (+3%)
+                                </span>
+                                <input
+                                    type="radio"
+                                    name="paymentMethod"
+                                    checked={paymentMethod === 'credit_card'}
+                                    onChange={() => setPaymentMethod('credit_card')}
+                                    className="h-4 w-4 text-blue-600 accent-blue-600"
+                                />
+                            </div>
+                            <div className="space-y-1 text-xs text-gray-600">
+                                <div className="flex justify-between">
+                                    <span>Credit Subtotal (+3%):</span>
+                                    <span className="font-mono">{formatCurrency(creditSubtotal)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Sales Tax (8.625%):</span>
+                                    <span className="font-mono">{formatCurrency(creditTax)}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t font-bold text-sm text-gray-900">
+                                    <span>Total (Credit Card):</span>
+                                    <span className="font-mono text-base text-blue-700 font-bold">{formatCurrency(creditTotal)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Services */}
-                <div className="bg-white rounded-xl shadow-sm border overflow-hidden mb-4">
+                <div className="bg-white rounded-xl shadow-xs border overflow-hidden">
                     <div className="px-6 py-4 border-b bg-gray-50">
-                        <h3 className="font-semibold text-gray-900">Proposed Services</h3>
+                        <h3 className="font-semibold text-gray-900">Proposed Scope & Breakdown</h3>
                     </div>
                     <div className="overflow-x-auto">
                     <table className="w-full min-w-[480px]">
                         <thead>
-                            <tr className="text-xs text-gray-500 uppercase border-b">
+                            <tr className="text-xs text-gray-500 uppercase border-b bg-gray-50/60">
                                 <th className="text-left px-6 py-3 font-medium">Location</th>
                                 <th className="text-left px-6 py-3 font-medium">Service</th>
                                 <th className="text-left px-6 py-3 font-medium">Frequency</th>
-                                <th className="text-right px-6 py-3 font-medium">Rate</th>
+                                <th className="text-right px-6 py-3 font-medium text-slate-800">ACH / Check</th>
+                                <th className="text-right px-6 py-3 font-medium text-blue-700">Credit (+3%)</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {quote.lineItems.map((item, i) => (
-                                <tr key={i} className="border-b last:border-0 hover:bg-gray-50/50">
-                                    <td className="px-6 py-4 text-sm">{item.locationName}</td>
-                                    <td className="px-6 py-4 text-sm font-medium">{item.serviceType}</td>
-                                    <td className="px-6 py-4 text-sm capitalize">{item.frequency}</td>
-                                    <td className="px-6 py-4 text-sm text-right font-semibold">{formatCurrency(item.clientRate)}/mo</td>
-                                </tr>
-                            ))}
+                            {quote.lineItems.map((item, i) => {
+                                const creditRate = Math.round(item.clientRate * 1.03 * 100) / 100;
+                                return (
+                                    <tr key={i} className="border-b last:border-0 hover:bg-gray-50/50">
+                                        <td className="px-6 py-4 text-sm">{item.locationName}</td>
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.serviceType}</td>
+                                        <td className="px-6 py-4 text-sm capitalize text-gray-600">{item.frequency}</td>
+                                        <td className="px-6 py-4 text-sm text-right font-semibold font-mono text-slate-900">
+                                            {formatCurrency(item.clientRate)}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-right font-semibold font-mono text-blue-800 bg-blue-50/20">
+                                            {formatCurrency(creditRate)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
-                    </div>
-                    <div className="px-6 py-4 bg-sky-50 border-t flex justify-between items-center">
-                        <span className="font-medium text-gray-700">Total Monthly Investment</span>
-                        <span className="text-2xl font-bold text-sky-700">{formatCurrency(quote.totalMonthlyRate)}<span className="text-sm font-normal text-gray-500">/month</span></span>
                     </div>
                 </div>
 
                 {/* Terms */}
-                <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+                <div className="bg-white rounded-xl shadow-xs border p-6">
                     <h3 className="font-semibold text-gray-900 mb-3">Agreement Terms</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                         <div>
@@ -269,15 +352,15 @@ export default function QuoteReviewPage() {
 
                 {/* Actions */}
                 {!showChangesForm ? (
-                    <div className="bg-white rounded-xl shadow-sm border p-6 mb-8">
-                        <h3 className="font-semibold text-gray-900 mb-4 text-center">How would you like to proceed?</h3>
+                    <div className="bg-white rounded-xl shadow-xs border p-6 mb-8">
+                        <h3 className="font-semibold text-gray-900 mb-4 text-center">Ready to authorize this project?</h3>
                         <div className="flex flex-col sm:flex-row gap-4">
                             <button
                                 onClick={handleAccept}
                                 disabled={submitting}
-                                className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg px-6 py-4 font-semibold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg px-6 py-4 font-semibold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                {submitting ? 'Processing...' : '✓ Accept Proposal'}
+                                {submitting ? 'Processing...' : `✓ Authorize via ${paymentMethod === 'credit_card' ? 'Credit Card' : 'ACH / Check'} (${formatCurrency(paymentMethod === 'credit_card' ? creditTotal : cashTotal)})`}
                             </button>
                             <button
                                 onClick={() => setShowChangesForm(true)}

@@ -158,6 +158,22 @@ export default function StepTermsAndSubmit({
                             <span className="text-xl font-bold text-amber-600">{formatCurrency(totals.totalOneTime > 0 ? totals.totalOneTime : totals.oneTimeSubtotal * 1.08625)}</span>
                         </div>
                     )}
+
+                    {/* Dual Pricing Preview */}
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                        <div className="p-2.5 rounded-lg border border-sky-200 bg-sky-50/60 text-xs">
+                            <p className="font-bold text-sky-900 uppercase text-[10px] tracking-wider">Method 1: ACH / Check (Cash)</p>
+                            <p className="text-sm font-bold text-sky-800 font-mono mt-0.5">
+                                {formatCurrency(totals.totalMonthly > 0 ? totals.totalMonthly : (totals.totalOneTime > 0 ? totals.totalOneTime : totals.subtotalBeforeTax * 1.08625))}
+                            </p>
+                        </div>
+                        <div className="p-2.5 rounded-lg border border-blue-200 bg-blue-50/60 text-xs">
+                            <p className="font-bold text-blue-900 uppercase text-[10px] tracking-wider">Method 2: Credit Card (+3%)</p>
+                            <p className="text-sm font-bold text-blue-800 font-mono mt-0.5">
+                                {formatCurrency(Math.round((totals.totalMonthly > 0 ? totals.totalMonthly : (totals.totalOneTime > 0 ? totals.totalOneTime : totals.subtotalBeforeTax * 1.08625)) * 1.03 * 100) / 100)}
+                            </p>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 
