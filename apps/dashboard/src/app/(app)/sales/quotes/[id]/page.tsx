@@ -182,6 +182,25 @@ export default function QuoteDetailPage({ params }: PageProps) {
         }
     };
 
+    const updateLeadOrCompany = async (id: string, data: Record<string, any>) => {
+        if (!id) return;
+        try {
+            const leadRef = doc(db, 'leads', id);
+            const leadSnap = await getDoc(leadRef);
+            if (leadSnap.exists()) {
+                await updateDoc(leadRef, data);
+                return;
+            }
+            const companyRef = doc(db, 'companies', id);
+            const companySnap = await getDoc(companyRef);
+            if (companySnap.exists()) {
+                await updateDoc(companyRef, data);
+            }
+        } catch (e) {
+            console.warn('Could not update lead/company:', e);
+        }
+    };
+
     const handleAssignFsm = async (fsm: FsmUser) => {
         if (!quote) return;
         try {
@@ -194,10 +213,13 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 assignedFsmName: fsm.displayName,
                 updatedAt: serverTimestamp(),
             });
-            // Also update the lead
-            await updateDoc(doc(db, 'leads', quote.leadId), {
-                assignedFsmId: fsm.uid,
-            });
+
+            // Safely update the lead or company
+            if (quote.leadId) {
+                await updateLeadOrCompany(quote.leadId, {
+                    assignedFsmId: fsm.uid,
+                });
+            }
 
             // Cascade to existing contracts for this lead
             const contractSnap = await getDocs(query(
@@ -223,8 +245,6 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     updatedAt: serverTimestamp(),
                 });
             }
-
-
 
             await addDoc(collection(db, 'activity_logs'), {
                 type: 'FSM_ASSIGNED',
@@ -502,12 +522,14 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 updatedAt: serverTimestamp(),
             });
 
-            // 4. Update Lead status to 'won'
-            await updateDoc(doc(db, 'leads', quote.leadId), {
-                status: 'won',
-                contractId,
-                wonAt: serverTimestamp(),
-            });
+            // 4. Update Lead or Company status to 'won'
+            if (quote.leadId) {
+                await updateLeadOrCompany(quote.leadId, {
+                    status: 'won',
+                    contractId,
+                    wonAt: serverTimestamp(),
+                });
+            }
 
             // 5. Log activity
             await addDoc(collection(db, 'activity_logs'), {
@@ -602,9 +624,11 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 status: 'rejected',
                 updatedAt: serverTimestamp(),
             });
-            await updateDoc(doc(db, 'leads', quote.leadId), {
-                status: 'lost',
-            });
+            if (quote.leadId) {
+                await updateLeadOrCompany(quote.leadId, {
+                    status: 'lost',
+                });
+            }
             await addDoc(collection(db, 'activity_logs'), {
                 type: 'QUOTE_REJECTED',
                 quoteId: quote.id,
