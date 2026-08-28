@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteDoc, addDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -488,7 +488,8 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
             await addDoc(collection(db, 'activity_logs'), {
                 type: 'WORK_ORDER_SOW_REMOVED',
                 workOrderId: wo.id,
-                removedBy: profile?.uid || profile?.email || 'unknown',
+                leadId: (wo as any).leadId || null,
+                createdBy: profile?.uid || 'unknown',
                 createdAt: serverTimestamp(),
             });
 
@@ -500,6 +501,28 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
             } : null);
         } catch (err) {
             console.error('Error removing SOW:', err);
+        }
+    };
+
+    const handleDeleteWorkOrder = async () => {
+        if (!wo?.id) return;
+        if (!confirm(`Are you sure you want to permanently delete Work Order #${wo.id.slice(0, 8)} (${wo.serviceType})? This action cannot be undone.`)) {
+            return;
+        }
+        try {
+            await deleteDoc(doc(db, 'work_orders', wo.id));
+            await addDoc(collection(db, 'activity_logs'), {
+                type: 'WORK_ORDER_DELETED',
+                workOrderId: wo.id,
+                serviceType: wo.serviceType,
+                leadId: (wo as any).leadId || null,
+                deletedBy: profile?.uid || 'unknown',
+                createdAt: serverTimestamp(),
+            });
+            router.push('/operations/work-orders');
+        } catch (err) {
+            console.error('Error deleting work order:', err);
+            alert('Failed to delete work order.');
         }
     };
 
@@ -607,6 +630,14 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                             <CheckCircle2 className="w-3.5 h-3.5" /> Complete
                         </Button>
                     )}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10 text-xs"
+                        onClick={handleDeleteWorkOrder}
+                    >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </Button>
                 </div>
             </div>
 

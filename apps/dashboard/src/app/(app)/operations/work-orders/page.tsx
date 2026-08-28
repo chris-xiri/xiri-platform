@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, getDocs, deleteDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { CLIENT_COLORS } from '@/lib/constants';
-import { X } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 import { WorkOrder } from '@xiri-facility-solutions/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -91,6 +91,27 @@ export default function WorkOrdersPage() {
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
+
+    const handleDeleteWo = async (e: React.MouseEvent, wo: any) => {
+        e.stopPropagation();
+        if (!confirm(`Are you sure you want to permanently delete Work Order for "${wo.serviceType}" (${wo.locationName})? This action cannot be undone.`)) {
+            return;
+        }
+        try {
+            await deleteDoc(doc(db, 'work_orders', wo.id));
+            await addDoc(collection(db, 'activity_logs'), {
+                type: 'WORK_ORDER_DELETED',
+                workOrderId: wo.id,
+                serviceType: wo.serviceType,
+                leadId: wo.leadId || null,
+                deletedBy: profile?.uid || 'unknown',
+                createdAt: serverTimestamp(),
+            });
+        } catch (err) {
+            console.error('Error deleting work order:', err);
+            alert('Failed to delete work order.');
+        }
+    };
 
     // Apply user filter, then search — also match by lead assignment for FSMs
     const userFiltered = filterMode === 'mine' && profile
@@ -351,10 +372,21 @@ export default function WorkOrdersPage() {
                                                                         return null;
                                                                     })()}
                                                                 </td>
-                                                                <td className="px-4 py-2.5">
-                                                                    <Link href={`/operations/work-orders/${wo.id}`}>
-                                                                        <Button variant="ghost" size="sm">View</Button>
-                                                                    </Link>
+                                                                <td className="px-4 py-2.5 text-right">
+                                                                    <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                                                        <Link href={`/operations/work-orders/${wo.id}`}>
+                                                                            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs font-medium">View</Button>
+                                                                        </Link>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                                            title="Delete Work Order"
+                                                                            onClick={(e) => handleDeleteWo(e, wo)}
+                                                                        >
+                                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                                        </Button>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         );
