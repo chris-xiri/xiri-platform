@@ -430,16 +430,33 @@ export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3 flex-shrink-0">
-                                            <div className="text-right">
-                                                <p className="text-sm font-bold text-foreground font-mono">
-                                                    {fmt(q.totalMonthlyRate || 0)}<span className="text-[10px] font-normal text-muted-foreground">/mo</span>
-                                                </p>
-                                                {q.oneTimeCharges > 0 && (
-                                                    <p className="text-[10px] text-muted-foreground font-mono">
-                                                        +{fmt(q.oneTimeCharges)} 1-time
-                                                    </p>
-                                                )}
-                                            </div>
+                                            {(() => {
+                                                const monthlyRate = q.totalMonthlyRate || 0;
+                                                const oneTimeTotal = (q.lineItems || [])
+                                                    .filter((li: any) => li.frequency === 'one_time' || li.billingType === 'one_time')
+                                                    .reduce((sum: number, li: any) => sum + (li.clientRate || 0), 0) || (q as any).oneTimeTotal || q.oneTimeCharges || 0;
+
+                                                return (
+                                                    <div className="text-right">
+                                                        {monthlyRate > 0 ? (
+                                                            <>
+                                                                <p className="text-sm font-bold text-foreground font-mono">
+                                                                    {fmt(monthlyRate)}<span className="text-[10px] font-normal text-muted-foreground">/mo</span>
+                                                                </p>
+                                                                {oneTimeTotal > 0 && (
+                                                                    <p className="text-[10px] text-muted-foreground font-mono">
+                                                                        +{fmt(oneTimeTotal)} 1-time
+                                                                    </p>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <p className="text-sm font-bold text-foreground font-mono">
+                                                                {fmt(oneTimeTotal)} <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-1 py-0.5 rounded border border-purple-200">One-Time</span>
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                             <ExternalLink className="w-4 h-4 text-muted-foreground" />
                                         </div>
                                     </div>

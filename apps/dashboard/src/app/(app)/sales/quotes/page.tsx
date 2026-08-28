@@ -272,7 +272,16 @@ export default function QuotesPage() {
                                             <div>
                                                 <p className="font-semibold">{group.leadBusinessName}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {group.latest.lineItems?.length || 0} services • {formatCurrency(group.latest.totalMonthlyRate)}/mo
+                                                    {group.latest.lineItems?.length || 0} services • {(() => {
+                                                        const monthlyRate = group.latest.totalMonthlyRate || 0;
+                                                        const oneTimeTotal = (group.latest.lineItems || [])
+                                                            .filter((li: any) => li.frequency === 'one_time' || li.billingType === 'one_time')
+                                                            .reduce((sum: number, li: any) => sum + (li.clientRate || 0), 0) || (group.latest as any).oneTimeTotal || 0;
+                                                        if (monthlyRate > 0 && oneTimeTotal > 0) return `${formatCurrency(monthlyRate)}/mo + ${formatCurrency(oneTimeTotal)} one-time`;
+                                                        if (monthlyRate > 0) return `${formatCurrency(monthlyRate)}/mo`;
+                                                        if (oneTimeTotal > 0) return `${formatCurrency(oneTimeTotal)} (One-Time)`;
+                                                        return `${formatCurrency(0)}/mo`;
+                                                    })()}
                                                     <span className="ml-2 text-muted-foreground/60">v{group.latest.version || 1}</span>
                                                 </p>
                                             </div>
@@ -287,11 +296,14 @@ export default function QuotesPage() {
                                     {/* Line item breakdown for scanability */}
                                     {group.latest.lineItems && group.latest.lineItems.length > 0 && (
                                         <div className="mt-2 pt-2 border-t border-dashed space-y-0.5">
-                                            {group.latest.lineItems.map((li: any, idx: number) => (
-                                                <p key={li.id || idx} className="text-xs text-muted-foreground">
-                                                    {li.serviceType} — {formatCurrency(li.clientRate)}/mo
-                                                </p>
-                                            ))}
+                                            {group.latest.lineItems.map((li: any, idx: number) => {
+                                                const isLiOneTime = li.frequency === 'one_time' || li.billingType === 'one_time';
+                                                return (
+                                                    <p key={li.id || idx} className="text-xs text-muted-foreground">
+                                                        {li.serviceType} — {formatCurrency(li.clientRate)}{isLiOneTime ? ' (One-Time)' : '/mo'}
+                                                    </p>
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>
@@ -320,6 +332,18 @@ export default function QuotesPage() {
                                                     const olderCreated = olderQuote.createdAt?.toDate?.()
                                                         ? olderQuote.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                                                         : '—';
+                                                    const olderMonthly = olderQuote.totalMonthlyRate || 0;
+                                                    const olderOneTime = (olderQuote.lineItems || [])
+                                                        .filter((li: any) => li.frequency === 'one_time' || li.billingType === 'one_time')
+                                                        .reduce((sum: number, li: any) => sum + (li.clientRate || 0), 0) || (olderQuote as any).oneTimeTotal || 0;
+                                                    const olderRateStr = olderMonthly > 0 && olderOneTime > 0
+                                                        ? `${formatCurrency(olderMonthly)}/mo + ${formatCurrency(olderOneTime)} one-time`
+                                                        : olderMonthly > 0
+                                                            ? `${formatCurrency(olderMonthly)}/mo`
+                                                            : olderOneTime > 0
+                                                                ? `${formatCurrency(olderOneTime)} (One-Time)`
+                                                                : `${formatCurrency(0)}/mo`;
+
                                                     return (
                                                         <div
                                                             key={olderQuote.id}
@@ -328,7 +352,7 @@ export default function QuotesPage() {
                                                         >
                                                             <div className="pl-4">
                                                                 <p className="text-sm text-muted-foreground">
-                                                                    v{olderQuote.version || 1} • {formatCurrency(olderQuote.totalMonthlyRate)}/mo • {olderQuote.lineItems?.length || 0} services
+                                                                    v{olderQuote.version || 1} • {olderRateStr} • {olderQuote.lineItems?.length || 0} services
                                                                 </p>
                                                             </div>
                                                             <div className="flex items-center gap-3">

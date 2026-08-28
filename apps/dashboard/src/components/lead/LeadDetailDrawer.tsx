@@ -969,6 +969,19 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                                         const created = q.createdAt?.toDate?.()
                                                             ? q.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                                                             : '—';
+                                                        const monthlyRate = q.totalMonthlyRate || 0;
+                                                        const oneTimeTotal = (q.lineItems || [])
+                                                            .filter((li: any) => li.frequency === 'one_time' || li.billingType === 'one_time')
+                                                            .reduce((sum: number, li: any) => sum + (li.clientRate || 0), 0) || (q as any).oneTimeTotal || (q as any).oneTimeCharges || 0;
+
+                                                        const rateDisplay = monthlyRate > 0 && oneTimeTotal > 0
+                                                            ? `${fmt(monthlyRate)}/mo + ${fmt(oneTimeTotal)} (One-Time)`
+                                                            : monthlyRate > 0
+                                                                ? `${fmt(monthlyRate)}/mo`
+                                                                : oneTimeTotal > 0
+                                                                    ? `${fmt(oneTimeTotal)} (One-Time)`
+                                                                    : `${fmt(0)}/mo`;
+
                                                         return (
                                                             <div
                                                                 key={q.id}
@@ -979,10 +992,10 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                                                     <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                                                     <div className="min-w-0">
                                                                         <p className="text-sm font-medium truncate">
-                                                                            v{q.version || 1} — {fmt(q.totalMonthlyRate || 0)}/mo
+                                                                            v{q.version || 1} — {rateDisplay}
                                                                         </p>
                                                                         <p className="text-[10px] text-muted-foreground">
-                                                                            {q.lineItems?.length || 0} services • {created}
+                                                                            {q.lineItems?.length || 0} service{(q.lineItems?.length || 0) !== 1 ? 's' : ''} • {created}
                                                                         </p>
                                                                     </div>
                                                                 </div>
