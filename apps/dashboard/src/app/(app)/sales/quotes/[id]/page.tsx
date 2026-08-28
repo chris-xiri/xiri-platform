@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Quote, QuoteLineItem, QuoteRevision, ROOM_TYPES, CLEANING_TASKS, computeDualPricing, getCreditPrice } from '@xiri-facility-solutions/shared';
 import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
 import QuoteBuilder from '@/components/QuoteBuilder';
