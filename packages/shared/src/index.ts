@@ -1556,6 +1556,9 @@ export interface WorkOrder {
     assignedNightManagerName?: string;
     assignedBy?: string;
     serviceStartDate?: any;        // ISO date — when service begins (from quote → contract)
+    sowDocumentUrl?: string;       // Signed Scope of Work (SOW) PDF/document URL
+    sowDocumentName?: string;      // File name of the uploaded signed SOW
+    sowUploadedAt?: string;        // ISO timestamp when signed SOW was uploaded
     notes?: string;
     createdAt: any;
     updatedAt: any;
@@ -1859,4 +1862,72 @@ export interface VendorProspect {
     searchQuery: string;
     searchLocation: string;
     createdAt: Date;
+}
+
+// --- SUBSCRIPTION & FREE TIER LIMITS ---
+
+export const FREE_TIER_LIMITS = {
+    maxLocations: 1,
+    maxLineItems: 3,
+    maxTeamMembers: 1,
+} as const;
+
+export interface AccountUsage {
+    locationCount: number;
+    lineItemCount: number;
+    teamMemberCount: number;
+}
+
+export interface FreeTierEligibilityResult {
+    isEligible: boolean;
+    usage: AccountUsage;
+    limits: typeof FREE_TIER_LIMITS;
+    exceededLimits: Array<{
+        metric: 'locations' | 'lineItems' | 'teamMembers';
+        label: string;
+        current: number;
+        max: number;
+        excess: number;
+    }>;
+}
+
+export function validateFreeTierEligibility(usage: AccountUsage): FreeTierEligibilityResult {
+    const exceededLimits: FreeTierEligibilityResult['exceededLimits'] = [];
+
+    if (usage.locationCount > FREE_TIER_LIMITS.maxLocations) {
+        exceededLimits.push({
+            metric: 'locations',
+            label: 'Active Facility Locations',
+            current: usage.locationCount,
+            max: FREE_TIER_LIMITS.maxLocations,
+            excess: usage.locationCount - FREE_TIER_LIMITS.maxLocations,
+        });
+    }
+
+    if (usage.lineItemCount > FREE_TIER_LIMITS.maxLineItems) {
+        exceededLimits.push({
+            metric: 'lineItems',
+            label: 'Monthly Recurring Line Items',
+            current: usage.lineItemCount,
+            max: FREE_TIER_LIMITS.maxLineItems,
+            excess: usage.lineItemCount - FREE_TIER_LIMITS.maxLineItems,
+        });
+    }
+
+    if (usage.teamMemberCount > FREE_TIER_LIMITS.maxTeamMembers) {
+        exceededLimits.push({
+            metric: 'teamMembers',
+            label: 'Team Members / User Seats',
+            current: usage.teamMemberCount,
+            max: FREE_TIER_LIMITS.maxTeamMembers,
+            excess: usage.teamMemberCount - FREE_TIER_LIMITS.maxTeamMembers,
+        });
+    }
+
+    return {
+        isEligible: exceededLimits.length === 0,
+        usage,
+        limits: FREE_TIER_LIMITS,
+        exceededLimits,
+    };
 }

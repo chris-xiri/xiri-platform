@@ -289,25 +289,36 @@ export default function StepServicesAndPricing({
                                                 {/* Unit Pricing Breakdown (for items generated from Trades / Unit-Based step) */}
                                                 {item.unitItems && item.unitItems.length > 0 && (
                                                     <div className="col-span-12">
-                                                        <div className="rounded-lg border bg-blue-50/50 dark:bg-blue-950/20 p-3 space-y-2">
-                                                            <div className="flex items-center justify-between text-xs font-semibold text-blue-900 dark:text-blue-200">
-                                                                <span className="flex items-center gap-1.5">
+                                                        <div className="rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-900/80 p-3 space-y-2">
+                                                            <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
+                                                                <span className="flex items-center gap-1.5 text-slate-900 dark:text-slate-100 font-bold">
                                                                     📐 Unit-Based Item Breakdown ({item.unitItems.length} item{item.unitItems.length !== 1 ? 's' : ''})
                                                                 </span>
-                                                                <span className="font-mono text-primary font-bold">
-                                                                    Total: ${item.clientRate?.toFixed(2) || '0.00'}
-                                                                </span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-mono text-slate-900 dark:text-slate-100 font-bold">
+                                                                        Total: ${item.clientRate?.toFixed(2) || '0.00'}
+                                                                    </span>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-red-600 font-normal"
+                                                                        onClick={() => onUpdateLineItem(item.id, { unitItems: [] })}
+                                                                        title="Remove unit item breakdown"
+                                                                    >
+                                                                        Clear Breakdown
+                                                                    </Button>
+                                                                </div>
                                                             </div>
-                                                            <div className="space-y-1">
+                                                            <div className="space-y-1 pt-1 border-t border-slate-200 dark:border-slate-800">
                                                                 {item.unitItems.map((u: any, uIdx: number) => (
-                                                                    <div key={u.id || uIdx} className="flex items-center justify-between text-xs text-muted-foreground">
-                                                                        <span>• {u.description}</span>
+                                                                    <div key={u.id || uIdx} className="flex items-center justify-between text-xs text-slate-800 dark:text-slate-200">
+                                                                        <span className="font-medium">• {u.description}</span>
                                                                         {u.quantity === 0 ? (
-                                                                            <span className="font-mono text-amber-700 dark:text-amber-300 font-medium">
+                                                                            <span className="font-mono text-amber-800 dark:text-amber-300 font-semibold">
                                                                                 0 {u.unit} @ ${u.unitPrice.toFixed(2)}/{u.unit} (Rate locked · Billed after completion)
                                                                             </span>
                                                                         ) : (
-                                                                            <span className="font-mono text-foreground">
+                                                                            <span className="font-mono text-slate-900 dark:text-slate-100 font-medium">
                                                                                 {u.quantity} {u.unit} × ${u.unitPrice.toFixed(2)} = <strong>${u.subtotal.toFixed(2)}</strong>
                                                                             </span>
                                                                         )}

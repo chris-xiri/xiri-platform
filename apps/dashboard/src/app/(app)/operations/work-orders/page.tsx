@@ -297,7 +297,14 @@ export default function WorkOrdersPage() {
                                                         return (
                                                             <tr key={wo.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => window.location.href = `/operations/work-orders/${wo.id}`}>
                                                                 <td className="px-4 py-2.5">
-                                                                    <span className="font-medium text-sm">{wo.serviceType}</span>
+                                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                                        <span className="font-medium text-sm">{wo.serviceType}</span>
+                                                                        {(wo as any).sowDocumentUrl && (
+                                                                            <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold px-1.5 py-0 h-4">
+                                                                                📄 SOW
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
                                                                     <p className="text-xs text-muted-foreground">{formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)}</p>
                                                                 </td>
                                                                 <td className="px-4 py-2.5">

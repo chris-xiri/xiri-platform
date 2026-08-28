@@ -7,14 +7,16 @@ import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, Building2, Printer, Eye, EyeOff, History, ChevronRight, Pencil, Check, X } from 'lucide-react';
+import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, Building2, Printer, Eye, EyeOff, History, ChevronRight, Pencil, Check, X, Settings } from 'lucide-react';
 import ContractPreview from '@/components/ContractPreview';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
+import ManageSubscriptionModal from '@/components/subscription/ManageSubscriptionModal';
 
 const STATUS_BADGE: Record<string, { variant: any; label: string; color: string }> = {
     draft: { variant: 'secondary', label: 'Draft', color: 'text-gray-500' },
     active: { variant: 'outline', label: 'Active', color: 'text-green-600' },
+    free_tier: { variant: 'secondary', label: 'Free Tier', color: 'text-emerald-600' },
     amended: { variant: 'default', label: 'Amended', color: 'text-blue-600' },
     superseded: { variant: 'secondary', label: 'Superseded', color: 'text-gray-400' },
     terminated: { variant: 'destructive', label: 'Terminated', color: 'text-red-600' },
@@ -50,6 +52,7 @@ export default function ContractDetailPage() {
     const [signerEmail, setSignerEmail] = useState('');
     const [signerPhone, setSignerPhone] = useState('');
     const [savingEntity, setSavingEntity] = useState(false);
+    const [manageModalOpen, setManageModalOpen] = useState(false);
 
     useEffect(() => {
         if (!contractId) return;
@@ -167,6 +170,14 @@ export default function ContractDetailPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-50 font-semibold"
+                        onClick={() => setManageModalOpen(true)}
+                    >
+                        <Settings className="w-4 h-4 text-emerald-600" /> Manage Subscription
+                    </Button>
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowPreview(!showPreview)}>
                         {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         {showPreview ? 'Hide Contract' : 'View Contract'}
@@ -553,6 +564,14 @@ export default function ContractDetailPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Manage Subscription Modal */}
+            <ManageSubscriptionModal
+                open={manageModalOpen}
+                onOpenChange={setManageModalOpen}
+                contract={contract}
+                onSuccess={() => window.location.reload()}
+            />
         </div>
     );
 }

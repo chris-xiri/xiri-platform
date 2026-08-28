@@ -17,6 +17,7 @@ const STATUS_BADGE: Record<string, { variant: any; label: string }> = {
     draft: { variant: 'secondary', label: 'Draft' },
     sent: { variant: 'default', label: 'Sent' },
     active: { variant: 'outline', label: 'Active' },
+    free_tier: { variant: 'secondary', label: 'Free Tier' },
     amended: { variant: 'default', label: 'Amended' },
     superseded: { variant: 'secondary', label: 'Superseded' },
     terminated: { variant: 'destructive', label: 'Terminated' },
@@ -236,6 +237,11 @@ export default function ContractsPage() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
+                                            {group.latest.lastRenewalReminderPeriod && (
+                                                <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                                                    Reminded ({group.latest.lastRenewalReminderPeriod})
+                                                </Badge>
+                                            )}
                                             <Badge variant={badge.variant}>{badge.label}</Badge>
                                             <span className="text-xs text-muted-foreground">{created}</span>
                                             <ChevronRight className="w-4 h-4 text-muted-foreground" />

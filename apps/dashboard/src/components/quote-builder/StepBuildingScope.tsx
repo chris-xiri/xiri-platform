@@ -121,11 +121,7 @@ export default function StepBuildingScope({
     const [unitItems, setUnitItems] = useState<UnitPriceItem[]>(
         existingScope?.unitItems && existingScope.unitItems.length > 0
             ? existingScope.unitItems
-            : [
-                { id: 'unit_1', description: 'Baseboard & Trim Installation', quantity: 50, unit: 'linear_ft', unitPrice: 8.50, subtotal: 425 },
-                { id: 'unit_2', description: 'Custom Door Frame Repair', quantity: 2, unit: 'units', unitPrice: 175.00, subtotal: 350 },
-                { id: 'unit_3', description: 'Skilled Carpenter Labor', quantity: 4, unit: 'hours', unitPrice: 85.00, subtotal: 340 },
-            ]
+            : []
     );
 
     const totalUnitRate = useMemo(() =>

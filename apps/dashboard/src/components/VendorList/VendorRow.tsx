@@ -6,9 +6,9 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, X, Eye, Briefcase, Zap, Send, Phone, Mail, MousePointerClick, MailOpen, MailCheck, AlertTriangle, Ban, Sparkles } from "lucide-react";
+import { Check, X, Eye, Briefcase, Zap, Send, Phone, Mail, MousePointerClick, MailOpen, MailCheck, AlertTriangle, Ban, Sparkles, FileText, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { getStatusColor, getScoreColor, getStatusLabel, formatCapability, getInsuranceStatusInfo } from "./utils";
+import { getStatusColor, getScoreColor, getStatusLabel, formatCapability, getInsuranceStatusInfo, getVendorInsuranceDocs } from "./utils";
 import { useState } from "react";
 
 export type VendorColumnKey = 'vendor' | 'location' | 'score' | 'status' | 'actions';
@@ -75,6 +75,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
     const showEditEmail = isNeedsContact || isBounced;
 
     const insuranceInfo = getInsuranceStatusInfo(vendor);
+    const insuranceDocs = getVendorInsuranceDocs(vendor);
 
     // Parse location — merge city/state/zip into single string
     const locationParts = [
@@ -158,6 +159,20 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                         🛡️ Fully Insured
                                     </Badge>
                                 ) : null}
+                                {insuranceDocs.length > 0 && (
+                                    <a
+                                        href={insuranceDocs[0].url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 h-5 rounded text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs"
+                                        title={`View ${insuranceDocs[0].title}`}
+                                    >
+                                        <FileText className="w-2.5 h-2.5" />
+                                        COI PDF
+                                        <ExternalLink className="w-2 h-2 opacity-80" />
+                                    </a>
+                                )}
                                 {/* "New" badge for organic/SEO entries */}
                                 {((vendor.status || '').toLowerCase() === 'new_lead' ||
                                     ((vendor.status || 'pending_review').toLowerCase() === 'pending_review' && !vendor.outreachStatus)) && (

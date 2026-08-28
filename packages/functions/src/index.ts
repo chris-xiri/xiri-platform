@@ -27,6 +27,8 @@ export { onAuditSubmitted } from "./triggers/onAuditSubmitted";
 export { onReferralLeadWritten } from "./triggers/referralPartnerNotifications";
 export { onAuditFailed } from "./triggers/onAuditFailed";
 export { generateMonthlyInvoices } from "./triggers/generateMonthlyInvoices";
+export { sendRenewalReminders, triggerSendRenewalReminders } from "./triggers/sendRenewalReminders";
+export { cancelSubscription, downgradeSubscription, checkFreeTierEligibility } from "./triggers/handleContractCancellation";
 export { resendWebhook } from "./triggers/resendWebhook";
 export { backfillEngagement } from "./scripts/backfill-engagement";
 export { seedInHouseSequence } from "./scripts/seed-in-house-sequence";

@@ -144,19 +144,34 @@ export function getVendorInsuranceDocs(vendor: Vendor): VendorDocRef[] {
         });
     }
 
-    // 3. Specific Coverage Policy URLs
+    // 3. Standalone COI Field (Object or String) in Compliance
+    if (typeof comp.coi === 'string') {
+        addDoc(comp.coi, 'Certificate of Insurance (COI)', 'COI');
+    } else if (comp.coi?.url) {
+        addDoc(comp.coi.url, comp.coi.fileName || 'Certificate of Insurance (COI)', 'COI', comp.coi.uploadedAt, comp.coi.status);
+    }
+    addDoc(comp.coiUrl, 'Certificate of Insurance (COI)', 'COI');
+
+    // 4. Uploaded Docs Map (Fast Track / Legacy)
+    if (comp.uploadedDocs) {
+        addDoc(comp.uploadedDocs.coi, 'COI Document', 'COI');
+        addDoc(comp.uploadedDocs.insurance, 'Insurance Document', 'COI');
+        addDoc(comp.uploadedDocs.acord, 'ACORD 25 Certificate', 'ACORD25');
+    }
+
+    // 5. Specific Coverage Policy URLs
     addDoc(comp.generalLiability?.policyUrl || comp.generalLiability?.url, 'General Liability Policy (COI)', 'GENERAL_LIABILITY');
     addDoc(comp.workersComp?.policyUrl || comp.workersComp?.url, 'Workers Comp Policy (COI)', 'WORKERS_COMP');
     addDoc(comp.autoInsurance?.policyUrl || comp.autoInsurance?.url, 'Auto Insurance Policy', 'OTHER');
 
-    // 4. Standalone vendor level URL fields
+    // 6. Standalone vendor level URL fields
     addDoc((vendor as any).coiUrl || (vendor as any).insuranceUrl || (vendor as any).coiFile, 'Certificate of Insurance (COI)', 'COI');
 
-    // 5. Onboarding responses COI URL
+    // 7. Onboarding responses COI URL
     const ob = (vendor as any).onboardingAnswers || (vendor as any).onboarding || {};
     addDoc(ob.coiUrl || ob.insuranceUrl || ob.insuranceDocumentUrl, 'Onboarding COI Document', 'COI');
 
-    // 6. Generic vendor.documents array or map
+    // 8. Generic vendor.documents array or map
     const genericDocs = (vendor as any).documents;
     if (Array.isArray(genericDocs)) {
         genericDocs.forEach((d: any, idx: number) => {
@@ -326,7 +341,8 @@ export function getInsurancePolicySummary(vendor: Vendor): PolicySummary {
         }
     }
 
-    const hasDoc = !!(acord.url || comp.coiUrl || (Array.isArray(comp.documentsHistory) && comp.documentsHistory.length > 0) || (vendor as any).coiUrl);
+    const allDocs = getVendorInsuranceDocs(vendor);
+    const hasDoc = allDocs.length > 0 || !!(acord.url || comp.coiUrl || (Array.isArray(comp.documentsHistory) && comp.documentsHistory.length > 0) || (vendor as any).coiUrl);
 
     let statusLabel = 'Active Policy';
     let statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold';

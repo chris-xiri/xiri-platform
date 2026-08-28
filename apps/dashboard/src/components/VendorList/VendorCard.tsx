@@ -5,7 +5,8 @@ import { Vendor } from "@xiri-facility-solutions/shared";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
-import { getStatusColor, getScoreColor, getInsuranceStatusInfo } from "./utils";
+import { getStatusColor, getScoreColor, getInsuranceStatusInfo, getVendorInsuranceDocs } from "./utils";
+import { FileText, ExternalLink } from "lucide-react";
 
 interface VendorCardProps {
     vendor: Vendor;
@@ -17,6 +18,7 @@ interface VendorCardProps {
 
 export function VendorCard({ vendor, index, isRecruitmentMode = false, isSelected, onSelectChange }: VendorCardProps) {
     const insuranceInfo = getInsuranceStatusInfo(vendor);
+    const insuranceDocs = getVendorInsuranceDocs(vendor);
 
     return (
         <div className="border border-border rounded-lg p-3 space-y-3 bg-card shadow-sm">
@@ -47,6 +49,20 @@ export function VendorCard({ vendor, index, isRecruitmentMode = false, isSelecte
                                     🛡️ Fully Insured
                                 </Badge>
                             ) : null}
+                            {insuranceDocs.length > 0 && (
+                                <a
+                                    href={insuranceDocs[0].url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 h-4 rounded text-[9px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs"
+                                    title={`View ${insuranceDocs[0].title}`}
+                                >
+                                    <FileText className="w-2.5 h-2.5" />
+                                    COI PDF
+                                    <ExternalLink className="w-2 h-2 opacity-80" />
+                                </a>
+                            )}
                         </div>
                         <Link href={isRecruitmentMode ? `/supply/recruitment/${vendor.id}` : `/supply/crm/${vendor.id}`} className="hover:opacity-80 transition-opacity">
                             <h3 className="font-medium text-foreground hover:text-primary transition-colors">{vendor.businessName}</h3>
