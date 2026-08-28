@@ -24,6 +24,7 @@ import {
     X,
     FileText,
     Wrench,
+    Plus,
 } from 'lucide-react';
 import {
     VENDOR_CAPABILITIES,
@@ -576,10 +577,19 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* Status Badge */}
-                    <Badge variant="outline" className={`text-sm ${STATUS_COLORS[lead.status] || ''}`}>
-                        {lead.status?.charAt(0).toUpperCase() + lead.status?.slice(1)}
-                    </Badge>
+                    {/* Actions & Status Badge */}
+                    <div className="flex items-center gap-3">
+                        <Button
+                            size="sm"
+                            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-9 shadow-xs"
+                            onClick={() => router.push(`/sales/quotes?new=true&leadId=${leadId}`)}
+                        >
+                            <Plus className="w-4 h-4" /> New Quote
+                        </Button>
+                        <Badge variant="outline" className={`text-sm py-1 px-3 ${STATUS_COLORS[lead.status] || ''}`}>
+                            {lead.status?.charAt(0).toUpperCase() + lead.status?.slice(1)}
+                        </Badge>
+                    </div>
                 </div>
 
                 {/* ═══ Company Dashboard Hub ═══ */}

@@ -2,13 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useRouter } from 'next/navigation';
-import LeadDetailDrawer from '@/components/lead/LeadDetailDrawer';
+import { Button } from '@/components/ui/button';
 import {
     Users,
+    Plus,
     Mail,
     Phone,
     ClipboardList,
@@ -373,39 +372,83 @@ export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
                 </CardContent>
             </Card>
 
-            {/* ═══ Quick Links: Quotes & Contracts ═══ */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Card
-                    className="hover:border-primary/30 transition-colors cursor-pointer"
-                    onClick={() => quotes.length > 0 && router.push(`/sales/quotes/${quotes[0].id}`)}
-                >
-                    <CardContent className="py-4 px-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <FileText className="w-5 h-5 text-blue-500" />
-                            <div>
-                                <p className="text-sm font-medium">Quotes</p>
-                                <p className="text-xs text-muted-foreground">{quotes.length} total</p>
-                            </div>
+            {/* ═══ Quotes Section ═══ */}
+            <Card>
+                <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-blue-500" /> Quotes ({quotes.length})
+                    </CardTitle>
+                    <Button
+                        size="sm"
+                        className="h-7 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                        onClick={() => router.push(`/sales/quotes?new=true&leadId=${companyId}`)}
+                    >
+                        <Plus className="w-3.5 h-3.5" /> New Quote
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    {quotes.length === 0 ? (
+                        <div className="text-center py-6 space-y-2 border border-dashed rounded-lg bg-muted/20">
+                            <p className="text-sm text-muted-foreground">No quotes on file for this company</p>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1.5 text-xs border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                                onClick={() => router.push(`/sales/quotes?new=true&leadId=${companyId}`)}
+                            >
+                                <Plus className="w-3.5 h-3.5" /> Create Quote
+                            </Button>
                         </div>
-                        {quotes.length > 0 && <ExternalLink className="w-4 h-4 text-muted-foreground" />}
-                    </CardContent>
-                </Card>
-                <Card
-                    className="hover:border-primary/30 transition-colors cursor-pointer"
-                    onClick={() => contracts.length > 0 && router.push(`/sales/quotes/${contracts[0]?.quoteId || contracts[0]?.id}`)}
-                >
-                    <CardContent className="py-4 px-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <FileSignature className="w-5 h-5 text-amber-500" />
-                            <div>
-                                <p className="text-sm font-medium">Contracts</p>
-                                <p className="text-xs text-muted-foreground">{contracts.length} total</p>
-                            </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {quotes.map((q: any) => {
+                                const st = q.status || 'draft';
+                                const badgeVariant = st === 'accepted' ? 'outline' : st === 'sent' ? 'default' : 'secondary';
+                                return (
+                                    <div
+                                        key={q.id}
+                                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors cursor-pointer"
+                                        onClick={() => router.push(`/sales/quotes/${q.id}`)}
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="p-2 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-300">
+                                                <FileText className="w-4 h-4" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-semibold truncate">
+                                                        {q.proposalTerms?.projectTitle || `Quote v${q.version || 1}`}
+                                                    </p>
+                                                    <Badge variant={badgeVariant as any} className="text-[10px] capitalize">
+                                                        {st}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {q.lineItems?.length || 0} line item{(q.lineItems?.length || 0) !== 1 ? 's' : ''}
+                                                    {q.createdAt && ` · ${format(toDate(q.createdAt) || new Date(), 'MMM d, yyyy')}`}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 flex-shrink-0">
+                                            <div className="text-right">
+                                                <p className="text-sm font-bold text-foreground font-mono">
+                                                    {fmt(q.totalMonthlyRate || 0)}<span className="text-[10px] font-normal text-muted-foreground">/mo</span>
+                                                </p>
+                                                {q.oneTimeCharges > 0 && (
+                                                    <p className="text-[10px] text-muted-foreground font-mono">
+                                                        +{fmt(q.oneTimeCharges)} 1-time
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                        {contracts.length > 0 && <ExternalLink className="w-4 h-4 text-muted-foreground" />}
-                    </CardContent>
-                </Card>
-            </div>
+                    )}
+                </CardContent>
+            </Card>
 
             {/* ═══ Collapsible Email Engagement ═══ */}
             <EmailEngagementCard activities={activities} contacts={contacts} />
