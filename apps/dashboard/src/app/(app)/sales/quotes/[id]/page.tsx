@@ -279,6 +279,116 @@ export default function QuoteDetailPage({ params }: PageProps) {
         }
     };
 
+    // BreezeDoc E-Sign Handlers
+    const [breezeModalOpen, setBreezeModalOpen] = useState(false);
+    const [breezeDocs, setBreezeDocs] = useState<any[]>([]);
+    const [breezeLoading, setBreezeLoading] = useState(false);
+    const [breezeSyncing, setBreezeSyncing] = useState(false);
+
+    const fetchBreezeDocuments = async () => {
+        setBreezeLoading(true);
+        try {
+            const res = await fetch('/api/breezedoc?action=documents');
+            const json = await res.json();
+            if (json.success && json.data?.data) {
+                setBreezeDocs(json.data.data);
+            }
+        } catch (err) {
+            console.error('Error fetching BreezeDoc documents:', err);
+        } finally {
+            setBreezeLoading(false);
+        }
+    };
+
+    const handleLinkBreezeDoc = async (bDoc: any) => {
+        if (!quote) return;
+        try {
+            const recipient = bDoc.recipients?.find((r: any) => r.party === 2) || bDoc.recipients?.[0];
+            const recipientUrl = recipient?.slug ? `https://breezedoc.com/d/${recipient.slug}` : `https://breezedoc.com/documents/${bDoc.id}`;
+            const isCompleted = !!bDoc.completed_at;
+
+            const updates: any = {
+                breezeDocId: bDoc.id,
+                breezeDocSlug: bDoc.slug,
+                breezeDocTitle: bDoc.title,
+                breezeDocStatus: isCompleted ? 'completed' : 'sent',
+                breezeDocRecipientUrl: recipientUrl,
+                updatedAt: serverTimestamp(),
+            };
+
+            await updateDoc(doc(db, 'quotes', quote.id), updates);
+            setQuote(prev => prev ? ({ ...prev, ...updates }) : null);
+            setBreezeModalOpen(false);
+
+            if (isCompleted && (quote.status === 'draft' || quote.status === 'sent')) {
+                await handleAccept();
+            }
+        } catch (err) {
+            console.error('Error linking BreezeDoc document:', err);
+        }
+    };
+
+    const handleUnlinkBreezeDoc = async () => {
+        if (!quote || !confirm('Unlink this BreezeDoc document from this quote?')) return;
+        try {
+            const updates = {
+                breezeDocId: null,
+                breezeDocSlug: null,
+                breezeDocTitle: null,
+                breezeDocStatus: null,
+                breezeDocRecipientUrl: null,
+                updatedAt: serverTimestamp(),
+            };
+            await updateDoc(doc(db, 'quotes', quote.id), updates);
+            setQuote(prev => prev ? ({
+                ...prev,
+                breezeDocId: undefined,
+                breezeDocSlug: undefined,
+                breezeDocTitle: undefined,
+                breezeDocStatus: undefined,
+                breezeDocRecipientUrl: undefined,
+            } as any) : null);
+        } catch (err) {
+            console.error('Error unlinking BreezeDoc:', err);
+        }
+    };
+
+    const handleCheckBreezeStatus = async () => {
+        const bId = (quote as any)?.breezeDocId;
+        if (!bId || !quote) return;
+        setBreezeSyncing(true);
+        try {
+            const res = await fetch(`/api/breezedoc?action=document&id=${bId}`);
+            const json = await res.json();
+            if (json.success && json.data) {
+                const bDoc = json.data;
+                const isCompleted = !!bDoc.completed_at;
+                const recipient = bDoc.recipients?.find((r: any) => r.party === 2) || bDoc.recipients?.[0];
+                const recipientUrl = recipient?.slug ? `https://breezedoc.com/d/${recipient.slug}` : `https://breezedoc.com/documents/${bDoc.id}`;
+
+                const updates: any = {
+                    breezeDocStatus: isCompleted ? 'completed' : 'sent',
+                    breezeDocRecipientUrl: recipientUrl,
+                    updatedAt: serverTimestamp(),
+                };
+
+                await updateDoc(doc(db, 'quotes', quote.id), updates);
+                setQuote(prev => prev ? ({ ...prev, ...updates }) : null);
+
+                if (isCompleted && (quote.status === 'draft' || quote.status === 'sent')) {
+                    alert('BreezeDoc signature completed! Converting quote to Active Contract.');
+                    await handleAccept();
+                } else if (!isCompleted) {
+                    alert(`BreezeDoc status: Pending client signature.`);
+                }
+            }
+        } catch (err) {
+            console.error('Error checking BreezeDoc status:', err);
+        } finally {
+            setBreezeSyncing(false);
+        }
+    };
+
     const handleAssignFsm = async (fsm: FsmUser) => {
         if (!quote) return;
         try {
@@ -1478,6 +1588,71 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             </div>
                         </div>
                     )}
+
+                    {/* BreezeDoc E-Sign Section */}
+                    <div className="pt-3 border-t">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded bg-blue-100 dark:bg-blue-950 flex items-center justify-center font-bold text-blue-700 text-xs">
+                                    BD
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-foreground">BreezeDoc E-Sign Integration</h4>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        {(quote as any).breezeDocId ? `Linked to document #${(quote as any).breezeDocId}` : 'Send or link an electronic signature envelope'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {(quote as any).breezeDocId ? (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant={(quote as any).breezeDocStatus === 'completed' ? 'default' : 'outline'} className="text-xs">
+                                        {(quote as any).breezeDocStatus === 'completed' ? '✓ Signed in BreezeDoc' : 'Pending Signature'}
+                                    </Badge>
+                                    {(quote as any).breezeDocRecipientUrl && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-8 text-xs gap-1"
+                                            onClick={() => window.open((quote as any).breezeDocRecipientUrl, '_blank')}
+                                        >
+                                            <ExternalLink className="w-3 h-3" /> Sign / View
+                                        </Button>
+                                    )}
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 text-xs gap-1 border-blue-300 text-blue-800 bg-blue-50/50"
+                                        disabled={breezeSyncing}
+                                        onClick={handleCheckBreezeStatus}
+                                    >
+                                        <RotateCcw className={`w-3 h-3 ${breezeSyncing ? 'animate-spin' : ''}`} />
+                                        {breezeSyncing ? 'Checking...' : 'Check Status'}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 text-xs text-muted-foreground"
+                                        onClick={handleUnlinkBreezeDoc}
+                                    >
+                                        Unlink
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-1.5 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                                    onClick={() => {
+                                        fetchBreezeDocuments();
+                                        setBreezeModalOpen(true);
+                                    }}
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" /> Link BreezeDoc Document
+                                </Button>
+                            )}
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -1569,6 +1744,91 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             >
                                 {sending ? 'Sending...' : <><Send className="w-4 h-4" /> Send Email</>}
                             </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* BreezeDoc Link Modal */}
+            {breezeModalOpen && (
+                <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+                    <div className="bg-background rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
+                        <div className="flex items-center justify-between p-5 border-b bg-slate-50 dark:bg-slate-900">
+                            <div>
+                                <h2 className="text-base font-bold flex items-center gap-2">
+                                    <FileCheck className="w-5 h-5 text-blue-600" /> Link BreezeDoc Document
+                                </h2>
+                                <p className="text-xs text-muted-foreground">
+                                    Select an envelope or document from your BreezeDoc account to connect to this quote.
+                                </p>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => setBreezeModalOpen(false)}>✕</Button>
+                        </div>
+
+                        <div className="p-5 overflow-y-auto space-y-3 flex-1">
+                            {breezeLoading ? (
+                                <div className="py-12 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
+                                    <RotateCcw className="w-6 h-6 animate-spin text-blue-600" />
+                                    <span>Fetching documents from BreezeDoc...</span>
+                                </div>
+                            ) : breezeDocs.length === 0 ? (
+                                <div className="py-8 text-center text-sm text-muted-foreground space-y-2">
+                                    <p>No documents found in your BreezeDoc account.</p>
+                                    <Button size="sm" variant="outline" onClick={fetchBreezeDocuments}>
+                                        <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Refresh
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {breezeDocs.map((bDoc: any) => {
+                                        const isCompleted = !!bDoc.completed_at;
+                                        const isLinked = (quote as any)?.breezeDocId === bDoc.id;
+
+                                        return (
+                                            <div
+                                                key={bDoc.id}
+                                                className={`p-3.5 rounded-lg border transition-all flex items-center justify-between gap-3 ${isLinked ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-950/20' : 'hover:border-slate-300 hover:bg-slate-50/50'}`}
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-semibold truncate text-foreground">
+                                                        {bDoc.title || 'Untitled Document'}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                                        <span>ID: #{bDoc.id}</span>
+                                                        <span>•</span>
+                                                        <span>{new Date(bDoc.created_at).toLocaleDateString()}</span>
+                                                        <span>•</span>
+                                                        <Badge variant={isCompleted ? 'default' : 'outline'} className="text-[10px] px-1.5 py-0">
+                                                            {isCompleted ? 'Completed' : 'In Progress'}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant={isLinked ? 'secondary' : 'default'}
+                                                    className="gap-1.5 text-xs shrink-0"
+                                                    onClick={() => handleLinkBreezeDoc(bDoc)}
+                                                >
+                                                    {isLinked ? 'Linked ✓' : 'Connect'}
+                                                </Button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-4 border-t bg-slate-50 dark:bg-slate-900 flex justify-between items-center text-xs">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-xs text-muted-foreground"
+                                onClick={fetchBreezeDocuments}
+                                disabled={breezeLoading}
+                            >
+                                <RotateCcw className={`w-3.5 h-3.5 mr-1.5 ${breezeLoading ? 'animate-spin' : ''}`} /> Refresh Documents
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setBreezeModalOpen(false)}>Close</Button>
                         </div>
                     </div>
                 </div>

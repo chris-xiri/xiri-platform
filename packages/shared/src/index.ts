@@ -1459,6 +1459,13 @@ export interface Quote {
     signedSowUrl?: string;
     signedSowName?: string;
     signedSowUploadedAt?: any;
+
+    // BreezeDoc E-Sign Integration
+    breezeDocId?: number | string;
+    breezeDocSlug?: string;
+    breezeDocTitle?: string;
+    breezeDocStatus?: 'sent' | 'opened' | 'completed' | 'pending';
+    breezeDocRecipientUrl?: string;
 }
 
 /**
