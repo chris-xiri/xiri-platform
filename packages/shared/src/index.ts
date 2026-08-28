@@ -1611,9 +1611,13 @@ export interface WorkOrder {
     assignedNightManagerName?: string;
     assignedBy?: string;
     serviceStartDate?: any;        // ISO date — when service begins (from quote → contract)
-    sowDocumentUrl?: string;       // Signed Scope of Work (SOW) PDF/document URL
+    sowDocumentUrl?: string;       // Client-signed Scope of Work (SOW) PDF/document URL
     sowDocumentName?: string;      // File name of the uploaded signed SOW
     sowUploadedAt?: string;        // ISO timestamp when signed SOW was uploaded
+    contractorSowUrl?: string;     // Contractor/Vendor-signed SOW / Subcontractor Agreement URL
+    contractorSowName?: string;    // File name of the contractor SOW
+    contractorSowUploadedAt?: any; // Timestamp when contractor SOW was uploaded
+    contractorRateConfirmed?: boolean;
     notes?: string;
     createdAt: any;
     updatedAt: any;

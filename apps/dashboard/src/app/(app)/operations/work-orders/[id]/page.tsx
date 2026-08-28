@@ -212,6 +212,87 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
         }
     };
 
+    // Contractor SOW Document State & Handlers
+    const [uploadingContractorSow, setUploadingContractorSow] = useState(false);
+    const [contractorSowProgress, setContractorSowProgress] = useState(0);
+    const contractorSowFileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleUploadContractorSow = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !wo) return;
+        setUploadingContractorSow(true);
+        try {
+            const storagePath = `contractor_sow_documents/wo_${wo.id}/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, storagePath);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on(
+                'state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setContractorSowProgress(Math.round(progress));
+                },
+                (err) => {
+                    console.error('Contractor SOW upload failed:', err);
+                    alert('Failed to upload contractor SOW.');
+                    setUploadingContractorSow(false);
+                },
+                async () => {
+                    const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                    await updateDoc(doc(db, 'work_orders', wo.id), {
+                        contractorSowUrl: downloadUrl,
+                        contractorSowName: file.name,
+                        contractorSowUploadedAt: serverTimestamp(),
+                        contractorRateConfirmed: true,
+                        updatedAt: serverTimestamp(),
+                    });
+
+                    await addDoc(collection(db, 'activity_logs'), {
+                        type: 'CONTRACTOR_SOW_UPLOADED',
+                        workOrderId: wo.id,
+                        vendorId: wo.vendorId || null,
+                        fileName: file.name,
+                        uploadedBy: profile?.uid || 'unknown',
+                        createdAt: serverTimestamp(),
+                    });
+
+                    setWo(prev => prev ? ({
+                        ...prev,
+                        contractorSowUrl: downloadUrl,
+                        contractorSowName: file.name,
+                        contractorRateConfirmed: true,
+                    } as any) : null);
+                    setUploadingContractorSow(false);
+                    setContractorSowProgress(0);
+                }
+            );
+        } catch (err) {
+            console.error('Error uploading contractor SOW:', err);
+            setUploadingContractorSow(false);
+        }
+    };
+
+    const handleRemoveContractorSow = async () => {
+        if (!wo || !confirm('Remove contractor SOW agreement from this work order?')) return;
+        try {
+            await updateDoc(doc(db, 'work_orders', wo.id), {
+                contractorSowUrl: null,
+                contractorSowName: null,
+                contractorSowUploadedAt: null,
+                contractorRateConfirmed: false,
+                updatedAt: serverTimestamp(),
+            });
+            setWo(prev => prev ? ({
+                ...prev,
+                contractorSowUrl: undefined,
+                contractorSowName: undefined,
+                contractorRateConfirmed: false,
+            } as any) : null);
+        } catch (err) {
+            console.error('Error removing contractor SOW:', err);
+        }
+    };
+
     // Fetch assignment-ready vendors when assignment panel opens
     useEffect(() => {
         if (!showAssign || !wo) return;
@@ -907,25 +988,125 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                 {/* Right: Assignment Panel */}
                 <div className="space-y-6">
                     {/* Current Vendor */}
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <User2 className="w-4 h-4 text-muted-foreground" /> Assigned Vendor
+                    <Card className="border-slate-200 dark:border-slate-800 shadow-2xs">
+                        <CardHeader className="pb-3 border-b bg-slate-50/50 dark:bg-slate-900/30">
+                            <CardTitle className="text-base flex items-center justify-between">
+                                <span className="flex items-center gap-2">
+                                    <User2 className="w-4 h-4 text-muted-foreground" /> Assigned Vendor
+                                </span>
+                                {wo.vendorId && (
+                                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                        Assigned
+                                    </Badge>
+                                )}
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pt-4 space-y-4">
                             {wo.vendorId ? (
-                                <div>
-                                    <p className="font-medium">{wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Assigned'}</p>
-                                    <p className="text-sm text-muted-foreground">{formatCurrency(wo.vendorRate!)}{isOneTime ? ' total' : '/mo'}</p>
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="font-semibold text-base text-foreground">
+                                            {wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Assigned'}
+                                        </p>
+                                        <p className="text-sm font-medium text-emerald-600">
+                                            Agreed Rate: {formatCurrency(wo.vendorRate!)}{isOneTime ? ' total' : '/mo'}
+                                        </p>
+                                    </div>
+
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="mt-3 w-full gap-2 border-orange-300 text-orange-700 hover:bg-orange-50"
+                                        className="w-full gap-2 border-orange-300 text-orange-700 hover:bg-orange-50 text-xs"
                                         onClick={() => setShowAssign(true)}
                                     >
                                         <Truck className="w-3.5 h-3.5" /> Replace Vendor
                                     </Button>
+
+                                    {/* Contractor SOW / Subcontractor Rate Agreement */}
+                                    <div className="pt-3 border-t space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                                                <FileCheck className="w-3.5 h-3.5 text-blue-600" /> Contractor SOW & Rate
+                                            </p>
+                                            {wo.contractorSowUrl && (
+                                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px] font-semibold">
+                                                    Rate Confirmed
+                                                </Badge>
+                                            )}
+                                        </div>
+
+                                        <input
+                                            type="file"
+                                            ref={contractorSowFileInputRef}
+                                            accept=".pdf,.png,.jpg,.jpeg"
+                                            className="hidden"
+                                            onChange={handleUploadContractorSow}
+                                        />
+
+                                        {uploadingContractorSow && (
+                                            <div className="p-2.5 rounded-lg border border-blue-200 bg-blue-50 text-xs space-y-1.5">
+                                                <div className="flex justify-between font-semibold text-blue-900">
+                                                    <span>Uploading Contractor SOW...</span>
+                                                    <span>{contractorSowProgress}%</span>
+                                                </div>
+                                                <div className="w-full bg-blue-200 rounded-full h-1.5 overflow-hidden">
+                                                    <div className="bg-blue-600 h-1.5 transition-all duration-300" style={{ width: `${contractorSowProgress}%` }} />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {wo.contractorSowUrl ? (
+                                            <div className="p-2.5 rounded-lg border border-emerald-200 bg-emerald-50/50 space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
+                                                    <p className="text-xs font-medium text-emerald-950 truncate">
+                                                        {wo.contractorSowName || 'Contractor_Signed_SOW.pdf'}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Button
+                                                        size="sm"
+                                                        className="h-7 text-xs gap-1 bg-emerald-700 hover:bg-emerald-800 text-white flex-1"
+                                                        onClick={() => window.open(wo.contractorSowUrl, '_blank')}
+                                                    >
+                                                        <ExternalLink className="w-3 h-3" /> View SOW (PDF)
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-7 text-xs px-2 text-slate-700"
+                                                        disabled={uploadingContractorSow}
+                                                        onClick={() => contractorSowFileInputRef.current?.click()}
+                                                    >
+                                                        <Upload className="w-3 h-3" /> Replace
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                                                        onClick={handleRemoveContractorSow}
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="p-3 border border-dashed border-slate-200 rounded-lg text-center bg-slate-50/50 space-y-1.5">
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    Upload contractor-signed SOW / rate confirmation
+                                                </p>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-7 text-xs gap-1.5 w-full text-blue-700 border-blue-200 hover:bg-blue-50"
+                                                    disabled={uploadingContractorSow}
+                                                    onClick={() => contractorSowFileInputRef.current?.click()}
+                                                >
+                                                    <Upload className="w-3 h-3" /> Upload Contractor SOW (PDF)
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="text-center py-4">
