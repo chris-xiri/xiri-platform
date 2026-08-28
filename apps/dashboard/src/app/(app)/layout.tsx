@@ -178,7 +178,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const showClientsNav = canAccess('sales/crm', profile.roles) || canAccess('operations/contracts', profile.roles);
     const showContractorsNav = canAccess('supply/recruitment', profile.roles);
-    const showOpsNav = canAccess('operations/work-orders', profile.roles) || canAccess('operations/nfc-zones', profile.roles);
+    const showOpsNav = canAccess('operations/work-orders', profile.roles) || canAccess('operations/nfc-zones', profile.roles) || canAccess('sales/quotes', profile.roles) || canAccess('operations/contracts', profile.roles);
     const showFinanceNav = canAccess('accounting/invoices', profile.roles);
     const showAdminNav = canAccess('admin/settings', profile.roles);
     const showGrowthNav = canAccess('admin/settings', profile.roles);
@@ -193,7 +193,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 ...(canAccess('sales/crm', profile.roles) ? [{ label: 'Contacts', href: '/sales/crm', icon: <Users className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/crm', profile.roles) ? [{ label: 'Companies', href: '/sales/companies', icon: <Building2 className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/crm', profile.roles) ? [{ label: 'Referral Partners', href: '/sales/referrals', icon: <Share2 className="w-4 h-4" /> }] : []),
-                ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Quotes & Contracts', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),
             ],
         },
         {
@@ -211,6 +210,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             show: showOpsNav,
             dividerAbove: true,
             items: [
+                ...(canAccess('sales/quotes', profile.roles) || canAccess('operations/contracts', profile.roles) ? [{ label: 'Quotes & Contracts', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),
                 ...(canAccess('operations/work-orders', profile.roles) ? [{ label: 'Work Orders', href: '/operations/work-orders', icon: <ClipboardList className="w-4 h-4" /> }] : []),
                 ...(canAccess('operations/nfc-zones', profile.roles) ? [{ label: 'NFC Zones', href: '/operations/nfc-zones', icon: <Package className="w-4 h-4" /> }] : []),
                 { label: 'Live Status', href: '/operations/command-center', icon: <Monitor className="w-4 h-4" /> },
