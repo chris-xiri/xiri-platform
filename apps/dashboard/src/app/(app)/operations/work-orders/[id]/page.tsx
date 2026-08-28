@@ -71,12 +71,40 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     const nmDropdownRef = useRef<HTMLDivElement>(null);
     const [quoteId, setQuoteId] = useState<string | null>(null);
 
+    // Signed SOW Document State
+    const [sowDoc, setSowDoc] = useState<{ url: string; name: string } | null>(null);
+    const [uploadingSow, setUploadingSow] = useState(false);
+    const [sowProgress, setSowProgress] = useState(0);
+    const sowFileInputRef = useRef<HTMLInputElement>(null);
+
     useEffect(() => {
         async function fetchWO() {
             try {
                 const docSnap = await getDoc(doc(db, 'work_orders', id));
                 if (docSnap.exists()) {
-                    setWo({ id: docSnap.id, ...docSnap.data() } as WorkOrder & { id: string });
+                    const data = docSnap.data();
+                    setWo({ id: docSnap.id, ...data } as WorkOrder & { id: string });
+
+                    if (data.sowDocumentUrl) {
+                        setSowDoc({ url: data.sowDocumentUrl, name: data.sowDocumentName || 'Signed_SOW.pdf' });
+                    } else {
+                        // Fallback: check quote or contract
+                        const qId = data.quoteId;
+                        const cId = data.contractId;
+                        if (qId) {
+                            getDoc(doc(db, 'quotes', qId)).then(qSnap => {
+                                if (qSnap.exists() && qSnap.data().signedSowUrl) {
+                                    setSowDoc({ url: qSnap.data().signedSowUrl, name: qSnap.data().signedSowName || 'Signed_SOW.pdf' });
+                                }
+                            });
+                        } else if (cId) {
+                            getDoc(doc(db, 'contracts', cId)).then(cSnap => {
+                                if (cSnap.exists() && cSnap.data().signedSowUrl) {
+                                    setSowDoc({ url: cSnap.data().signedSowUrl, name: cSnap.data().signedSowName || 'Signed_SOW.pdf' });
+                                }
+                            });
+                        }
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching work order:', err);
@@ -94,14 +122,95 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
             try {
                 const contractSnap = await getDoc(doc(db, 'contracts', wo!.contractId));
                 if (contractSnap.exists()) {
-                    setQuoteId((contractSnap.data() as any).quoteId || null);
+                    const cData = contractSnap.data() as any;
+                    setQuoteId(cData.quoteId || null);
+                    if (!sowDoc && cData.signedSowUrl) {
+                        setSowDoc({ url: cData.signedSowUrl, name: cData.signedSowName || 'Signed_SOW.pdf' });
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching contract for quoteId:', err);
             }
         }
         fetchQuoteId();
-    }, [wo?.contractId]);
+    }, [wo?.contractId, sowDoc]);
+
+    const handleUploadSowFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !wo) return;
+        setUploadingSow(true);
+        try {
+            const storagePath = `signed_sow_documents/wo_${wo.id}/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, storagePath);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on(
+                'state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setSowProgress(Math.round(progress));
+                },
+                (err) => {
+                    console.error('SOW Upload failed:', err);
+                    alert('Failed to upload signed SOW document.');
+                    setUploadingSow(false);
+                },
+                async () => {
+                    const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                    await updateDoc(doc(db, 'work_orders', wo.id), {
+                        sowDocumentUrl: downloadUrl,
+                        sowDocumentName: file.name,
+                        sowUploadedAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                    });
+
+                    // If linked to a quote, also update quote
+                    if (wo.quoteId) {
+                        try {
+                            await updateDoc(doc(db, 'quotes', wo.quoteId), {
+                                signedSowUrl: downloadUrl,
+                                signedSowName: file.name,
+                                signedSowUploadedAt: serverTimestamp(),
+                                updatedAt: serverTimestamp(),
+                            });
+                        } catch (qe) { /* ignore */ }
+                    }
+
+                    setWo(prev => prev ? ({
+                        ...prev,
+                        sowDocumentUrl: downloadUrl,
+                        sowDocumentName: file.name,
+                    } as any) : null);
+                    setSowDoc({ url: downloadUrl, name: file.name });
+                    setUploadingSow(false);
+                    setSowProgress(0);
+                }
+            );
+        } catch (err) {
+            console.error('Error uploading SOW on work order:', err);
+            setUploadingSow(false);
+        }
+    };
+
+    const handleRemoveSowFile = async () => {
+        if (!wo || !confirm('Remove attached SOW document from this work order?')) return;
+        try {
+            await updateDoc(doc(db, 'work_orders', wo.id), {
+                sowDocumentUrl: null,
+                sowDocumentName: null,
+                sowUploadedAt: null,
+                updatedAt: serverTimestamp(),
+            });
+            setWo(prev => prev ? ({
+                ...prev,
+                sowDocumentUrl: undefined,
+                sowDocumentName: undefined,
+            } as any) : null);
+            setSowDoc(null);
+        } catch (err) {
+            console.error('Error removing SOW from work order:', err);
+        }
+    };
 
     // Fetch assignment-ready vendors when assignment panel opens
     useEffect(() => {
@@ -468,14 +577,14 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
 
                 {/* Status Actions */}
                 <div className="flex gap-2 items-center">
-                    {wo.sowDocumentUrl && (
+                    {(wo.sowDocumentUrl || sowDoc?.url) && (
                         <a
-                            href={wo.sowDocumentUrl}
+                            href={wo.sowDocumentUrl || sowDoc?.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs"
                         >
-                            <FileText className="w-3.5 h-3.5" /> View SOW PDF <ExternalLink className="w-2.5 h-2.5 opacity-80" />
+                            <FileCheck className="w-3.5 h-3.5" /> View SOW (PDF) <ExternalLink className="w-2.5 h-2.5 opacity-80" />
                         </a>
                     )}
                     {quoteId && (
@@ -531,6 +640,108 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                             </CardContent>
                         </Card>
                     </div>
+
+                    {/* Signed Scope of Work Document Card */}
+                    <Card className="border-slate-300 dark:border-slate-800 shadow-xs">
+                        <CardHeader className="pb-3 border-b bg-slate-50/60 dark:bg-slate-900/30">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                                <div>
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <FileCheck className="w-5 h-5 text-blue-600" />
+                                        Signed Scope of Work (SOW) & Agreement
+                                    </CardTitle>
+                                    <CardDescription className="text-xs">
+                                        Official client-signed agreement and scope documentation for this work order.
+                                    </CardDescription>
+                                </div>
+                                {(wo.sowDocumentUrl || sowDoc?.url) && (
+                                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-medium">
+                                        <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" /> SOW Attached
+                                    </Badge>
+                                )}
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-3">
+                            <input
+                                type="file"
+                                ref={sowFileInputRef}
+                                accept=".pdf,.png,.jpg,.jpeg"
+                                className="hidden"
+                                onChange={handleUploadSowFile}
+                            />
+
+                            {uploadingSow && (
+                                <div className="p-3 rounded-lg border border-blue-200 bg-blue-50 text-xs space-y-2">
+                                    <div className="flex justify-between font-semibold text-blue-900">
+                                        <span>Uploading signed SOW document...</span>
+                                        <span>{sowProgress}%</span>
+                                    </div>
+                                    <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                                        <div className="bg-blue-600 h-2 transition-all duration-300" style={{ width: `${sowProgress}%` }} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {(wo.sowDocumentUrl || sowDoc?.url) ? (
+                                <div className="flex items-center justify-between p-3 rounded-lg border border-emerald-200 bg-emerald-50/50 flex-wrap gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
+                                            <FileText className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-emerald-950">
+                                                {wo.sowDocumentName || sowDoc?.name || 'Signed_Statement_of_Work.pdf'}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Executed SOW Document • Linked to Operations & Vendor Dispatch
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            size="sm"
+                                            className="gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white"
+                                            onClick={() => window.open(wo.sowDocumentUrl || sowDoc?.url, '_blank')}
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" /> View Signed SOW (PDF)
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-1.5 text-xs text-slate-700"
+                                            disabled={uploadingSow}
+                                            onClick={() => sowFileInputRef.current?.click()}
+                                        >
+                                            <Upload className="w-3.5 h-3.5" /> Replace
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-xs text-destructive hover:bg-destructive/10"
+                                            onClick={handleRemoveSowFile}
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center space-y-2 bg-slate-50/40">
+                                    <p className="text-xs text-muted-foreground">
+                                        No signed SOW document currently attached to this work order.
+                                    </p>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2 text-xs"
+                                        disabled={uploadingSow}
+                                        onClick={() => sowFileInputRef.current?.click()}
+                                    >
+                                        <Upload className="w-3.5 h-3.5 text-blue-600" /> Upload Signed SOW (PDF)
+                                    </Button>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
                     {/* Schedule */}
                     <Card>

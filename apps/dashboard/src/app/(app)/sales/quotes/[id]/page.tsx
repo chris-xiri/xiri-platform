@@ -238,6 +238,34 @@ export default function QuoteDetailPage({ params }: PageProps) {
                         updatedAt: serverTimestamp(),
                     });
 
+                    // Cascade SOW document to all existing work orders for this quote
+                    const woSnap = await getDocs(query(
+                        collection(db, 'work_orders'),
+                        where('quoteId', '==', quote.id)
+                    ));
+                    for (const woDoc of woSnap.docs) {
+                        await updateDoc(doc(db, 'work_orders', woDoc.id), {
+                            sowDocumentUrl: downloadUrl,
+                            sowDocumentName: file.name,
+                            sowUploadedAt: serverTimestamp(),
+                            updatedAt: serverTimestamp(),
+                        });
+                    }
+
+                    // Cascade SOW document to all existing contracts for this quote
+                    const contractSnap = await getDocs(query(
+                        collection(db, 'contracts'),
+                        where('quoteId', '==', quote.id)
+                    ));
+                    for (const cDoc of contractSnap.docs) {
+                        await updateDoc(doc(db, 'contracts', cDoc.id), {
+                            signedSowUrl: downloadUrl,
+                            signedSowName: file.name,
+                            signedSowUploadedAt: serverTimestamp(),
+                            updatedAt: serverTimestamp(),
+                        });
+                    }
+
                     setQuote(prev => prev ? ({
                         ...prev,
                         signedSowUrl: downloadUrl,
@@ -623,6 +651,23 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
             // 2. Create Work Orders ONLY for newly accepted (pending) items
             for (const item of pendingItems) {
+                // Deduplication check: see if a work order already exists for this quoteLineItemId
+                const existingWoSnap = await getDocs(query(
+                    collection(db, 'work_orders'),
+                    where('quoteId', '==', quote.id),
+                    where('quoteLineItemId', '==', item.id)
+                ));
+                if (!existingWoSnap.empty) {
+                    const existingDoc = existingWoSnap.docs[0];
+                    await updateDoc(doc(db, 'work_orders', existingDoc.id), {
+                        sowDocumentUrl: (quote as any).signedSowUrl || null,
+                        sowDocumentName: (quote as any).signedSowName || null,
+                        sowUploadedAt: (quote as any).signedSowUploadedAt || null,
+                        updatedAt: serverTimestamp(),
+                    });
+                    continue;
+                }
+
                 // Prefer room-level tasks from calculator, then scopeTasks, then template
                 let tasks;
                 if ((item as any).rooms && (item as any).rooms.length > 0) {
