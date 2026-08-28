@@ -1547,6 +1547,7 @@ export interface Contract {
 // Work Orders
 export type WorkOrderStatus =
     | 'pending_assignment'
+    | 'scheduled'
     | 'active'
     | 'paused'
     | 'completed'
@@ -1605,6 +1606,9 @@ export interface WorkOrder {
         frequency: 'one_time' | 'custom_days' | 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
     };
 
+    scheduledDate?: any;           // Specific execution date for one-time work orders (ISO YYYY-MM-DD or date)
+    scheduledStartTime?: string;   // e.g. "09:00"
+    scheduledEndTime?: string;     // e.g. "17:00"
 
     clientRate: number;
     margin?: number;

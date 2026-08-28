@@ -29,6 +29,7 @@ interface PageProps {
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string; color: string }> = {
     pending_assignment: { variant: 'destructive', label: 'Needs Vendor', color: 'text-red-600' },
+    scheduled: { variant: 'default', label: 'Scheduled', color: 'text-blue-600' },
     active: { variant: 'default', label: 'Active', color: 'text-green-600' },
     paused: { variant: 'secondary', label: 'Paused', color: 'text-yellow-600' },
     completed: { variant: 'outline', label: 'Completed', color: 'text-gray-500' },
@@ -75,7 +76,10 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     const [sowDoc, setSowDoc] = useState<{ url: string; name: string } | null>(null);
     const [uploadingSow, setUploadingSow] = useState(false);
     const [sowProgress, setSowProgress] = useState(0);
-    const sowFileInputRef = useRef<HTMLInputElement>(null);
+    // Scheduled Date & Time State for One-Time Work Orders
+    const [scheduledDateVal, setScheduledDateVal] = useState<string>('');
+    const [scheduledTimeVal, setScheduledTimeVal] = useState<string>('');
+    const [savingSchedule, setSavingSchedule] = useState(false);
 
     useEffect(() => {
         async function fetchWO() {
@@ -84,6 +88,16 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     setWo({ id: docSnap.id, ...data } as WorkOrder & { id: string });
+
+                    if (data.scheduledDate) {
+                        setScheduledDateVal(data.scheduledDate);
+                    } else if (data.serviceStartDate) {
+                        const sDate = typeof data.serviceStartDate === 'string' ? data.serviceStartDate.split('T')[0] : '';
+                        if (sDate) setScheduledDateVal(sDate);
+                    }
+                    if (data.scheduledStartTime || data.schedule?.startTime) {
+                        setScheduledTimeVal(data.scheduledStartTime || data.schedule?.startTime || '');
+                    }
 
                     if (data.sowDocumentUrl) {
                         setSowDoc({ url: data.sowDocumentUrl, name: data.sowDocumentName || 'Signed_SOW.pdf' });
@@ -114,6 +128,41 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
         }
         fetchWO();
     }, [id]);
+
+    const handleSaveScheduleDate = async () => {
+        if (!wo || !scheduledDateVal) return;
+        setSavingSchedule(true);
+        try {
+            const nextStatus = wo.status === 'pending_assignment' && wo.vendorId ? 'scheduled' : wo.status;
+            await updateDoc(doc(db, 'work_orders', wo.id), {
+                scheduledDate: scheduledDateVal,
+                scheduledStartTime: scheduledTimeVal || null,
+                status: nextStatus,
+                updatedAt: serverTimestamp(),
+            });
+
+            await addDoc(collection(db, 'activity_logs'), {
+                type: 'WORK_ORDER_SCHEDULED',
+                workOrderId: wo.id,
+                scheduledDate: scheduledDateVal,
+                scheduledTime: scheduledTimeVal,
+                updatedBy: profile?.uid || 'unknown',
+                createdAt: serverTimestamp(),
+            });
+
+            setWo(prev => prev ? ({
+                ...prev,
+                scheduledDate: scheduledDateVal,
+                scheduledStartTime: scheduledTimeVal,
+                status: nextStatus,
+            } as any) : null);
+        } catch (err) {
+            console.error('Error saving schedule date:', err);
+            alert('Failed to save schedule date.');
+        } finally {
+            setSavingSchedule(false);
+        }
+    };
 
     // Fetch quoteId from the contract
     useEffect(() => {
@@ -708,19 +757,42 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                             <Pencil className="w-3.5 h-3.5" /> Revise Quote
                         </Button>
                     )}
+                    {wo.status === 'scheduled' && (
+                        <>
+                            <Button variant="outline" size="sm" className="gap-2 border-green-300 text-green-700 hover:bg-green-50 font-semibold" onClick={() => handleStatusChange('active')}>
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Start Service
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50" onClick={() => handleStatusChange('paused')}>
+                                <Clock className="w-3.5 h-3.5" /> Pause
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-2 border-slate-300 text-slate-700 hover:bg-slate-50" onClick={() => handleStatusChange('completed')}>
+                                Complete
+                            </Button>
+                        </>
+                    )}
                     {wo.status === 'active' && (
-                        <Button variant="outline" size="sm" className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50" onClick={() => handleStatusChange('paused')}>
-                            <Clock className="w-3.5 h-3.5" /> Pause
-                        </Button>
+                        <>
+                            <Button variant="outline" size="sm" className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50" onClick={() => handleStatusChange('paused')}>
+                                <Clock className="w-3.5 h-3.5" /> Pause
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-2 border-green-300 text-green-700 hover:bg-green-50" onClick={() => handleStatusChange('completed')}>
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Complete
+                            </Button>
+                        </>
                     )}
                     {wo.status === 'paused' && (
-                        <Button variant="outline" size="sm" className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => handleStatusChange('active')}>
-                            Resume
-                        </Button>
+                        <>
+                            <Button variant="outline" size="sm" className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => handleStatusChange(isOneTime && wo.scheduledDate ? 'scheduled' : 'active')}>
+                                {isOneTime ? 'Resume Schedule' : 'Resume'}
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-2 border-green-300 text-green-700 hover:bg-green-50" onClick={() => handleStatusChange('completed')}>
+                                Complete
+                            </Button>
+                        </>
                     )}
-                    {(wo.status === 'active' || wo.status === 'paused') && (
-                        <Button variant="outline" size="sm" className="gap-2 border-green-300 text-green-700 hover:bg-green-50" onClick={() => handleStatusChange('completed')}>
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Complete
+                    {wo.status === 'completed' && (
+                        <Button variant="outline" size="sm" className="gap-2 text-xs" onClick={() => handleStatusChange(isOneTime ? 'scheduled' : 'active')}>
+                            Re-open Work Order
                         </Button>
                     )}
                     <Button
@@ -870,31 +942,143 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                     </Card>
 
                     {/* Schedule */}
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-muted-foreground" /> Schedule
-                            </CardTitle>
+                    <Card className={isOneTime ? "border-indigo-200 bg-indigo-50/10 shadow-2xs" : ""}>
+                        <CardHeader className="pb-3 border-b bg-muted/20">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-indigo-600" />
+                                    {isOneTime ? 'Project Execution Date & Schedule' : 'Recurring Service Schedule'}
+                                </CardTitle>
+                                {isOneTime && (
+                                    <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold">
+                                        One-Time Project
+                                    </Badge>
+                                )}
+                            </div>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                                <p className="text-xs text-muted-foreground uppercase mb-1">Frequency</p>
-                                <p className="font-medium">{formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground uppercase mb-1">Start Time</p>
-                                <p className="font-medium">{wo.schedule?.startTime || '—'}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground uppercase mb-1">Days</p>
-                                <div className="flex gap-1 mt-0.5">
-                                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                                        <span key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${wo.schedule?.daysOfWeek?.[i] ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                                            {d}
-                                        </span>
-                                    ))}
+                        <CardContent className="pt-4">
+                            {isOneTime ? (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        {/* Scheduled Date Input / Display */}
+                                        <div className="sm:col-span-2 space-y-1.5">
+                                            <Label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                                                <Calendar className="w-3.5 h-3.5 text-indigo-600" /> Scheduled Execution Date
+                                            </Label>
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    type="date"
+                                                    value={scheduledDateVal}
+                                                    onChange={(e) => setScheduledDateVal(e.target.value)}
+                                                    className="h-9 text-sm font-medium bg-background"
+                                                />
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={handleSaveScheduleDate}
+                                                    disabled={savingSchedule || !scheduledDateVal || scheduledDateVal === (wo.scheduledDate || '')}
+                                                    className="h-9 text-xs font-bold border-indigo-300 text-indigo-700 hover:bg-indigo-50 shrink-0"
+                                                >
+                                                    {savingSchedule ? 'Saving...' : 'Save Date'}
+                                                </Button>
+                                            </div>
+                                            {wo.scheduledDate && (
+                                                <p className="text-xs text-indigo-900 font-medium pt-0.5">
+                                                    📅 Scheduled for: <strong>{new Date(wo.scheduledDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</strong>
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Service Window */}
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                                                <Clock className="w-3.5 h-3.5 text-indigo-600" /> Service Window / Time
+                                            </Label>
+                                            <Input
+                                                type="time"
+                                                value={scheduledTimeVal}
+                                                onChange={(e) => setScheduledTimeVal(e.target.value)}
+                                                onBlur={handleSaveScheduleDate}
+                                                className="h-9 text-sm bg-background"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Status Switcher Bar for One-Time Work Orders */}
+                                    <div className="p-3 rounded-lg border border-indigo-100 bg-indigo-50/50 flex items-center justify-between flex-wrap gap-2 text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-indigo-950">Current Status:</span>
+                                            <Badge variant={config.variant} className="font-bold">
+                                                {config.label}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-muted-foreground mr-1">Mark as:</span>
+                                            {wo.status !== 'scheduled' && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-7 text-xs px-2.5 border-blue-300 text-blue-700 hover:bg-blue-50"
+                                                    onClick={() => handleStatusChange('scheduled')}
+                                                >
+                                                    📅 Scheduled
+                                                </Button>
+                                            )}
+                                            {wo.status !== 'active' && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-7 text-xs px-2.5 border-green-300 text-green-700 hover:bg-green-50"
+                                                    onClick={() => handleStatusChange('active')}
+                                                >
+                                                    ⚡ Active / In-Progress
+                                                </Button>
+                                            )}
+                                            {wo.status !== 'paused' && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-7 text-xs px-2.5 border-amber-300 text-amber-700 hover:bg-amber-50"
+                                                    onClick={() => handleStatusChange('paused')}
+                                                >
+                                                    ⏸️ Paused / On Hold
+                                                </Button>
+                                            )}
+                                            {wo.status !== 'completed' && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-7 text-xs px-2.5 border-slate-300 text-slate-700 hover:bg-slate-50"
+                                                    onClick={() => handleStatusChange('completed')}
+                                                >
+                                                    ✅ Completed
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase mb-1">Frequency</p>
+                                        <p className="font-medium">{formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase mb-1">Start Time</p>
+                                        <p className="font-medium">{wo.schedule?.startTime || '—'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase mb-1">Days</p>
+                                        <div className="flex gap-1 mt-0.5">
+                                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                                                <span key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${wo.schedule?.daysOfWeek?.[i] ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                                                    {d}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 

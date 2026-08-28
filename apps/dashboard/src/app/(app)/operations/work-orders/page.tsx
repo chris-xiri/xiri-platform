@@ -10,12 +10,13 @@ import { WorkOrder } from '@xiri-facility-solutions/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, MapPin, User2, Clock, AlertCircle, CheckCircle2, PauseCircle, Filter, Search, ChevronDown, ChevronRight, Building2, DollarSign } from 'lucide-react';
+import { ClipboardList, MapPin, User2, Clock, AlertCircle, CheckCircle2, PauseCircle, Filter, Search, ChevronDown, ChevronRight, Building2, DollarSign, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string; icon: any }> = {
     pending_assignment: { variant: 'destructive', label: 'Needs Vendor', icon: AlertCircle },
+    scheduled: { variant: 'default', label: 'Scheduled', icon: Calendar },
     active: { variant: 'default', label: 'Active', icon: CheckCircle2 },
     paused: { variant: 'secondary', label: 'Paused', icon: PauseCircle },
     completed: { variant: 'outline', label: 'Completed', icon: CheckCircle2 },
@@ -332,7 +333,19 @@ export default function WorkOrdersPage() {
                                                                             </Badge>
                                                                         )}
                                                                     </div>
-                                                                    <p className="text-xs text-muted-foreground">{formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)}</p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {isWoOneTime ? (
+                                                                            (wo as any).scheduledDate ? (
+                                                                                <span className="text-indigo-600 font-medium">
+                                                                                    📅 {new Date((wo as any).scheduledDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                                </span>
+                                                                            ) : (
+                                                                                'One-Time Project (Date not set)'
+                                                                            )
+                                                                        ) : (
+                                                                            formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)
+                                                                        )}
+                                                                    </p>
                                                                 </td>
                                                                 <td className="px-4 py-2.5">
                                                                     <div className="flex items-center gap-1.5 text-sm">
