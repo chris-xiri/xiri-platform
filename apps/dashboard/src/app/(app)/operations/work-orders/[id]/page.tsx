@@ -621,6 +621,8 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
 
     const config = STATUS_CONFIG[wo.status] || STATUS_CONFIG.pending_assignment;
     const margin = wo.vendorRate ? wo.clientRate - wo.vendorRate : null;
+    const marginPercent = margin !== null && wo.clientRate > 0 ? Math.round((margin / wo.clientRate) * 100) : null;
+    const isOneTime = wo.schedule?.frequency === 'one_time' || (wo as any).frequency === 'one_time' || (wo as any).billingType === 'one_time';
     const filteredVendors = vendors.filter(v =>
         v.companyName?.toLowerCase().includes(vendorSearch.toLowerCase()) ||
         v.contactName?.toLowerCase().includes(vendorSearch.toLowerCase()) ||
