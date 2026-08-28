@@ -314,12 +314,18 @@ export default function WorkOrdersPage() {
                                                 <tbody>
                                                     {group.orders.map((wo) => {
                                                         const config = STATUS_CONFIG[wo.status] || STATUS_CONFIG.pending_assignment;
+                                                        const isWoOneTime = wo.schedule?.frequency === 'one_time' || (wo as any).frequency === 'one_time';
                                                         const margin = wo.vendorRate ? wo.clientRate - wo.vendorRate : null;
                                                         return (
                                                             <tr key={wo.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => window.location.href = `/operations/work-orders/${wo.id}`}>
                                                                 <td className="px-4 py-2.5">
                                                                     <div className="flex items-center gap-1.5 flex-wrap">
                                                                         <span className="font-medium text-sm">{wo.serviceType}</span>
+                                                                        {isWoOneTime && (
+                                                                            <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700 border-purple-200 font-semibold px-1.5 py-0 h-4">
+                                                                                One-Time
+                                                                            </Badge>
+                                                                        )}
                                                                         {(wo as any).sowDocumentUrl && (
                                                                             <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold px-1.5 py-0 h-4">
                                                                                 📄 SOW
@@ -341,14 +347,23 @@ export default function WorkOrdersPage() {
                                                                         <span className="text-sm text-red-500 font-medium">Unassigned</span>
                                                                     )}
                                                                 </td>
-                                                                <td className="px-4 py-2.5 font-medium text-sm">{formatCurrency(wo.clientRate)}</td>
+                                                                <td className="px-4 py-2.5 font-medium text-sm">
+                                                                    {formatCurrency(wo.clientRate)}
+                                                                    {!isWoOneTime && <span className="text-[11px] text-muted-foreground font-normal ml-0.5">/mo</span>}
+                                                                </td>
                                                                 <td className="px-4 py-2.5 text-sm">
-                                                                    {wo.vendorRate ? formatCurrency(wo.vendorRate) : '—'}
+                                                                    {wo.vendorRate ? (
+                                                                        <>
+                                                                            {formatCurrency(wo.vendorRate)}
+                                                                            {!isWoOneTime && <span className="text-[11px] text-muted-foreground font-normal ml-0.5">/mo</span>}
+                                                                        </>
+                                                                    ) : '—'}
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-sm">
                                                                     {margin !== null ? (
                                                                         <span className={margin > 0 ? 'text-green-600 font-medium' : 'text-red-600'}>
                                                                             {formatCurrency(margin)}
+                                                                            {!isWoOneTime && <span className="text-[11px] font-normal ml-0.5 opacity-80">/mo</span>}
                                                                         </span>
                                                                     ) : '—'}
                                                                 </td>

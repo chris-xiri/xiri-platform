@@ -568,8 +568,9 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                 return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Service active</Badge>;
                             })()}
                         </h1>
-                        <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <MapPin className="w-3.5 h-3.5" /> {wo.locationName} • ID: {wo.id?.slice(0, 8)}
+                        <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                            <MapPin className="w-3.5 h-3.5" />
+                            {wo.locationName}
                         </p>
                         {(wo.locationAddress || wo.locationCity) && (
                             <p className="text-xs text-muted-foreground ml-5">
@@ -648,25 +649,27 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                     <div className="grid grid-cols-3 gap-4">
                         <Card>
                             <CardContent className="pt-6">
-                                <p className="text-xs text-muted-foreground uppercase">Client Rate</p>
-                                <p className="text-2xl font-bold text-primary">{formatCurrency(wo.clientRate)}<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                                <p className="text-xs text-muted-foreground uppercase">{isOneTime ? 'Client Rate (One-Time)' : 'Client Rate'}</p>
+                                <p className="text-2xl font-bold text-primary">{formatCurrency(wo.clientRate)}<span className="text-xs font-normal text-muted-foreground ml-1">{isOneTime ? 'total' : '/mo'}</span></p>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardContent className="pt-6">
-                                <p className="text-xs text-muted-foreground uppercase">Vendor Rate</p>
+                                <p className="text-xs text-muted-foreground uppercase">{isOneTime ? 'Vendor Rate (One-Time)' : 'Vendor Rate'}</p>
                                 <p className="text-2xl font-bold">
                                     {wo.vendorRate ? formatCurrency(wo.vendorRate) : <span className="text-muted-foreground">—</span>}
-                                    {wo.vendorRate && <span className="text-sm font-normal text-muted-foreground">/mo</span>}
+                                    {wo.vendorRate && <span className="text-xs font-normal text-muted-foreground ml-1">{isOneTime ? 'total' : '/mo'}</span>}
                                 </p>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardContent className="pt-6">
-                                <p className="text-xs text-muted-foreground uppercase">Margin</p>
+                                <p className="text-xs text-muted-foreground uppercase">{isOneTime ? 'Project Margin' : 'Monthly Margin'}</p>
                                 <p className={`text-2xl font-bold ${margin !== null ? (margin > 0 ? 'text-green-600' : 'text-red-600') : ''}`}>
                                     {margin !== null ? formatCurrency(margin) : <span className="text-muted-foreground">—</span>}
-                                    {margin !== null && <span className="text-sm font-normal text-muted-foreground">/mo</span>}
+                                    {margin !== null && marginPercent !== null && (
+                                        <span className="text-xs font-normal text-muted-foreground ml-1">({marginPercent}%)</span>
+                                    )}
                                 </p>
                             </CardContent>
                         </Card>
@@ -881,7 +884,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                             <div>
                                                 <p className="text-sm font-medium">{v.vendorName}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {formatCurrency(v.vendorRate)}/mo •
+                                                    {formatCurrency(v.vendorRate)}{isOneTime ? ' total' : '/mo'} •
                                                     Assigned {new Date(v.assignedAt).toLocaleDateString()}
                                                 </p>
                                             </div>
@@ -914,7 +917,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                             {wo.vendorId ? (
                                 <div>
                                     <p className="font-medium">{wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Assigned'}</p>
-                                    <p className="text-sm text-muted-foreground">{formatCurrency(wo.vendorRate!)}/mo</p>
+                                    <p className="text-sm text-muted-foreground">{formatCurrency(wo.vendorRate!)}{isOneTime ? ' total' : '/mo'}</p>
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -1086,7 +1089,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                             <div>
                                 <h2 className="text-lg font-bold">Assign Vendor</h2>
                                 <p className="text-sm text-muted-foreground">
-                                    {wo.serviceType} at {wo.locationName} • Client rate: {formatCurrency(wo.clientRate)}/mo
+                                    {wo.serviceType} at {wo.locationName} • Client rate: {formatCurrency(wo.clientRate)}{isOneTime ? ' total (One-Time)' : '/mo'}
                                 </p>
                             </div>
                             <Button variant="ghost" size="sm" onClick={() => { setShowAssign(false); setSelectedVendor(null); }}>✕</Button>
@@ -1169,12 +1172,12 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                             {selectedVendor && (
                                 <div className="border-t pt-4 space-y-3">
                                     <div>
-                                        <Label className="text-sm">Vendor Monthly Rate</Label>
+                                        <Label className="text-sm">Vendor {isOneTime ? 'One-Time' : 'Monthly'} Rate ($)</Label>
                                         <div className="relative mt-1">
                                             <DollarSign className="w-4 h-4 absolute left-2.5 top-2.5 text-muted-foreground" />
                                             <Input
                                                 type="number"
-                                                placeholder="1800"
+                                                placeholder={isOneTime ? 'e.g. 500' : 'e.g. 1800'}
                                                 className="pl-8"
                                                 value={vendorRate || ''}
                                                 onChange={(e) => setVendorRate(parseFloat(e.target.value) || 0)}
@@ -1184,9 +1187,14 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
 
                                     {vendorRate > 0 && (
                                         <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
-                                            <span className="text-sm text-muted-foreground">Projected Monthly Margin:</span>
+                                            <span className="text-sm text-muted-foreground">Projected {isOneTime ? 'Total Project' : 'Monthly'} Margin:</span>
                                             <span className={`text-lg font-bold ${wo.clientRate - vendorRate > 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                 {formatCurrency(wo.clientRate - vendorRate)}
+                                                {wo.clientRate > 0 && (
+                                                    <span className="text-xs font-normal text-muted-foreground ml-1.5">
+                                                        ({Math.round(((wo.clientRate - vendorRate) / wo.clientRate) * 100)}%)
+                                                    </span>
+                                                )}
                                             </span>
                                         </div>
                                     )}
