@@ -1565,6 +1565,8 @@ export interface VendorAssignment {
     vendorId: string;
     vendorName: string;
     vendorRate: number;
+    vendorPaymentFrequency?: string; // aligned with work order frequency ('one_time', 'monthly', etc.)
+    vendorRateType?: 'one_time' | 'recurring';
     assignedAt: any;
     removedAt?: any;
     removalReason?: string;
@@ -1592,6 +1594,8 @@ export interface WorkOrder {
 
     vendorId?: string;
     vendorRate?: number;
+    vendorPaymentFrequency?: string; // e.g. 'one_time' | 'monthly' (mirrors schedule.frequency)
+    vendorRateType?: 'one_time' | 'recurring';
     vendorHistory: VendorAssignment[];
 
     schedule: {

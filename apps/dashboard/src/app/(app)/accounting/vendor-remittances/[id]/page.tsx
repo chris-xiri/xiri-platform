@@ -271,7 +271,9 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
                                                     <span className="block text-xs text-muted-foreground/70">{li.locationAddress}</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-muted-foreground capitalize">{li.frequency}</td>
+                                            <td className="px-4 py-3 text-muted-foreground capitalize">
+                                                {li.frequency === 'one_time' ? 'One-Time' : li.frequency === 'custom_days' ? 'Custom' : li.frequency}
+                                            </td>
                                             <td className="px-4 py-3 text-right font-medium">{formatCurrency(li.amount)}</td>
                                         </tr>
                                     ))}

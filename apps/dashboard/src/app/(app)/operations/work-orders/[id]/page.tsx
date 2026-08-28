@@ -393,10 +393,14 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
 
         try {
             const userId = profile.uid || profile.email || 'unknown';
+            const frequency = wo.schedule?.frequency || 'monthly';
+            const rateType = frequency === 'one_time' ? 'one_time' : 'recurring';
             const newAssignment: any = {
                 vendorId: selectedVendor.id,
                 vendorName: selectedVendor.companyName,
                 vendorRate,
+                vendorPaymentFrequency: frequency,
+                vendorRateType: rateType,
                 assignedAt: new Date().toISOString(),
             };
 
@@ -406,6 +410,8 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
             await updateDoc(doc(db, 'work_orders', wo.id), {
                 vendorId: selectedVendor.id,
                 vendorRate,
+                vendorPaymentFrequency: frequency,
+                vendorRateType: rateType,
                 vendorHistory: updatedHistory,
                 margin,
                 status: 'active',
@@ -420,6 +426,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                 vendorId: selectedVendor.id,
                 vendorName: selectedVendor.companyName,
                 vendorRate,
+                vendorPaymentFrequency: frequency,
                 clientRate: wo.clientRate,
                 margin,
                 assignedBy: userId,
@@ -431,6 +438,8 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                 ...wo,
                 vendorId: selectedVendor.id,
                 vendorRate,
+                vendorPaymentFrequency: frequency,
+                vendorRateType: rateType,
                 vendorHistory: updatedHistory,
                 margin,
                 status: 'active',
