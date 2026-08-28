@@ -21,7 +21,8 @@ import {
     ArrowLeft, Check, X, Printer, FileText, MapPin, Plus,
     DollarSign, Calendar, Clock, Building2, AlertTriangle,
     Send, Eye, MessageSquare, Mail, UserRoundCheck, RotateCcw, History,
-    CreditCard, Landmark, FileCheck, Layers, Upload, ExternalLink, Trash2
+    CreditCard, Landmark, FileCheck, Layers, Upload, ExternalLink, Trash2,
+    ClipboardList, ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -107,22 +108,40 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
     // Fetch related work orders
     useEffect(() => {
-        if (!quote?.lineItems?.length) return;
+        if (!quote?.id) return;
         async function fetchWorkOrders() {
             try {
-                const lineItemIds = quote!.lineItems.map(li => li.id);
-                // Firestore 'in' queries limited to 30, chunk if needed
-                const chunks = [];
-                for (let i = 0; i < lineItemIds.length; i += 30) {
-                    chunks.push(lineItemIds.slice(i, i + 30));
-                }
                 const allWos: any[] = [];
-                for (const chunk of chunks) {
-                    const woSnap = await getDocs(query(
-                        collection(db, 'work_orders'),
-                        where('quoteLineItemId', 'in', chunk),
-                    ));
-                    woSnap.docs.forEach(d => allWos.push({ id: d.id, ...d.data() }));
+                const seenIds = new Set<string>();
+
+                // 1. Fetch by quoteId
+                const woSnap = await getDocs(query(
+                    collection(db, 'work_orders'),
+                    where('quoteId', '==', quote!.id)
+                ));
+                woSnap.docs.forEach(d => {
+                    seenIds.add(d.id);
+                    allWos.push({ id: d.id, ...d.data() });
+                });
+
+                // 2. Also fetch by quoteLineItemId if quote has line items
+                if (quote?.lineItems?.length) {
+                    const lineItemIds = quote.lineItems.map(li => li.id).filter(Boolean);
+                    for (let i = 0; i < lineItemIds.length; i += 30) {
+                        const chunk = lineItemIds.slice(i, i + 30);
+                        if (chunk.length > 0) {
+                            const liWoSnap = await getDocs(query(
+                                collection(db, 'work_orders'),
+                                where('quoteLineItemId', 'in', chunk)
+                            ));
+                            liWoSnap.docs.forEach(d => {
+                                if (!seenIds.has(d.id)) {
+                                    seenIds.add(d.id);
+                                    allWos.push({ id: d.id, ...d.data() });
+                                }
+                            });
+                        }
+                    }
                 }
                 setWorkOrders(allWos);
             } catch (err) {
@@ -130,7 +149,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
             }
         }
         fetchWorkOrders();
-    }, [quote?.lineItems]);
+    }, [quote?.id, quote?.lineItems]);
 
     // Fetch FSM users for dropdown
     useEffect(() => {
@@ -994,6 +1013,27 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             <RotateCcw className="w-4 h-4" /> {revising ? 'Revising...' : 'Revise Quote'}
                         </Button>
                     )}
+                    {workOrders.length === 1 && (
+                        <Button
+                            size="sm"
+                            className="gap-1.5 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                            onClick={() => router.push(`/operations/work-orders/${workOrders[0].id}`)}
+                        >
+                            <ClipboardList className="w-4 h-4" /> Open Work Order →
+                        </Button>
+                    )}
+                    {workOrders.length > 1 && (
+                        <Button
+                            size="sm"
+                            className="gap-1.5 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                            onClick={() => {
+                                const el = document.getElementById('linked-work-orders-section');
+                                el?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                        >
+                            <ClipboardList className="w-4 h-4" /> View Work Orders ({workOrders.length}) ↓
+                        </Button>
+                    )}
                     {(quote as any).signedSowUrl && (
                         <Button
                             variant="outline"
@@ -1091,6 +1131,106 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     )}
                 </CardContent>
             </Card>
+
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {/* LINKED OPERATIONAL WORK ORDERS                                      */}
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {workOrders.length > 0 && (
+                <Card id="linked-work-orders-section" className="border-indigo-200 bg-indigo-50/20 shadow-xs print:hidden">
+                    <CardHeader className="pb-3 border-b bg-indigo-50/60 dark:bg-indigo-950/20">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div>
+                                <CardTitle className="text-base flex items-center gap-2 text-indigo-950 dark:text-indigo-200">
+                                    <ClipboardList className="w-5 h-5 text-indigo-600" />
+                                    Operational Work Orders ({workOrders.length})
+                                </CardTitle>
+                                <CardDescription className="text-xs text-indigo-900/80 dark:text-indigo-300/80">
+                                    Click any work order below to enter operations, manage vendor dispatch, inspect tasks, or attach contractor agreements.
+                                </CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Badge className="bg-indigo-100 text-indigo-800 border-indigo-300 font-semibold text-xs">
+                                    {workOrders.filter(w => w.status === 'active').length} Active
+                                </Badge>
+                                {workOrders.some(w => !w.vendorId) && (
+                                    <Badge variant="destructive" className="text-xs">
+                                        {workOrders.filter(w => !w.vendorId).length} Needs Vendor
+                                    </Badge>
+                                )}
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                            {workOrders.map((wo) => {
+                                const isWoOneTime = wo.schedule?.frequency === 'one_time' || wo.frequency === 'one_time';
+                                return (
+                                    <div
+                                        key={wo.id}
+                                        onClick={() => router.push(`/operations/work-orders/${wo.id}`)}
+                                        className="p-4 rounded-xl border border-slate-200 bg-white hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                                    >
+                                        <div>
+                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                <div className="min-w-0">
+                                                    <span className="font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                                                        {wo.serviceType}
+                                                        <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-indigo-600 transition-opacity shrink-0" />
+                                                    </span>
+                                                    {isWoOneTime && (
+                                                        <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700 border-purple-200 font-semibold px-1.5 py-0 h-4 mt-1">
+                                                            One-Time Project
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <Badge
+                                                    variant={wo.status === 'active' ? 'default' : wo.vendorId ? 'secondary' : 'destructive'}
+                                                    className="text-[10px] uppercase font-semibold shrink-0"
+                                                >
+                                                    {wo.status === 'active' ? 'Active' : wo.vendorId ? 'Assigned' : 'Needs Vendor'}
+                                                </Badge>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                                                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                                <span className="truncate">{wo.locationName}</span>
+                                            </p>
+                                            {(wo.locationAddress || wo.locationCity) && (
+                                                <p className="text-[11px] text-muted-foreground ml-4.5 mb-2 truncate">
+                                                    {[wo.locationAddress, wo.locationCity, wo.locationState].filter(Boolean).join(', ')}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs mt-2">
+                                            <div>
+                                                <span className="text-[10px] text-muted-foreground uppercase block font-semibold">Client Rate</span>
+                                                <span className="font-bold text-slate-900">
+                                                    {formatCurrency(wo.clientRate)}{isWoOneTime ? ' total' : '/mo'}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-muted-foreground uppercase block font-semibold">Vendor</span>
+                                                <span className="font-medium text-slate-700">
+                                                    {wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || (
+                                                        <span className="text-red-500 font-semibold">Unassigned</span>
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-7 px-2 text-xs text-indigo-600 group-hover:bg-indigo-50 font-bold gap-1"
+                                            >
+                                                Open <ArrowRight className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {/* VIEW MODE 1: STATEMENT OF WORK (SOW) & WORK AUTHORIZATION          */}
