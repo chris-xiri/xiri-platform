@@ -76,6 +76,8 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     const [sowDoc, setSowDoc] = useState<{ url: string; name: string } | null>(null);
     const [uploadingSow, setUploadingSow] = useState(false);
     const [sowProgress, setSowProgress] = useState(0);
+    const sowFileInputRef = useRef<HTMLInputElement>(null);
+
     // Scheduled Date & Time State for One-Time Work Orders
     const [scheduledDateVal, setScheduledDateVal] = useState<string>('');
     const [scheduledTimeVal, setScheduledTimeVal] = useState<string>('');
