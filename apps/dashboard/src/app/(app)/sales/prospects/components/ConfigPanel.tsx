@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Plus, X, Search, MapPin, Settings2, Sparkles, TrendingUp, Target, Save, ChevronDown, Briefcase, ShieldBan, Bot, RotateCcw, Brain, PenTool, ShieldAlert } from 'lucide-react';
+import { Loader2, Plus, X, Search, MapPin, Settings2, Sparkles, TrendingUp, Target, Save, ChevronDown, Briefcase, ShieldBan, Bot, RotateCcw, Brain, PenTool, ShieldAlert, Mail } from 'lucide-react';
 import { groupQueriesByTier, groupLocationsByCounty, TIER_LABELS } from './icp-data';
 import type { ProspectingConfig } from './types';
 

@@ -1031,8 +1031,8 @@ export default function ProspectsPage() {
                         size="sm"
                         onClick={() => setConfigOpen(c => !c)}
                     >
-                        <Settings className="w-4 h-4 mr-1" />
-                        {configOpen ? 'Hide Config' : 'Config'}
+                        <Settings className="w-4 h-4 mr-1.5 text-primary" />
+                        {configOpen ? 'Close SDR Studio' : '🤖 SDR Studio & Config'}
                     </Button>
 
                     <Button
