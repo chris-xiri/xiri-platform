@@ -109,6 +109,7 @@ export default function ProspectsPage() {
     const [editQueries, setEditQueries] = useState<string[]>([]);
     const [editLocations, setEditLocations] = useState<string[]>([]);
     const [editTarget, setEditTarget] = useState(100);
+    const [editMaxDailyOutreach, setEditMaxDailyOutreach] = useState(25);
     const [editEnabled, setEditEnabled] = useState(true);
     const [editExclude, setEditExclude] = useState<string[]>([]);
     const [editSdrProfiler, setEditSdrProfiler] = useState<string>(DEFAULT_UI_SDR_PROFILER_PROMPT);
@@ -183,6 +184,7 @@ export default function ProspectsPage() {
                     setEditQueries(data.queries || []);
                     setEditLocations(data.locations || []);
                     setEditTarget(data.dailyTarget || 100);
+                    setEditMaxDailyOutreach(data.maxDailyOutreach ?? 25);
                     setEditEnabled(data.enabled !== false);
                     setEditExclude(data.excludePatterns || []);
                 }

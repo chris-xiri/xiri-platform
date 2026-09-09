@@ -120,6 +120,28 @@ export const processOutreachQueue = onSchedule({
         return;
     }
 
+    // ── Max Daily Outreach Limit Guard (default 25 per weekday) ──
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    let maxDailyOutreach = 25;
+    try {
+        const configDoc = await db.collection("prospecting_config").doc("default").get();
+        if (configDoc.exists && typeof configDoc.data()?.maxDailyOutreach === 'number') {
+            maxDailyOutreach = configDoc.data()!.maxDailyOutreach;
+        }
+    } catch (cfgErr) {
+        logger.warn("[OutreachWorker] Could not read maxDailyOutreach, defaulting to 25:", cfgErr);
+    }
+
+    const dailyStatsRef = db.collection("prospecting_config").doc("outreach_daily_stats");
+    const dailyStatsDoc = await dailyStatsRef.get();
+    const statsData = dailyStatsDoc.exists ? dailyStatsDoc.data() : null;
+    let sentToday = statsData?.date === todayStr ? (statsData?.sentCount || 0) : 0;
+
+    if (sentToday >= maxDailyOutreach) {
+        logger.info(`[OutreachWorker] Daily outreach cap reached (${sentToday}/${maxDailyOutreach} sent on ${todayStr}). Deferring remaining queue items to next weekday.`);
+        return;
+    }
+
     try {
         const tasks = await fetchPendingTasks(db);
         if (tasks.length === 0) {
@@ -127,7 +149,7 @@ export const processOutreachQueue = onSchedule({
             return;
         }
 
-        logger.info(`Found ${tasks.length} tasks to process.`);
+        logger.info(`Found ${tasks.length} tasks to process (${sentToday}/${maxDailyOutreach} sent today).`);
 
         for (const task of tasks) {
             try {
@@ -139,8 +161,14 @@ export const processOutreachQueue = onSchedule({
                 }
 
                 if (task.leadId) {
+                    // Check if daily cap reached mid-batch
+                    if (sentToday >= maxDailyOutreach) {
+                        logger.info(`[OutreachWorker] Daily outreach cap reached (${sentToday}/${maxDailyOutreach}). Halting current batch.`);
+                        break;
+                    }
                     // ── Lead Outreach (template-based) ──
                     await handleLeadSend(task);
+                    sentToday++;
                 } else {
                     // ── Vendor Outreach (existing) ──
                     if (task.type === 'GENERATE') {
@@ -774,6 +802,18 @@ async function handleLeadSend(task: QueueItem) {
             outreachStatus: 'SENT',
             outreachSentAt: new Date(),
         });
+
+        // Increment daily outreach counter
+        try {
+            const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+            await db.collection("prospecting_config").doc("outreach_daily_stats").set({
+                date: todayStr,
+                sentCount: admin.firestore.FieldValue.increment(1),
+                lastSentAt: new Date(),
+            }, { merge: true });
+        } catch (counterErr) {
+            logger.warn('Daily outreach counter update failed:', counterErr);
+        }
 
         // Increment template stats.sent
         try {

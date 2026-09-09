@@ -18,11 +18,13 @@ interface ConfigPanelProps {
     editQueries: string[];
     editLocations: string[];
     editTarget: number;
+    editMaxDailyOutreach: number;
     editEnabled: boolean;
     editExclude: string[];
     setEditQueries: (val: string[]) => void;
     setEditLocations: (val: string[]) => void;
     setEditTarget: (val: number) => void;
+    setEditMaxDailyOutreach: (val: number) => void;
     setEditEnabled: (val: boolean) => void;
     setEditExclude: (val: string[]) => void;
     onSave: () => void;
@@ -118,11 +120,13 @@ export function ConfigPanel({
     editQueries,
     editLocations,
     editTarget,
+    editMaxDailyOutreach,
     editEnabled,
     editExclude,
     setEditQueries,
     setEditLocations,
     setEditTarget,
+    setEditMaxDailyOutreach,
     setEditEnabled,
     setEditExclude,
     onSave,
@@ -532,6 +536,20 @@ export function ConfigPanel({
                                     />
                                     <span className="text-xs text-muted-foreground">leads/day</span>
                                 </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-sm font-semibold">Max Daily Outreaches</Label>
+                                <div className="flex items-center gap-2">
+                                    <Mail className="w-4 h-4 text-muted-foreground" />
+                                    <Input
+                                        type="number"
+                                        value={editMaxDailyOutreach}
+                                        onChange={(e) => setEditMaxDailyOutreach(parseInt(e.target.value) || 0)}
+                                        className="w-24 h-8"
+                                    />
+                                    <span className="text-xs text-muted-foreground">emails/weekday</span>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground">Cap automated cold outreach to {editMaxDailyOutreach} emails per weekday.</p>
                             </div>
                         </div>
                     </div>

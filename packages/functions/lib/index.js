@@ -59802,13 +59802,31 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
     logger5.info(`Weekend detected (day=${nowDay}) \u2014 skipping outreach queue processing.`);
     return;
   }
+  const todayStr = (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  let maxDailyOutreach = 25;
+  try {
+    const configDoc = await db4.collection("prospecting_config").doc("default").get();
+    if (configDoc.exists && typeof configDoc.data()?.maxDailyOutreach === "number") {
+      maxDailyOutreach = configDoc.data().maxDailyOutreach;
+    }
+  } catch (cfgErr) {
+    logger5.warn("[OutreachWorker] Could not read maxDailyOutreach, defaulting to 25:", cfgErr);
+  }
+  const dailyStatsRef = db4.collection("prospecting_config").doc("outreach_daily_stats");
+  const dailyStatsDoc = await dailyStatsRef.get();
+  const statsData = dailyStatsDoc.exists ? dailyStatsDoc.data() : null;
+  let sentToday = statsData?.date === todayStr ? statsData?.sentCount || 0 : 0;
+  if (sentToday >= maxDailyOutreach) {
+    logger5.info(`[OutreachWorker] Daily outreach cap reached (${sentToday}/${maxDailyOutreach} sent on ${todayStr}). Deferring remaining queue items to next weekday.`);
+    return;
+  }
   try {
     const tasks = await fetchPendingTasks(db4);
     if (tasks.length === 0) {
       logger5.info("No pending tasks found.");
       return;
     }
-    logger5.info(`Found ${tasks.length} tasks to process.`);
+    logger5.info(`Found ${tasks.length} tasks to process (${sentToday}/${maxDailyOutreach} sent today).`);
     for (const task of tasks) {
       try {
         const claimed = await claimTask(db4, task.id);
@@ -59817,7 +59835,12 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
           continue;
         }
         if (task.leadId) {
+          if (sentToday >= maxDailyOutreach) {
+            logger5.info(`[OutreachWorker] Daily outreach cap reached (${sentToday}/${maxDailyOutreach}). Halting current batch.`);
+            break;
+          }
           await handleLeadSend(task);
+          sentToday++;
         } else {
           if (task.type === "GENERATE") {
             await handleGenerate(task);
@@ -60325,6 +60348,16 @@ async function handleLeadSend(task) {
       outreachStatus: "SENT",
       outreachSentAt: /* @__PURE__ */ new Date()
     });
+    try {
+      const todayStr = (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      await db4.collection("prospecting_config").doc("outreach_daily_stats").set({
+        date: todayStr,
+        sentCount: admin6.firestore.FieldValue.increment(1),
+        lastSentAt: /* @__PURE__ */ new Date()
+      }, { merge: true });
+    } catch (counterErr) {
+      logger5.warn("Daily outreach counter update failed:", counterErr);
+    }
     try {
       await db4.collection("templates").doc(templateId).update({
         "stats.sent": admin6.firestore.FieldValue.increment(1),

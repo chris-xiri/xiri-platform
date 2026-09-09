@@ -82,6 +82,7 @@ export interface ProspectingConfig {
     queries: string[];
     locations: string[];
     dailyTarget: number;
+    maxDailyOutreach?: number;
     enabled: boolean;
     excludePatterns: string[];
     activeIcp?: string;
