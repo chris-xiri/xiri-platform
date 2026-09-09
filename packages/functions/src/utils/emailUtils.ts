@@ -3,7 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Resend } from 'resend';
 import { getPrompt } from './promptUtils';
 import { resolveGeminiModel } from './gemini';
-import { getFacilityPhrases } from '@xiri/shared';
+import { getFacilityPhrases, cleanBusinessName } from '@xiri/shared';
+export { cleanBusinessName };
 import { isEmailSuppressed } from './suppressionUtils';
 
 const db = admin.firestore();
@@ -410,6 +411,8 @@ export interface SendEmailOptions {
     /** Schedule delivery at a future time (Resend Pro native scheduling). */
     scheduledAt?: Date;
     attachments?: any[];
+    /** Omit the centered logo header (recommended for 1-to-1 cold lead outreach). */
+    skipHeader?: boolean;
 }
 
 export async function sendEmail(
@@ -440,7 +443,9 @@ export async function sendEmail(
         const resolvedScheduledAt = options?.scheduledAt;
         const resolvedAttachments = options?.attachments ?? attachments;
 
-        const header = buildEmailHeader();
+        // Skip centered visual header on cold lead emails to maximize inbox placement & open rates
+        const skipHeader = options?.skipHeader ?? (resolvedEntityType === 'lead');
+        const header = skipHeader ? '' : buildEmailHeader();
         const sigConfig = await getEmailSignatureConfig();
         const signature = buildEmailSignature(sigConfig);
         const footer = buildEmailFooter(resolvedEntityId, resolvedEntityType);

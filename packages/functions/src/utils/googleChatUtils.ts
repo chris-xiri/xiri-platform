@@ -16,10 +16,14 @@ const COMMAND_CENTER_URL = "https://app.xiri.ai/operations/command-center";
 
 const googleChatWebhookSecret = defineSecret("GOOGLE_CHAT_WEBHOOK_URL");
 
-function getWebhookUrl(): string {
-    return googleChatWebhookSecret.value()
-        || process.env.GOOGLE_CHAT_WEBHOOK_URL
-        || "";
+export function getWebhookUrl(): string {
+    try {
+        const val = googleChatWebhookSecret.value();
+        if (val) return val;
+    } catch {
+        // Outside deployed cloud function runtime
+    }
+    return process.env.GOOGLE_CHAT_WEBHOOK_URL || "";
 }
 
 // ─── Thread Key ──────────────────────────────────────────────────────
@@ -114,7 +118,7 @@ export async function sendText(threadKey: string, text: string): Promise<void> {
     } catch (err) { console.error("Chat webhook error:", err); }
 }
 
-async function sendCard(threadKey: string, card: any, fallbackText?: string): Promise<void> {
+export async function sendCard(threadKey: string, card: any, fallbackText?: string): Promise<void> {
     const webhookUrl = getWebhookUrl();
     if (!webhookUrl) { console.log("⚠️ Chat webhook not configured"); return; }
 

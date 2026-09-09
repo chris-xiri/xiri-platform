@@ -4,11 +4,30 @@
  */
 import * as admin from "firebase-admin";
 
-const serviceAccount = require("../packages/functions/service-account.json");
+import * as path from "path";
+import * as fs from "fs";
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-});
+if (!admin.apps.length) {
+    const candidates = [
+        path.resolve(__dirname, 'serviceAccountKey.json'),
+        path.resolve(__dirname, '../service-account.json'),
+        path.resolve(__dirname, '../packages/functions/service-account.json'),
+    ];
+    let cred = admin.credential.applicationDefault();
+    for (const p of candidates) {
+        if (fs.existsSync(p)) {
+            try {
+                const sa = require(p);
+                cred = admin.credential.cert(sa);
+                break;
+            } catch (e) {}
+        }
+    }
+    admin.initializeApp({
+        credential: cred,
+        projectId: 'xiri-facility-solutions',
+    });
+}
 
 const db = admin.firestore();
 
@@ -27,6 +46,18 @@ interface SequenceSeed {
 }
 
 const SEQUENCES: SequenceSeed[] = [
+    {
+        id: 'dental_lead_sequence',
+        name: 'Dental Practice Lead Outreach',
+        description: '4-step sequence for dental practice leads (Day 0, 3, 7, 14)',
+        category: 'lead',
+        steps: [
+            { templateId: 'dental_lead_1', dayOffset: 0, label: 'Morning Inspection Hook' },
+            { templateId: 'dental_lead_2', dayOffset: 3, label: 'OSHA & Cross-Contamination' },
+            { templateId: 'dental_lead_3', dayOffset: 7, label: 'Local Case Study' },
+            { templateId: 'dental_lead_4', dayOffset: 14, label: 'Breakup / File Close' },
+        ],
+    },
     {
         id: 'tenant_lead_sequence',
         name: 'Tenant / Direct Lead Outreach',

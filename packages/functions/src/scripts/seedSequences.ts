@@ -33,6 +33,18 @@ interface SequenceSeed {
 
 const SEQUENCES_TO_SEED: SequenceSeed[] = [
     {
+        id: "dental_lead_sequence",
+        name: "Dental Practice Lead Outreach",
+        description: "4 emails over 14 days focused on operatory hygiene, infection control, and morning inspection elimination (Day 0, 3, 7, 14)",
+        category: "lead",
+        steps: [
+            { templateId: "dental_lead_1", dayOffset: 0, label: "Morning Inspection Hook" },
+            { templateId: "dental_lead_2", dayOffset: 3, label: "OSHA & Cross-Contamination" },
+            { templateId: "dental_lead_3", dayOffset: 7, label: "Local Case Study" },
+            { templateId: "dental_lead_4", dayOffset: 14, label: "Breakup / File Close" },
+        ],
+    },
+    {
         id: "tenant_lead_sequence",
         name: "Tenant/Direct Lead Outreach",
         description: "4 emails over 14 days (Day 0, 3, 7, 14)",

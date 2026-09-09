@@ -31,6 +31,11 @@ import type { ProspectingConfig, QueuedProspect, ClientTriggerConfig } from './c
 import { ConfigPanel } from './components/ConfigPanel';
 import { RecommendationsPanel } from './components/RecommendationsPanel';
 import type { RecommendationAction } from './components/RecommendationsPanel';
+import {
+    DEFAULT_UI_SDR_PROFILER_PROMPT,
+    DEFAULT_UI_SDR_COPYWRITER_PROMPT,
+    DEFAULT_UI_SDR_INTENT_TRIAGE_PROMPT,
+} from './components/sdr-defaults';
 
 // ── Local-only types (not exported) ─────────────────────────────────
 
@@ -106,6 +111,9 @@ export default function ProspectsPage() {
     const [editTarget, setEditTarget] = useState(100);
     const [editEnabled, setEditEnabled] = useState(true);
     const [editExclude, setEditExclude] = useState<string[]>([]);
+    const [editSdrProfiler, setEditSdrProfiler] = useState<string>(DEFAULT_UI_SDR_PROFILER_PROMPT);
+    const [editSdrCopywriter, setEditSdrCopywriter] = useState<string>(DEFAULT_UI_SDR_COPYWRITER_PROMPT);
+    const [editSdrIntentTriage, setEditSdrIntentTriage] = useState<string>(DEFAULT_UI_SDR_INTENT_TRIAGE_PROMPT);
 
     // Client Trigger (Job Board) config state
     const [triggerConfig, setTriggerConfig] = useState<ClientTriggerConfig | null>(null);

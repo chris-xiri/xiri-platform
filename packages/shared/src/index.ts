@@ -1818,6 +1818,29 @@ export interface NrrSnapshot {
     calculatedAt: Date;
 }
 
+/**
+ * Clean business names for natural, conversational cold outreach copy.
+ * Strips corporate suffixes (LLC, PLLC, Inc, P.C., Corp), trailing punctuation,
+ * and web-directory tags (e.g. " | Best Long Island Dentist").
+ */
+export function cleanBusinessName(rawName?: string | null): string {
+    if (!rawName) return '';
+    let name = rawName.trim();
+
+    // 1. Remove directory/SEO separators like " | ...", " - ...", " – ..."
+    const pipeIdx = name.indexOf('|');
+    if (pipeIdx > 0) name = name.slice(0, pipeIdx).trim();
+
+    // 2. Remove trailing legal suffixes
+    name = name.replace(/,\s*(LLC|PLLC|P\.C\.|PC|Inc\.?|Corp\.?|Corporation|Co\.?|Ltd\.?)$/i, '');
+    name = name.replace(/\s+(LLC|PLLC|P\.C\.|PC|Inc\.?|Corp\.?|Corporation|Co\.?|Ltd\.?)$/i, '');
+
+    // 3. Clean trailing commas, hyphens, periods
+    name = name.replace(/[,.\-\s]+$/, '').trim();
+
+    return name;
+}
+
 // --- LEAD PROSPECTING ---
 
 export type EmailSource =
@@ -1851,6 +1874,17 @@ export interface ProspectContact {
     provider: string;        // "hunter", "snov", "ai_extraction", "mailto", "serper"
 }
 
+export interface ClinicDossier {
+    clinicType?: string;
+    isDsoChain?: boolean;
+    dsoName?: string | null;
+    estimatedOperatories?: number;
+    doctorCount?: number;
+    keyObservation?: string;
+    icpScore?: number;
+    qualificationReason?: string;
+}
+
 export interface EnrichedProspect {
     // Business info (from Google Places / Serper)
     businessName: string;
@@ -1875,6 +1909,13 @@ export interface EnrichedProspect {
     // Social
     facebookUrl?: string;
     linkedinUrl?: string;
+
+    // SDR Intelligence & Persistent Memory
+    dossier?: ClinicDossier;
+    outreachDraft?: {
+        subject: string;
+        body: string;
+    };
 
     // Enrichment metadata
     emailSource: EmailSource;

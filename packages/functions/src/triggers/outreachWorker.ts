@@ -4,7 +4,7 @@ import * as logger from "firebase-functions/logger";
 import { fetchPendingTasks, updateTaskStatus, enqueueTask, claimTask, QueueItem } from "../utils/queueUtils";
 import { skipToWeekday, DEFAULT_SEND_HOUR_UTC } from "../utils/scheduleUtils";
 import { sendEmail } from "../utils/emailUtils";
-import { getFacilityPhrases } from '@xiri/shared';
+import { getFacilityPhrases, cleanBusinessName } from '@xiri/shared';
 
 // ── Smart fallbacks for unresolved merge variables ─────────────────
 const SMART_FALLBACKS: Record<string, string> = {
@@ -619,6 +619,14 @@ async function handleLeadSend(task: QueueItem) {
         return;
     }
 
+    // ── Human Pipeline Guardrail: skip leads in active sales conversations ──
+    const HUMAN_PIPELINE_STATUSES = ['qualified', 'walkthrough', 'proposal', 'quoted', 'won'];
+    if (HUMAN_PIPELINE_STATUSES.includes(leadData.status)) {
+        logger.info(`[HumanHandoff] Lead ${task.leadId} is in active human sales pipeline ("${leadData.status}") — cancelling automated cold task.`);
+        await updateTaskStatus(db, task.id!, 'CANCELLED');
+        return;
+    }
+
     // ── Resolve contact (contact-centric model) ──
     const contactId = task.contactId || task.metadata?.contactId || null;
     let toEmail = task.metadata?.email;
@@ -662,10 +670,14 @@ async function handleLeadSend(task: QueueItem) {
 
     const template = templateDoc.data()!;
 
-    // Build merge variables from task metadata
+    // Build merge variables from task metadata with sanitized business name
+    const rawBizName = task.metadata.businessName || 'your practice';
+    const cleanBiz = cleanBusinessName(rawBizName) || rawBizName;
+
     const mergeVars: Record<string, string> = {
         contactName,
-        businessName: task.metadata.businessName || 'your practice',
+        businessName: cleanBiz,
+        cleanBizName: cleanBiz,
         facilityType: titleCase(task.metadata.facilityType || 'Medical Office'),
         address: task.metadata.address || '',
         squareFootage: task.metadata.squareFootage || '',
@@ -729,7 +741,10 @@ async function handleLeadSend(task: QueueItem) {
         leadSenderFrom,
         task.leadId ?? undefined, templateId,
         'lead', // entityType for unsubscribe footer
-        { contactId: contactId || undefined }, // tag email with contactId for webhook resolution
+        {
+            contactId: contactId || undefined, // tag email with contactId for webhook resolution
+            skipHeader: true, // Omit visual banner logo for personal 1-to-1 deliverability
+        },
     );
 
     await db.collection("lead_activities").add({

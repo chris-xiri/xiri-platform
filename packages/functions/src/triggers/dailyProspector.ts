@@ -519,6 +519,10 @@ async function runDailyPipeline() {
                             inferredTitle: inferredPic?.title ?? null,
                             inferredDept: inferredPic?.dept ?? null,
 
+                            // SDR Intelligence Dossier & Personalized Pitch Draft
+                            dossier: prospect.dossier || null,
+                            outreachDraft: prospect.outreachDraft || null,
+
                             emailSource: prospect.emailSource || 'none',
                             emailConfidence: prospect.emailConfidence || 'low',
                             facebookUrl: prospect.facebookUrl || null,

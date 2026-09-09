@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Plus, X, Search, MapPin, Settings2, Sparkles, TrendingUp, Target, Save, ChevronDown, Briefcase, ShieldBan } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Plus, X, Search, MapPin, Settings2, Sparkles, TrendingUp, Target, Save, ChevronDown, Briefcase, ShieldBan, Bot, RotateCcw, Brain, PenTool, ShieldAlert } from 'lucide-react';
 import { groupQueriesByTier, groupLocationsByCounty, TIER_LABELS } from './icp-data';
 import type { ProspectingConfig } from './types';
 
@@ -32,6 +33,14 @@ interface ConfigPanelProps {
     setEditTriggerExclude: (val: string[]) => void;
     onSaveTriggerConfig: () => void;
     isSavingTrigger: boolean;
+    // SDR Studio Prompts
+    editSdrProfiler: string;
+    setEditSdrProfiler: (val: string) => void;
+    editSdrCopywriter: string;
+    setEditSdrCopywriter: (val: string) => void;
+    editSdrIntentTriage: string;
+    setEditSdrIntentTriage: (val: string) => void;
+    onResetDentalPrompts: () => void;
 }
 
 /** Helper to get yield color from stats */
@@ -123,11 +132,19 @@ export function ConfigPanel({
     setEditTriggerExclude,
     onSaveTriggerConfig,
     isSavingTrigger,
+    editSdrProfiler,
+    setEditSdrProfiler,
+    editSdrCopywriter,
+    setEditSdrCopywriter,
+    editSdrIntentTriage,
+    setEditSdrIntentTriage,
+    onResetDentalPrompts,
 }: ConfigPanelProps) {
     const [newQuery, setNewQuery] = useState('');
     const [newLocation, setNewLocation] = useState('');
     const [newTriggerExclude, setNewTriggerExclude] = useState('');
     const [newExclude, setNewExclude] = useState('');
+    const [activeAgentTab, setActiveAgentTab] = useState<'profiler' | 'copywriter' | 'intent'>('profiler');
 
     if (!configOpen) return null;
 
@@ -136,6 +153,160 @@ export function ConfigPanel({
 
     return (
         <div className="mb-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+            {/* ── Autonomous SDR Agent Studio (Prompts) ──────────────── */}
+            <Card className="border-emerald-500/30 shadow-sm bg-card/60 backdrop-blur">
+                <CardHeader className="pb-3 flex flex-row items-start justify-between">
+                    <div>
+                        <CardTitle className="text-xl flex items-center gap-2">
+                            <Bot className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                            Autonomous SDR Agent Studio
+                            <Badge variant="outline" className="text-[10px] font-semibold border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                                Dental Practice ICP
+                            </Badge>
+                        </CardTitle>
+                        <CardDescription>
+                            Configure system prompts for each agent in the autonomous outbound pipeline.
+                        </CardDescription>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onResetDentalPrompts}
+                        className="h-8 text-xs border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                        title="Reset all prompts to optimized dental practice defaults"
+                    >
+                        <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                        Reset to Dental Defaults
+                    </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {/* Agent Tabs */}
+                    <div className="flex flex-wrap gap-2 border-b border-border/60 pb-3">
+                        <button
+                            type="button"
+                            onClick={() => setActiveAgentTab('profiler')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                                activeAgentTab === 'profiler'
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                            }`}
+                        >
+                            <Brain className="w-3.5 h-3.5" />
+                            Agent 1: Clinic Intelligence Profiler
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveAgentTab('copywriter')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                                activeAgentTab === 'copywriter'
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                            }`}
+                        >
+                            <PenTool className="w-3.5 h-3.5" />
+                            Agent 2: 1-to-1 Cold Copywriter
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveAgentTab('intent')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                                activeAgentTab === 'intent'
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                            }`}
+                        >
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                            Agent 3: Intent Triage & Human Handoff
+                        </button>
+                    </div>
+
+                    {/* Active Prompt Content */}
+                    {activeAgentTab === 'profiler' && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                        Agent 1 Prompt — Clinic Website & Persona Analysis
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Analyzes clinic websites, detects operatory count, identifies private practice vs corporate DSO, and finds Office Managers.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                    <span>Variables:</span>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{businessName}}"}</code>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{address}}"}</code>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{website}}"}</code>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{websiteText}}"}</code>
+                                </div>
+                            </div>
+                            <Textarea
+                                value={editSdrProfiler}
+                                onChange={(e) => setEditSdrProfiler(e.target.value)}
+                                className="font-mono text-xs min-h-[220px] bg-background/80"
+                                placeholder="Enter system prompt for Agent 1..."
+                            />
+                        </div>
+                    )}
+
+                    {activeAgentTab === 'copywriter' && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                        Agent 2 Prompt — 1-to-1 Hyper-Personalized Copywriter
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Writes plain-text emails focused on dental morning prep, operatory turnover, and OSHA logs without generic marketing jargon.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                    <span>Variables:</span>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{cleanBizName}}"}</code>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{contactName}}"}</code>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{city}}"}</code>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{keyObservation}}"}</code>
+                                </div>
+                            </div>
+                            <Textarea
+                                value={editSdrCopywriter}
+                                onChange={(e) => setEditSdrCopywriter(e.target.value)}
+                                className="font-mono text-xs min-h-[220px] bg-background/80"
+                                placeholder="Enter system prompt for Agent 2..."
+                            />
+                        </div>
+                    )}
+
+                    {activeAgentTab === 'intent' && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                        Agent 3 Prompt — Inbound Intent Radar & Human Handoff
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Classifies inbound emails/clicks. Freezes automated cold drips, creates CRM deals, and triggers Google Chat alerts for human closing.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                    <span>Variables:</span>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{businessName}}"}</code>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{contactName}}"}</code>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{leadEmail}}"}</code>
+                                    <code className="px-1 py-0.5 rounded bg-muted">{"{{inboundContent}}"}</code>
+                                </div>
+                            </div>
+                            <Textarea
+                                value={editSdrIntentTriage}
+                                onChange={(e) => setEditSdrIntentTriage(e.target.value)}
+                                className="font-mono text-xs min-h-[220px] bg-background/80"
+                                placeholder="Enter system prompt for Agent 3..."
+                            />
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
             <Card className="border-primary/20 shadow-sm bg-card/50 backdrop-blur">
                 <CardHeader className="pb-3 flex flex-row items-start justify-between">
                     <div>

@@ -131,3 +131,15 @@ export {
     deployApprovedNudges,
     getPseoDeployStatus,
 } from "./functions/pseoDeployment";
+
+// ── Radar & Intent Triage (onCall) ──
+export {
+    triageLeadEngagement,
+} from "./triggers/radarIntentWebhook";
+
+// ── Email Engagement Digest (scheduled + onCall) ──
+export {
+    dailyEmailEngagementDigest,
+    triggerDailyEngagementDigest,
+} from "./triggers/dailyEmailEngagementDigest";
+

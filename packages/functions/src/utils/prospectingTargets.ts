@@ -250,11 +250,13 @@ interface GeneratedConfig {
  */
 export function generateProspectingConfig(options?: {
     tiers?: (1 | 2 | 3)[];
+    categories?: string[];
     maxQueriesPerCategory?: number;
     includeCountyFallback?: boolean;
     dailyTarget?: number;
 }): GeneratedConfig {
     const tiers = options?.tiers ?? [1, 2, 3];
+    const categoryFilters = options?.categories?.map(c => c.toLowerCase());
     const maxPerCat = options?.maxQueriesPerCategory ?? 99; // no limit by default
     const includeCounty = options?.includeCountyFallback ?? false;
     const dailyTarget = options?.dailyTarget ?? 100;
@@ -265,6 +267,7 @@ export function generateProspectingConfig(options?: {
 
     for (const cat of ICP_CATEGORIES) {
         if (!tiers.includes(cat.tier)) continue;
+        if (categoryFilters && categoryFilters.length > 0 && !categoryFilters.includes(cat.label.toLowerCase())) continue;
         const tierKey = `tier${cat.tier}`;
         const catQueries = cat.queries.slice(0, maxPerCat);
         queries.push(...catQueries);

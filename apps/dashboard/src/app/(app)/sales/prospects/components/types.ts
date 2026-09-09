@@ -52,6 +52,22 @@ export interface QueuedProspect {
         snippet: string;
         datePosted?: string;
     };
+
+    /** Autonomous SDR Intelligence & Persistent Memory */
+    dossier?: {
+        clinicType?: string;
+        isDsoChain?: boolean;
+        dsoName?: string | null;
+        estimatedOperatories?: number;
+        doctorCount?: number;
+        keyObservation?: string;
+        icpScore?: number;
+        qualificationReason?: string;
+    };
+    outreachDraft?: {
+        subject: string;
+        body: string;
+    };
 }
 
 export interface ClientTriggerConfig {
@@ -68,6 +84,12 @@ export interface ProspectingConfig {
     dailyTarget: number;
     enabled: boolean;
     excludePatterns: string[];
+    activeIcp?: string;
+    sdrPrompts?: {
+        profiler?: string;
+        copywriter?: string;
+        intentTriage?: string;
+    };
     dismissedRecommendations?: string[];
     lastRunAt?: any;
     lastRunStats?: {
@@ -79,3 +101,4 @@ export interface ProspectingConfig {
         locationYield?: Record<string, { discovered: number; qualified: number }>;
     };
 }
+

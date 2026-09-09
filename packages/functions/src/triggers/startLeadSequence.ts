@@ -148,7 +148,17 @@ export const startLeadSequence = onCall(async (request) => {
     }
 
     // ── Resolve sequence ──────────────────────────────────────
-    const sequenceId = requestedSequenceId || DEFAULT_SEQUENCE_MAP[leadType] || "tenant_lead_sequence";
+    let sequenceId = requestedSequenceId;
+    if (!sequenceId) {
+        const isDental = lead.facilityType === 'medical_dental' ||
+            String(lead.facilityType || '').toLowerCase().includes('dental') ||
+            String(lead.category || '').toLowerCase().includes('dental');
+        if (isDental) {
+            sequenceId = "dental_lead_sequence";
+        } else {
+            sequenceId = DEFAULT_SEQUENCE_MAP[leadType] || "tenant_lead_sequence";
+        }
+    }
 
     const sequenceDoc = await db.collection("sequences").doc(sequenceId).get();
     if (!sequenceDoc.exists) {

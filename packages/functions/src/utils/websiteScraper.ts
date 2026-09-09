@@ -1,7 +1,8 @@
 import * as cheerio from 'cheerio';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getPrompt } from './promptUtils';
+import { getPrompt, DEFAULT_SDR_PROFILER_PROMPT } from './promptUtils';
 import { resolveGeminiModel } from './gemini';
+import type { ClinicDossier } from '@xiri/shared';
 
 interface ScrapedData {
     email?: string;
@@ -22,6 +23,7 @@ interface ScrapedData {
     ownerEmail?: string;
     allEmails?: { email: string; type: 'personal' | 'generic' }[];
     organizationScope?: 'single_location' | 'multi_location';
+    dossier?: ClinicDossier;
 }
 
 interface EnrichmentResult {
@@ -53,7 +55,11 @@ async function fetchPage(url: string): Promise<{ html: string; $: cheerio.Cheeri
 /**
  * Scrapes a website and extracts contact information using multi-page + AI extraction
  */
-export async function scrapeWebsite(url: string, geminiApiKey: string): Promise<EnrichmentResult> {
+export async function scrapeWebsite(
+    url: string,
+    geminiApiKey: string,
+    metadata?: { businessName?: string; address?: string; website?: string }
+): Promise<EnrichmentResult> {
     try {
         // ─── Step 1: Scrape homepage ───
         const homepage = await fetchPage(url);
@@ -99,43 +105,42 @@ export async function scrapeWebsite(url: string, geminiApiKey: string): Promise<
         const combinedData: ScrapedData = {
             email: structuredData.email || linkData.email || mergedContact.email || patternData.email,
             phone: structuredData.phone || linkData.phone || mergedContact.phone || patternData.phone,
-            address: structuredData.address || mergedContact.address || patternData.address,
+            address: structuredData.address || patternData.address,
             businessName: structuredData.businessName || patternData.businessName,
-            contactFormUrl: mergedContact.contactFormUrl,
+            contactFormUrl: mergedContact.contactFormUrl || patternData.contactFormUrl,
             socialMedia: {
-                linkedin: patternData.socialMedia?.linkedin || mergedContact.socialMedia?.linkedin,
-                facebook: patternData.socialMedia?.facebook || mergedContact.socialMedia?.facebook,
-                twitter: patternData.socialMedia?.twitter || mergedContact.socialMedia?.twitter,
+                ...structuredData.socialMedia,
+                ...patternData.socialMedia,
             },
             confidence: 'low',
-            source: 'web-scraper',
+            source: structuredData.email ? 'structured_data' : linkData.email ? 'mailto' : 'pattern',
+            allEmails: extractAllEmails(homepage.html + '\n' + allAdditionalHtml),
         };
 
-        // ─── Step 3b: Collect ALL emails for categorization (reuse cached pages) ───
-        const allEmailsFromLinks = extractAllMailtoEmails(homepage.$);
-        for (const cached of additionalPageCache) {
-            allEmailsFromLinks.push(...extractAllMailtoEmails(cached.$));
+        // ─── Step 3b: Fallback — scan cached contact pages if no email found yet ───
+        if (!combinedData.email && additionalPageCache.length > 0) {
+            for (const cached of additionalPageCache) {
+                const mailtoData = extractMailtoAndTel(cached.$);
+                if (mailtoData.email) {
+                    combinedData.email = mailtoData.email;
+                    combinedData.source = 'contact_page';
+                    break;
+                }
+            }
         }
-        // De-duplicate and categorize
-        const seenEmails = new Set<string>();
-        combinedData.allEmails = allEmailsFromLinks.filter(e => {
-            if (seenEmails.has(e.email)) return false;
-            seenEmails.add(e.email);
-            return true;
-        });
 
-        // ─── Step 4: Generic email fallback (info@, contact@) if no personal email found ───
-        if (!combinedData.email) {
-            const genericEmail = findGenericEmail(homepage.html, allAdditionalHtml);
+        // ─── Step 4: Fallback — use generic email from allEmails if primary email is empty ───
+        if (!combinedData.email && combinedData.allEmails && combinedData.allEmails.length > 0) {
+            const genericEmail = combinedData.allEmails.find(e => e.type === 'generic')?.email;
             if (genericEmail) {
                 combinedData.email = genericEmail;
             }
         }
 
-        // ─── Step 5: AI extraction on the best available HTML (owner detection) ───
-        // Always run AI to try to find owner/decision-maker, even if we have an email
+        // ─── Step 5: AI extraction on the best available HTML (owner detection & SDR dossier) ───
+        // Always run AI to try to find owner/decision-maker and clinic profile
         const aiHtml = allAdditionalHtml.length > 500 ? allAdditionalHtml : homepage.html;
-        const aiData = await extractWithAI(aiHtml, geminiApiKey);
+        const aiData = await extractWithAI(aiHtml, geminiApiKey, metadata);
         combinedData.email = combinedData.email || aiData.email;
         combinedData.phone = combinedData.phone || aiData.phone;
         combinedData.address = combinedData.address || aiData.address;
@@ -144,6 +149,7 @@ export async function scrapeWebsite(url: string, geminiApiKey: string): Promise<
         combinedData.ownerTitle = aiData.ownerTitle;
         combinedData.ownerEmail = aiData.ownerEmail;
         combinedData.organizationScope = aiData.organizationScope;
+        combinedData.dossier = aiData.dossier;
 
         // Merge AI-discovered staff emails into allEmails (deduped)
         if (aiData.allEmails && aiData.allEmails.length > 0) {
@@ -427,7 +433,11 @@ function mergeContactPages(pages: Partial<ScrapedData>[]): Partial<ScrapedData> 
 /**
  * Extract contact info using Gemini AI — runs on the best available HTML
  */
-async function extractWithAI(html: string, geminiApiKey: string): Promise<Partial<ScrapedData>> {
+async function extractWithAI(
+    html: string,
+    geminiApiKey: string,
+    metadata?: { businessName?: string; address?: string; website?: string }
+): Promise<Partial<ScrapedData>> {
     try {
         const genAI = new GoogleGenerativeAI(geminiApiKey);
         const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.5-flash') });
@@ -435,35 +445,10 @@ async function extractWithAI(html: string, geminiApiKey: string): Promise<Partia
         // Strip HTML to plain text and limit size
         const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').substring(0, 15000);
 
-        const FALLBACK = `Extract business contact information AND the BEST local decision-maker for commercial cleaning / facilities vendor outreach from this website content.
-
-PRIORITY:
-1. Find the LOCAL person most likely responsible for vendor management, facilities, operations, office management, practice administration, branch/studio/store management, or site administration.
-2. For multi-location brands or franchises, prefer the branch/studio/store/site leader over a founder, CEO, or corporate executive.
-3. Find PERSONAL email addresses (e.g. john@business.com, jsmith@business.com). Generic emails like info@, contact@, hello@, office@, admin@ are LOW VALUE and should only be the fallback.
-
-Look specifically for:
-1. A local general manager, studio manager, office manager, practice manager, administrator, facilities manager, operations manager, store manager, branch manager, or site director
-2. Any named person with an email address listed (e.g. on About Us, Our Team, Staff, Leadership, Meet the Doctor, Location, Studio, Branch sections)
-3. Evidence the business is multi-location or franchise-based (e.g. "locations", "find a studio", "franchise", "our offices", "our stores")
-
-Return ONLY a JSON object with these fields (use null if not found):
-{
-  "email": "the BEST non-generic email found (personal > generic). Only use info@/contact@ as last resort",
-  "phone": "primary phone number in format (xxx) xxx-xxxx",
-  "address": "full physical address if available",
-  "businessName": "official business name",
-  "ownerName": "full name of the BEST local decision-maker for facilities/vendor outreach",
-  "ownerTitle": "their title (prefer local operational titles over founder/CEO titles)",
-  "ownerEmail": "that person's direct email if found",
-  "organizationScope": "single_location or multi_location",
-  "allStaffEmails": ["array of ALL email addresses found for named individuals, e.g. john@biz.com"]
-}
-
-Website content:
-{{websiteText}}`;
-
-        const prompt = await getPrompt('website_contact_extractor', FALLBACK, {
+        const prompt = await getPrompt('sdr_profiler', DEFAULT_SDR_PROFILER_PROMPT, {
+            businessName: metadata?.businessName || '',
+            address: metadata?.address || '',
+            website: metadata?.website || '',
             websiteText: text,
         });
 
@@ -475,7 +460,15 @@ Website content:
             const data = JSON.parse(jsonMatch[0]);
             const clean = (v: any) => (v && v !== 'null' && v !== null && v !== 'N/A' && v !== 'n/a') ? v : undefined;
 
-            // Extract staff emails from AI response and add to allEmails
+            // Handle structured decisionMaker object or flat legacy fields
+            const dm = data.decisionMaker || {};
+            const resolvedOwnerName = clean(dm.name) || clean(data.ownerName);
+            const resolvedOwnerTitle = clean(dm.title) || clean(data.ownerTitle);
+            const resolvedOwnerEmail = clean(dm.email) || clean(data.ownerEmail);
+            const resolvedPhone = clean(dm.phone) || clean(data.phone);
+            const resolvedEmail = resolvedOwnerEmail || clean(data.genericEmail) || clean(data.email);
+
+            // Extract staff emails if present
             const aiStaffEmails: { email: string; type: 'personal' | 'generic' }[] = [];
             if (Array.isArray(data.allStaffEmails)) {
                 for (const staffEmail of data.allStaffEmails) {
@@ -487,16 +480,32 @@ Website content:
                 }
             }
 
+            // Build ClinicDossier
+            let dossier: ClinicDossier | undefined;
+            if (data.clinicType || data.keyObservation || typeof data.icpScore === 'number' || typeof data.isDsoChain === 'boolean') {
+                dossier = {
+                    clinicType: data.clinicType || undefined,
+                    isDsoChain: typeof data.isDsoChain === 'boolean' ? data.isDsoChain : undefined,
+                    dsoName: clean(data.dsoName) || null,
+                    estimatedOperatories: Number(data.estimatedOperatories) || undefined,
+                    doctorCount: Number(data.doctorCount) || undefined,
+                    keyObservation: clean(data.keyObservation) || undefined,
+                    icpScore: typeof data.icpScore === 'number' ? data.icpScore : undefined,
+                    qualificationReason: clean(data.qualificationReason) || undefined,
+                };
+            }
+
             return {
-                email: clean(data.email),
-                phone: clean(data.phone),
+                email: resolvedEmail,
+                phone: resolvedPhone,
                 address: clean(data.address),
                 businessName: clean(data.businessName),
-                ownerName: clean(data.ownerName),
-                ownerTitle: clean(data.ownerTitle),
-                ownerEmail: clean(data.ownerEmail),
+                ownerName: resolvedOwnerName,
+                ownerTitle: resolvedOwnerTitle,
+                ownerEmail: resolvedOwnerEmail,
                 organizationScope: data.organizationScope === 'multi_location' ? 'multi_location' : data.organizationScope === 'single_location' ? 'single_location' : undefined,
                 allEmails: aiStaffEmails.length > 0 ? aiStaffEmails : undefined,
+                dossier,
             };
         }
 
