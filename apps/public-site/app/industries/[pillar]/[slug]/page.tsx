@@ -16,22 +16,12 @@ type Props = {
 
 export async function generateStaticParams() {
     const params: { pillar: string; slug: string }[] = [];
-    const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     for (const pillar of INDUSTRY_PILLARS) {
         for (const industrySlug of pillar.industries) {
-            // 1. Industry hub page (e.g., /industries/healthcare/medical-offices)
+            // Industry hub page (e.g., /industries/healthcare/dental-offices)
+            // Note: Industry × Location pages live canonically at /locations/[state]/[county]/[town]/[service]
             params.push({ pillar: pillar.slug, slug: industrySlug });
-
-            // 2. Industry × Location pages (e.g., /industries/healthcare/medical-offices-in-garden-city-nassau-ny)
-            for (const location of seoData.locations) {
-                const countySlug = slugify(location.region);
-                const townSlug = slugify(location.name.split(',')[0]);
-                params.push({
-                    pillar: pillar.slug,
-                    slug: `${industrySlug}-in-${townSlug}-${countySlug}-ny`,
-                });
-            }
         }
     }
 

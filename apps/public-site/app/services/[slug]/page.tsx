@@ -214,24 +214,13 @@ type Props = {
     }>;
 };
 
-// Generate all Service + Industry + Location combinations
+// Generate all Service Hub static params (Location combos redirect dynamically to /locations/...)
 export async function generateStaticParams() {
     const params = [];
-    const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-    // 1. Service Hubs (e.g. /services/medical-office-cleaning)
+    // Service Hubs (e.g. /services/medical-office-cleaning)
     for (const service of seoData.services) {
         params.push({ slug: service.slug });
-    }
-
-    // 2. Service x Location combos (e.g. /services/medical-office-cleaning-in-garden-city-nassau-ny)
-    for (const service of seoData.services) {
-        for (const location of seoData.locations) {
-            const countySlug = slugify(location.region);
-            const townSlug = slugify(location.name.split(',')[0]);
-            const stateSlug = "ny";
-            params.push({ slug: `${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}` });
-        }
     }
 
     return params;

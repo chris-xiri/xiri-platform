@@ -16,6 +16,8 @@ import type { CensusEstablishmentResult } from '@/lib/census';
 import type { CountySummary, MarketWageContext } from '@/data/open-data';
 import { getIndustryHeroSlides } from '@/lib/hero-media';
 import { CaseStudySpotlight } from '@/components/CaseStudySpotlight';
+import { AskAnyAI } from '@/components/AskAnyAI';
+import { getAllLocations, slugify } from '@/lib/location-utils';
 
 interface Location {
     slug: string;
@@ -357,6 +359,116 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
                 </section>
             )}
 
+            {/* Dental Authority Deep-Dive: For Dentist-Owners, Office Managers & Hygienists */}
+            {industry.slug === 'dental-offices' && (
+                <section className="py-16 bg-sky-50/70 border-b border-sky-100">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+                        {/* AI / GEO Extractable Summary */}
+                        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-sky-200 shadow-sm">
+                            <p className="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">
+                                Clinical Standard Summary · CDC DHCP &amp; OSHA 29 CFR 1910.1030
+                            </p>
+                            <p className="text-slate-800 text-base sm:text-lg leading-relaxed">
+                                <strong>XIRI Facility Solutions</strong> provides nightly-verified <strong>dental office janitorial and terminal cleaning</strong> across <strong>Nassau County, Suffolk County, and Queens, NY</strong>. Purpose-built for <strong>dentist-owners (DDS/DMD), dental office managers, and clinical hygiene teams</strong>, our protocol combines chair-safe EPA List N surface disinfection, sterilization lab sanitation, amalgam-safe floor care, Georgia-Pacific restroom supply management, and NFC zone-by-zone proof-of-work under one monthly invoice.
+                            </p>
+                        </div>
+
+                        {/* Role-Based Value Breakdown */}
+                        <div className="grid md:grid-cols-3 gap-6">
+                            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                <span className="inline-block px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-bold mb-3">
+                                    For the Dentist / Practice Owner
+                                </span>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                    Protect Your $25k+ Dental Chairs &amp; License
+                                </h3>
+                                <p className="text-sm text-slate-600 leading-relaxed">
+                                    Generic cleaners ruin A-dec, Belmont, and Pelton &amp; Crane dental chair upholstery with harsh bleach or alcohol. We enforce manufacturer-safe, EPA List N protocols, carry $1M+ liability insurance, and log every shift for state board and OSHA inspections.
+                                </p>
+                            </div>
+                            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                <span className="inline-block px-3 py-1 rounded-full bg-teal-100 text-teal-800 text-xs font-bold mb-3">
+                                    For the Dental Office Manager
+                                </span>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                    Zero Vendor Chasing. One Consolidated Bill.
+                                </h3>
+                                <p className="text-sm text-slate-600 leading-relaxed">
+                                    Stop texting no-show cleaners or ordering paper towels and soap from 3 suppliers. Your NFC compliance log arrives automatically before your 7:30 AM morning huddle, and janitorial + supplies + maintenance arrive on a single monthly invoice.
+                                </p>
+                            </div>
+                            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                <span className="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold mb-3">
+                                    For Dental Hygienists &amp; Assistants
+                                </span>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                    Treat Patients — Never Scrub Toilets or Floors
+                                </h3>
+                                <p className="text-sm text-slate-600 leading-relaxed">
+                                    Asking $55–$65/hr Registered Dental Hygienists (RDHs) and dental assistants to mop operatory floors or clean bathrooms drives clinical burnout. Let your clinical team focus on daytime chair turnover while XIRI handles the nightly terminal clean.
+                                    </p>
+                            </div>
+                        </div>
+
+                        {/* Dental Comparison Table + Resource Links */}
+                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="p-6 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-xl font-bold">Dental Practice Cleaning Models Compared</h3>
+                                    <p className="text-xs sm:text-sm text-slate-300 mt-1">Why Long Island &amp; Queens dental offices switch to XIRI</p>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <Link href="/guides/dental-office-terminal-cleaning-checklist" className="text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white px-3.5 py-2 rounded-lg transition-colors">
+                                        Dental Terminal Cleaning Checklist →
+                                    </Link>
+                                    <Link href="/tools/janitorial-rfp/dental-offices" className="text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-3.5 py-2 rounded-lg transition-colors">
+                                        Free Dental RFP Builder →
+                                    </Link>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr className="bg-slate-50 border-b border-slate-200 text-slate-700">
+                                            <th className="p-4 font-bold">Clinical Benchmark</th>
+                                            <th className="p-4 font-bold text-sky-700 bg-sky-50/60">XIRI Dental Protocol</th>
+                                            <th className="p-4 font-bold">Generic Office Cleaners</th>
+                                            <th className="p-4 font-bold">In-House Hygienists / Staff</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        <tr>
+                                            <td className="p-4 font-semibold text-slate-900">Operatory &amp; Chair Safety</td>
+                                            <td className="p-4 bg-sky-50/40 text-slate-900 font-medium">✓ Chair-safe EPA List N &amp; color-coded microfiber</td>
+                                            <td className="p-4 text-slate-500">✗ Bleach/quat overspray cracks vinyl chairs</td>
+                                            <td className="p-4 text-slate-500">Rushed wipe-downs between patients</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="p-4 font-semibold text-slate-900">Sterilization &amp; Lab Zones</td>
+                                            <td className="p-4 bg-sky-50/40 text-slate-900 font-medium">✓ Clean/dirty zone separation &amp; floor decontamination</td>
+                                            <td className="p-4 text-slate-500">✗ Same mop used in restroom and sterilization lab</td>
+                                            <td className="p-4 text-slate-500">Takes clinical time away from instrument processing</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="p-4 font-semibold text-slate-900">Proof of Completion</td>
+                                            <td className="p-4 bg-sky-50/40 text-slate-900 font-medium">✓ NFC tag scan in every operatory + Night Manager audit</td>
+                                            <td className="p-4 text-slate-500">✗ Unverified; discover missed rooms at 7:30 AM</td>
+                                            <td className="p-4 text-slate-500">No independent compliance log</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="p-4 font-semibold text-slate-900">True Cost &amp; Staff Morale</td>
+                                            <td className="p-4 bg-sky-50/40 text-slate-900 font-medium">✓ Predictable flat monthly bill (includes supplies)</td>
+                                            <td className="p-4 text-slate-500">Hidden supply markups &amp; high vendor turnover</td>
+                                            <td className="p-4 text-slate-500">✗ $55–$65/hr RDH wage + high staff turnover</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
+
             {/* 2. VALUE PROPS (Generic XIRI Props) */}
             <ValuePropsSection
                 title={`Why ${industry.name} Choose XIRI`}
@@ -487,6 +599,43 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
             {industry.faqs && industry.faqs.length > 0 && (
                 <FAQ items={industry.faqs} />
             )}
+
+            {/* 6. Ask Any AI + Tri-County Local Directory Links */}
+            <section className="py-16 bg-white border-t border-slate-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+                    <AskAnyAI
+                        variant="card"
+                        heading={`Ask AI About XIRI's ${industry.name} Protocol`}
+                    />
+
+                    <div>
+                        <h3 className="text-2xl font-bold font-heading text-slate-900 mb-2 text-center">
+                            {industry.name} Cleaning Across Nassau, Suffolk &amp; Queens
+                        </h3>
+                        <p className="text-slate-600 text-center mb-8 text-sm sm:text-base">
+                            Select your town below for local compliance standards, zip code coverage, and instant walkthrough scheduling:
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                            {getAllLocations().map((loc) => {
+                                const townName = loc.name.split(',')[0].trim();
+                                const stateSlug = slugify(loc.state);
+                                const countySlug = slugify(loc.region);
+                                const townSlug = slugify(townName);
+                                return (
+                                    <Link
+                                        key={loc.slug}
+                                        href={`/locations/${stateSlug}/${countySlug}/${townSlug}/${industry.slug}`}
+                                        className="px-3.5 py-2.5 rounded-xl bg-slate-50 hover:bg-sky-50 border border-slate-200 hover:border-sky-300 text-xs sm:text-sm font-medium text-slate-700 hover:text-sky-700 transition-colors flex items-center gap-2"
+                                    >
+                                        <MapPin className="w-3.5 h-3.5 text-sky-500 flex-shrink-0" />
+                                        <span className="truncate">{townName}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
     );
 }

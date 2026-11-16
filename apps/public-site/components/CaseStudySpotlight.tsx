@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
-import { ShieldCheck, Wifi, CheckCircle2, ArrowRight, Building2, Sparkles, MapPin } from 'lucide-react';
+import { ShieldCheck, Wifi, CheckCircle2, ArrowRight, Building2, Sparkles, MapPin, FileText } from 'lucide-react';
+import { trackEvent } from '@/lib/tracking';
 
 interface CaseStudySpotlightProps {
     /** Optional compact mode for embedding on industry pages */
@@ -21,15 +24,24 @@ export function CaseStudySpotlight({ variant = 'full' }: CaseStudySpotlightProps
                                 Trusted at UBS Arena for Georgia-Pacific&apos;s IoT Soap Dispensing Hardware Deployment
                             </h3>
                             <p className="text-sm md:text-base text-slate-300 leading-relaxed">
-                                When Georgia-Pacific needed field execution for connected, smart soap dispensing hardware at UBS Arena, XIRI delivered. We bring that exact same technical precision, hygiene accountability, and supply-chain reliability to private dental practices and clinical suites across Long Island.
+                                When Georgia-Pacific needed field execution for connected, smart soap dispensing hardware at UBS Arena, XIRI delivered. We bring that exact same technical precision, hygiene accountability, and supply-chain reliability to private dental practices, medical suites, and commercial facilities across Long Island &amp; Queens.
                             </p>
                         </div>
-                        <div className="flex-shrink-0 w-full lg:w-auto">
+                        <div className="flex-shrink-0 flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                            <Link
+                                href="/case-studies/ubs-arena-georgia-pacific"
+                                onClick={() => trackEvent('case_study_cta_click', { variant: 'compact', destination: '/case-studies/ubs-arena-georgia-pacific' })}
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold px-5 py-3.5 rounded-xl transition-colors text-sm border border-slate-600"
+                            >
+                                <FileText className="w-4 h-4 text-sky-400" />
+                                Read Case Study
+                            </Link>
                             <a
                                 href="#audit"
-                                className="w-full lg:w-auto inline-flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-white font-bold px-6 py-3.5 rounded-xl transition-colors text-sm shadow-lg shadow-sky-500/20"
+                                onClick={() => trackEvent('case_study_cta_click', { variant: 'compact', destination: '#audit' })}
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-white font-bold px-6 py-3.5 rounded-xl transition-colors text-sm shadow-lg shadow-sky-500/20"
                             >
-                                Scope My Practice
+                                Scope My Facility
                                 <ArrowRight className="w-4 h-4" />
                             </a>
                         </div>
@@ -40,7 +52,7 @@ export function CaseStudySpotlight({ variant = 'full' }: CaseStudySpotlightProps
     }
 
     return (
-        <section className="py-20 md:py-24 bg-slate-900 text-white relative overflow-hidden border-y border-slate-800">
+        <section id="ubs-arena-spotlight" className="py-20 md:py-24 bg-slate-900 text-white relative overflow-hidden border-y border-slate-800">
             {/* Subtle background glow */}
             <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
@@ -55,12 +67,12 @@ export function CaseStudySpotlight({ variant = 'full' }: CaseStudySpotlightProps
                         </div>
                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-white tracking-tight leading-tight">
                             Enterprise-Grade Execution.<br />
-                            <span className="text-sky-400">Built for Dental &amp; Medical Practices.</span>
+                            <span className="text-sky-400">Brought to Local Practices &amp; Facilities.</span>
                         </h2>
                     </div>
                     <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
                         <MapPin className="w-4 h-4 text-sky-400 flex-shrink-0" />
-                        <span>Executed in Elmont, NY · Serving Nassau &amp; Suffolk County</span>
+                        <span>Executed in Elmont, NY · Serving Nassau, Suffolk &amp; Queens</span>
                     </div>
                 </div>
 
@@ -90,34 +102,33 @@ export function CaseStudySpotlight({ variant = 'full' }: CaseStudySpotlightProps
                                 XIRI recently completed a field deployment at <strong className="text-white">UBS Arena</strong> in Elmont, NY for <strong className="text-white">Georgia-Pacific&apos;s connected IoT soap dispensing hardware</strong>. Operating inside a premier 18,000+ seat venue requires strict chain-of-custody, technical hardware precision, and zero-defect verification across high-volume restroom zones.
                             </p>
 
-                            {/* The Bridge to Dental Offices */}
+                            {/* The Bridge to Dental Offices & Single-Tenant Facilities */}
                             <div className="bg-slate-900/90 border border-sky-500/30 rounded-2xl p-5 sm:p-6 space-y-3">
                                 <p className="text-xs font-bold uppercase tracking-wider text-sky-400">
-                                    Why This Matters for Dentists &amp; Practice Managers
+                                    Why This Matters for Dental Practices, Medical Suites &amp; Buildings
                                 </p>
                                 <p className="text-slate-200 text-sm sm:text-base leading-relaxed">
-                                    Most local janitorial crews are unmanaged subcontractors with a mop and a key. <strong className="text-white">XIRI is a technology-driven facility operations partner.</strong> Whether we are commissioning smart Georgia-Pacific hygiene hardware at UBS Arena or performing nightly <strong className="text-white">CDC/OSHA terminal cleaning across your dental operatories and sterilization suite</strong>, your practice gets enterprise-grade verification and supply management without the enterprise overhead.
+                                    Most local janitorial crews are unmanaged subcontractors with a mop and a key. <strong className="text-white">XIRI is a technology-driven facility operations partner.</strong> Whether we are commissioning smart Georgia-Pacific hygiene hardware at UBS Arena or performing nightly <strong className="text-white">CDC/OSHA terminal cleaning across dental operatories, medical clinics, and commercial suites</strong>, you get enterprise-grade verification and supply management without the enterprise overhead.
                                 </p>
                             </div>
                         </div>
 
-                        {/* Bottom Takeaways + CTA */}
+                        {/* Bottom Takeaways + CTAs */}
                         <div className="pt-4 border-t border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-300 font-medium">
-                                <span className="inline-flex items-center gap-1.5">
-                                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
-                                    Smart Dispenser &amp; Consumable Logistics
-                                </span>
-                                <span className="inline-flex items-center gap-1.5">
-                                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
-                                    NFC Zone-by-Zone Verification
-                                </span>
-                            </div>
+                            <Link
+                                href="/case-studies/ubs-arena-georgia-pacific"
+                                onClick={() => trackEvent('case_study_cta_click', { variant: 'full', destination: '/case-studies/ubs-arena-georgia-pacific' })}
+                                className="inline-flex items-center gap-2 text-white bg-slate-700/80 hover:bg-slate-700 border border-slate-600 px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                            >
+                                <FileText className="w-4 h-4 text-sky-400" />
+                                Read Full UBS Arena Case Study
+                            </Link>
                             <Link
                                 href="/industries/healthcare/dental-offices"
+                                onClick={() => trackEvent('dental_hub_funnel_click', { source: 'case_study_spotlight', destination: '/industries/healthcare/dental-offices' })}
                                 className="inline-flex items-center gap-2 text-sky-400 hover:text-sky-300 font-bold text-sm whitespace-nowrap group"
                             >
-                                See Our Dental Office Protocol
+                                Explore Dental Office Terminal Cleaning Hub
                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </Link>
                         </div>

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Loader2 } from "lucide-react";
-import { trackEvent } from "@/lib/tracking";
+import { trackEvent, getFirstTouchAttribution } from "@/lib/tracking";
 
 function AuditInitializer() {
     const router = useRouter();
@@ -26,13 +26,15 @@ function AuditInitializer() {
                 const serviceWindow = searchParams.get("serviceWindow") || "";
                 const transitionDate = searchParams.get("transitionDate") || "";
                 const scopeBrief = searchParams.get("scopeBrief") || "";
+                const originPage = searchParams.get("originPage") || "";
+                const firstTouch = getFirstTouchAttribution();
 
                 if (!zip && !address) {
                     router.replace("/");
                     return;
                 }
 
-                // Create Lead
+                // Create Lead with full first-touch & AI / pSEO attribution
                 const docRef = await addDoc(collection(db, "leads"), {
                     status: 'new',
                     zipCode: zip || null,
@@ -46,10 +48,14 @@ function AuditInitializer() {
                     transitionDate: transitionDate || null,
                     scopeBrief: scopeBrief || null,
                     attribution: {
-                        source,
-                        medium: 'web_audit_flow',
-                        campaign: 'alpha_launch',
-                        landingPage: window.location.pathname
+                        source: firstTouch?.aiSource ? `ai_${firstTouch.aiSource}` : source,
+                        formSource: source,
+                        medium: firstTouch?.utmMedium || (firstTouch?.aiSource ? 'ai_answer_engine' : 'web_audit_flow'),
+                        campaign: firstTouch?.utmCampaign || 'seo_geo_2026',
+                        landingPage: firstTouch?.initialLandingPage || originPage || window.location.pathname,
+                        conversionPage: originPage || window.location.pathname,
+                        referrer: firstTouch?.initialReferrer || document.referrer || 'direct',
+                        aiEngine: firstTouch?.aiSource || null,
                     },
                     createdAt: serverTimestamp(),
                     // Wizard State
@@ -57,7 +63,13 @@ function AuditInitializer() {
                 });
 
                 // Redirect to Wizard (same as vendor onboarding pattern)
-                trackEvent('audit_start', { zip: zip || '', service, source });
+                trackEvent('audit_start', {
+                    zip: zip || '',
+                    service,
+                    source,
+                    origin_page: originPage || '',
+                    ai_engine: firstTouch?.aiSource || 'none',
+                });
                 router.replace(`/audit/${docRef.id}`);
 
             } catch (err) {

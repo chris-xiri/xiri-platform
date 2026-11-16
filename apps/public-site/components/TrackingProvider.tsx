@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { initTracking } from '@/lib/tracking';
 import { TrackingDebugOverlay } from '@/components/TrackingDebugOverlay';
 
@@ -9,15 +9,22 @@ export default function TrackingProvider({
 }: {
     children: React.ReactNode;
 }) {
+    const [showDebug, setShowDebug] = useState(false);
+
     useEffect(() => {
-        // Initialize tracking on mount
         initTracking();
+        if (
+            process.env.NODE_ENV === 'development' ||
+            (typeof window !== 'undefined' && window.location.search.includes('debug_tracking=1'))
+        ) {
+            setShowDebug(true);
+        }
     }, []);
 
     return (
         <>
             {children}
-            {process.env.NODE_ENV === 'development' && <TrackingDebugOverlay />}
+            {showDebug && <TrackingDebugOverlay />}
         </>
     );
 }

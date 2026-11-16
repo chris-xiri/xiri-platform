@@ -55,12 +55,21 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
 
 
 
-        // Valid -> Start Audit Flow
+        // Valid -> Start Audit Flow with real page & vertical attribution
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+        const sourceLabel = industryName
+            ? `industry_${industryName.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`
+            : currentPath === '/'
+                ? 'homepage_lead_form'
+                : `page_${currentPath.replace(/^\/+|\/+$/g, '').replace(/\//g, '_')}`;
+
         const params = new URLSearchParams({
             zip,
             email,
             service: prefilledService || "general",
-            source: "homepage_lead_form"
+            source: sourceLabel,
+            originPage: currentPath,
+            ...(industryName ? { facilityType: industryName } : {}),
         });
 
         if (onStart) onStart();

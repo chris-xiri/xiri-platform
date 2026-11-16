@@ -15,8 +15,10 @@ export function TrackingDebugOverlay() {
     const [isVisible, setIsVisible] = useState(true);
 
     useEffect(() => {
-        // Only run in development
-        if (process.env.NODE_ENV !== 'development') return;
+        const isDebug =
+            process.env.NODE_ENV === 'development' ||
+            (typeof window !== 'undefined' && window.location.search.includes('debug_tracking=1'));
+        if (!isDebug) return;
 
         const handleDebugEvent = (e: Event) => {
             const customEvent = e as CustomEvent;
@@ -25,23 +27,14 @@ export function TrackingDebugOverlay() {
                 ...customEvent.detail,
             };
 
-            setEvents((prev) => [newEvent, ...prev].slice(0, 5)); // Keep last 5 events
+            setEvents((prev) => [newEvent, ...prev].slice(0, 8)); // Keep last 8 events
             setIsVisible(true);
-
-            // Auto-hide after 5 seconds if no interaction
-            const timer = setTimeout(() => {
-                // We don't auto-hide completely, but could fade out. 
-                // For now, let's keep it visible so user can see history.
-            }, 5000);
-
-            return () => clearTimeout(timer);
         };
 
         window.addEventListener(DEBUG_EVENT_NAME, handleDebugEvent);
         return () => window.removeEventListener(DEBUG_EVENT_NAME, handleDebugEvent);
     }, []);
 
-    if (process.env.NODE_ENV !== 'development') return null;
     if (!isVisible && events.length === 0) return null;
 
     return (

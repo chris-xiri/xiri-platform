@@ -11,7 +11,7 @@ const FEATURED_INDUSTRIES = [
         slugs: ['dental-offices'],
         title: 'Dental Offices & Oral Surgery',
         description: 'Built for Dentist-Owners & Office Managers. Nightly operatory terminal cleaning, sterilization area sanitization, chair-safe disinfection, and CDC/OSHA compliance.',
-        cta: 'View Dental Office Solutions',
+        cta: 'View Dental Office Hub',
         link: '/industries/healthcare/dental-offices',
         icon: Stethoscope,
         iconColor: 'text-sky-600',
@@ -25,7 +25,7 @@ const FEATURED_INDUSTRIES = [
     },
     {
         slugs: ['medical-offices', 'urgent-care', 'surgery-centers'],
-        title: 'Medical & Surgical Suites',
+        title: 'Medical & Surgical Facilities',
         description: 'Private Practices, Urgent Care, & Ambulatory Surgery Centers. Focused on High-Level Disinfection, Infection Control & JCAHO Survey Readiness.',
         cta: 'View Medical Solutions',
         link: '/industries/healthcare/medical-offices',
@@ -62,8 +62,8 @@ export function IndustriesSection() {
         <section className="py-24 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-16">
-                    <h2 className="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-4">Specialized for Dental &amp; Clinical Environments</h2>
-                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">We don&apos;t do &quot;generic&quot; office cleaning. We build custom terminal cleaning &amp; janitorial scopes for your specific compliance needs.</p>
+                    <h2 className="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-4">Specialized for Your Industry</h2>
+                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">We don&apos;t do &quot;generic&quot; cleaning. We build custom scopes for your specific compliance needs.</p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8">
