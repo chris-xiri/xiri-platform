@@ -16,10 +16,10 @@ export interface FacilityType {
 
 export const FACILITY_TYPES: FacilityType[] = [
     // Healthcare
+    { slug: 'dental-offices', label: 'Dental Offices', group: 'Healthcare', pillar: 'healthcare' },
     { slug: 'medical-offices', label: 'Medical Offices', group: 'Healthcare', pillar: 'healthcare' },
     { slug: 'urgent-care', label: 'Urgent Care Centers', group: 'Healthcare', pillar: 'healthcare' },
     { slug: 'surgery-centers', label: 'Surgery Centers', group: 'Healthcare', pillar: 'healthcare' },
-    { slug: 'dental-offices', label: 'Dental Offices', group: 'Healthcare', pillar: 'healthcare' },
     { slug: 'dialysis-centers', label: 'Dialysis Centers', group: 'Healthcare', pillar: 'healthcare' },
     { slug: 'veterinary-clinics', label: 'Veterinary Clinics', group: 'Healthcare', pillar: 'healthcare' },
     { slug: 'converted-clinical-suites', label: 'Converted Clinical Suites', group: 'Healthcare', pillar: 'healthcare' },

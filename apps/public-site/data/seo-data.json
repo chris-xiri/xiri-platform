@@ -221,46 +221,50 @@
     {
       "slug": "dental-offices",
       "name": "Dental Offices",
-      "heroTitle": "Dental Office Cleaning Hewlett—$1M+ Insured | XIRI",
-      "heroSubtitle": "Sterile-grade cleaning that keeps your operatories compliant, your patients confident, and your schedule uninterrupted.",
+      "heroTitle": "Nightly Verified Dental Office Janitorial & Terminal Cleaning",
+      "heroSubtitle": "Built for dentist-owners and practice managers. We disinfect your operatories, sterilization labs, and waiting areas with chair-safe EPA List N products and NFC proof-of-work — so your hygienists treat patients instead of cleaning floors.",
       "coreServices": [
         "medical-office-cleaning",
         "disinfecting-services",
+        "consumable-procurement",
         "floor-care",
         "waste-management",
-        "hvac-maintenance",
         "handyman-services"
       ],
       "specializedServices": [],
       "benefits": [
         {
-          "title": "Operatory Disinfection",
-          "description": "CDC-compliant surface disinfection between your last patient and your first morning appointment.",
+          "title": "Operatory Terminal Cleaning",
+          "description": "CDC DHCP & OSHA 1910.1030 compliant disinfection of operatories, sterilization areas, and high-touch surfaces — using chair-safe products that never crack or discolor dental upholstery.",
           "icon": "shield-check"
         },
         {
-          "title": "Amalgam Waste Compliance",
-          "description": "Proper handling and disposal of amalgam waste, sharps, and extracted materials per EPA and OSHA requirements.",
+          "title": "Relieve Your Office Team",
+          "description": "Your hygienists, dental assistants, and office manager shouldn't be scrubbing restrooms or chasing no-show cleaners. We verify every zone via NFC and manage all restroom & paper supplies.",
           "icon": "shield"
         },
         {
-          "title": "One Invoice",
-          "description": "Janitorial, waste, HVAC, and maintenance consolidated into one predictable monthly bill.",
+          "title": "One Predictable Invoice",
+          "description": "Consolidate nightly janitorial, terminal cleaning, Georgia-Pacific smart soap/towel restocking, floor care, and maintenance into one monthly bill.",
           "icon": "invoice"
         }
       ],
       "faqs": [
         {
-          "question": "Do you understand dental office cleaning requirements?",
-          "answer": "Yes. Dental operatories require CDC-compliant disinfection of all patient contact surfaces, proper handling of sharps and amalgam waste, and OSHA-standard bloodborne pathogen protocols. Our contractors are specifically trained for these environments."
+          "question": "How is dental terminal cleaning different from regular office janitorial?",
+          "answer": "Dental operatories face aerosolized blood and saliva particles from high-speed handpieces, requiring CDC Dental Health Care Personnel (DHCP) and OSHA Bloodborne Pathogen (29 CFR 1910.1030) protocols. Our crews perform top-to-bottom terminal cleaning of operatories, sterilization rooms, X-ray suites, and patient restrooms every night — logged with NFC timestamps."
         },
         {
-          "question": "Can you clean without disrupting our schedule?",
-          "answer": "All cleaning is scheduled after your last patient. Our crews work overnight so your operatories are disinfected, floors are clean, and restrooms are restocked before your first morning appointment."
+          "question": "Will your disinfectants damage our expensive dental chairs and upholstery?",
+          "answer": "Never. Generic janitorial crews often ruin $20,000+ dental chairs with harsh bleach or improper quaternary ammonium solutions. We strictly follow manufacturer and CDC guidelines, using surface-compatible, EPA-registered disinfectants on clinical floors, cabinetry, and non-porous surfaces while protecting delicate operatory upholstery and electronics."
         },
         {
-          "question": "Do you handle dental-specific waste disposal?",
-          "answer": "Yes. We coordinate certified waste haulers for sharps containers, amalgam waste, and red-bag disposal in full compliance with EPA, OSHA, and state dental board requirements."
+          "question": "How does XIRI help our Dental Office Manager and clinical staff?",
+          "answer": "In too many practices, hygienists and assistants get stuck mopping floors or cleaning bathrooms at the end of a long day, and the office manager wastes hours ordering paper towels and soap or texting a no-show cleaner. XIRI takes 100% of facility cleaning, consumable restocking (including smart Georgia-Pacific dispensers), and nightly NFC verification off your team's plate."
+        },
+        {
+          "question": "Can you clean overnight without disrupting our patient schedule?",
+          "answer": "Yes. All janitorial and terminal cleaning is scheduled after your last patient leaves. Every crew member is background-checked, insured ($1M+ liability), and checks into each zone via NFC so you have digital proof your practice is spotless before your 7:00 AM huddle."
         }
       ]
     },

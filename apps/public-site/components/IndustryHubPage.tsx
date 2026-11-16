@@ -15,6 +15,7 @@ import { CountyDataBar } from '@/components/CountyDataBar';
 import type { CensusEstablishmentResult } from '@/lib/census';
 import type { CountySummary, MarketWageContext } from '@/data/open-data';
 import { getIndustryHeroSlides } from '@/lib/hero-media';
+import { CaseStudySpotlight } from '@/components/CaseStudySpotlight';
 
 interface Location {
     slug: string;
@@ -232,6 +233,8 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
 
                 <ValuePropsSection title={`Our Standard for ${townName}`} />
 
+                <CaseStudySpotlight variant="compact" />
+
                 {/* FAQs */}
                 <section className="py-16 bg-slate-50">
                     <div className="max-w-4xl mx-auto px-4">
@@ -360,6 +363,7 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
             />
 
             {/* 3. CORE SERVICES GRID */}
+            <CaseStudySpotlight variant="compact" />
             <section className="py-20 bg-white border-t border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">

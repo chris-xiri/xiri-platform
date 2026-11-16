@@ -12,8 +12,8 @@ export const INDUSTRY_PILLARS: IndustryPillar[] = [
     {
         slug: 'healthcare',
         name: 'Healthcare Facilities',
-        description: 'OSHA, HIPAA, and CMS-compliant cleaning for medical offices, surgery centers, urgent care, dental, dialysis, veterinary clinics, and converted clinical suites.',
-        industries: ['medical-offices', 'urgent-care', 'surgery-centers', 'dental-offices', 'dialysis-centers', 'converted-clinical-suites', 'veterinary-clinics'],
+        description: 'CDC, OSHA, HIPAA, and CMS-compliant janitorial and terminal cleaning for dental offices, medical practices, surgery centers, urgent care, dialysis, veterinary clinics, and converted clinical suites.',
+        industries: ['dental-offices', 'medical-offices', 'urgent-care', 'surgery-centers', 'dialysis-centers', 'converted-clinical-suites', 'veterinary-clinics'],
     },
     {
         slug: 'automotive',

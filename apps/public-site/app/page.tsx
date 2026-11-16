@@ -8,32 +8,36 @@ import { IndustriesSection } from '@/components/IndustriesSection';
 import { Testimonials } from '@/components/Testimonials';
 import { HomepageFAQ } from '@/components/HomepageFAQ';
 import { MidPageCTA } from '@/components/MidPageCTA';
+import { CaseStudySpotlight } from '@/components/CaseStudySpotlight';
 import { Rocket, ShieldCheck, ClipboardCheck, Receipt } from 'lucide-react';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <Hero
-        title={<>Was Your Building Actually<br /><span className="text-sky-600">Cleaned Last Night?</span></>}
-        subtitle="XIRI gives you verified proof of what was cleaned, when, and by whom. One partner for cleaning, maintenance, supplies, and compliance."
-        ctaText="Get Verified Cleaning"
+        title={<>Nightly Verified Janitorial &amp;<br /><span className="text-sky-600">Terminal Cleaning for Dental Offices</span></>}
+        subtitle="Built for dentist-owners and practice managers. We disinfect your operatories, sterilization areas, and waiting rooms with NFC proof-of-work — so your hygienists treat patients instead of cleaning floors."
+        ctaText="Scope My Dental Practice"
         ctaLink="#audit"
         features={[
-          { text: 'Proof of Work' },
-          { text: '100% Insured' },
-          { text: 'Compliance Ready' },
+          { text: 'CDC & OSHA Compliant' },
+          { text: 'NFC Proof of Work' },
+          { text: '$1M+ Insured' },
         ]}
-        secondaryCta={{ text: 'See How Verification Works', href: '/solutions/cleaning-verification' }}
+        secondaryCta={{ text: 'Explore Dental Suite Protocol', href: '/industries/healthcare/dental-offices' }}
       />
 
       <TrustBar />
 
       <ValuePropsSection />
 
-      {/* ── Mid-Page CTA #1: After Value Props ── */}
+      {/* ── Enterprise Credibility & Case Study Spotlight (UBS Arena × Georgia-Pacific) ── */}
+      <CaseStudySpotlight />
+
+      {/* ── Mid-Page CTA #1: After Case Study Spotlight ── */}
       <MidPageCTA
-        headline="See if we cover your area"
-        subtext="Enter your zip code — we'll tell you if we can service your building and build a custom scope in 48 hours."
+        headline="See if we cover your practice area"
+        subtext="Enter your zip code — we'll walk your dental office or clinical suite and build a custom janitorial & terminal cleaning scope in 48 hours."
         ctaText={CTA.primary}
         variant="gradient"
         trackingId="after_value_props"
@@ -43,9 +47,9 @@ export default function Home() {
 
       {/* ── Mid-Page CTA #2: After Testimonials ── */}
       <MidPageCTA
-        headline="Join the facilities that trust XIRI"
-        subtext="One partner replaces your cleaning company, handyman, and supply orders. No contracts. Cancel anytime."
-        ctaText="Get Started — Free Audit"
+        headline="Join the practices & facilities that trust XIRI"
+        subtext="One partner replaces your janitorial crew, handyman, and consumable supply orders. Month-to-month. Cancel anytime."
+        ctaText="Get Started — Free Practice Audit"
         variant="dark"
         trackingId="after_testimonials"
         showAskAI
@@ -63,14 +67,14 @@ export default function Home() {
               <div className="inline-block px-4 py-2 rounded-full bg-sky-800 text-sky-200 font-bold text-sm mb-6 border border-sky-700">
                 <span className="inline-flex items-center gap-2">
                   <Rocket className="w-4 h-4" />
-                  One Partner. One Invoice. Done.
+                  For Practice Owners &amp; Office Managers
                 </span>
               </div>
               <h2 className="text-4xl md:text-5xl font-heading font-bold mb-6 leading-tight">
-                Get a custom cleaning scope for your building
+                Get a custom terminal cleaning &amp; janitorial scope for your practice
               </h2>
               <p className="text-xl text-sky-100 mb-8 leading-relaxed">
-                We&apos;ll walk your facility, match you with vetted contractors already in your area, and handle everything — from nightly cleaning to supplies to compliance paperwork.
+                We&apos;ll walk your dental office or clinical facility, match you with vetted, clinical-trained teams in your area, and handle everything — from nightly operatory disinfection to restroom supplies and OSHA/CDC compliance logs.
               </p>
 
               <div className="space-y-6">
@@ -79,8 +83,8 @@ export default function Home() {
                     <ShieldCheck className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">100% Insured &amp; Vetted</h3>
-                    <p className="text-sky-200/80">$1M Liability Policy for every single contractor.</p>
+                    <h3 className="font-bold text-lg">Chair-Safe &amp; 100% Insured</h3>
+                    <p className="text-sky-200/80">$1M+ Liability Policy and surface-safe EPA List N disinfectants that protect dental upholstery and equipment.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -89,7 +93,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Nightly Verified. Protocol-Driven.</h3>
-                    <p className="text-sky-200/80">We verify your vendor followed CDC Guidelines for Healthcare Facilities and OSHA&apos;s Bloodborne Pathogen Standard (29 CFR 1910.1030) — every night.</p>
+                    <p className="text-sky-200/80">We verify your vendor followed CDC Dental (DHCP) Infection Control Guidelines and OSHA&apos;s Bloodborne Pathogen Standard (29 CFR 1910.1030) — every night.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -97,8 +101,8 @@ export default function Home() {
                     <Receipt className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">Consolidated Billing</h3>
-                    <p className="text-sky-200/80">One invoice for janitorial, supplies, and maintenance.</p>
+                    <h3 className="font-bold text-lg">Relieve Your Office Team</h3>
+                    <p className="text-sky-200/80">One consolidated invoice for janitorial, terminal cleaning, supplies, and maintenance — zero vendor chasing for your office manager.</p>
                   </div>
                 </div>
               </div>

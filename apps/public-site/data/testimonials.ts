@@ -16,15 +16,15 @@ export interface Testimonial {
 
 export const TESTIMONIALS: Testimonial[] = [
     {
-        quote: "We went through three janitorial companies in two years before finding the right fit. Having one partner handle cleaning, supplies, and compliance paperwork has been a game changer — our staff doesn't have to chase vendors anymore.",
-        role: 'Office Manager',
-        facility: 'Multi-Specialty Medical Office',
+        quote: "As a practice owner, my hygienists and assistants shouldn't be mopping floors or cleaning restrooms after seeing patients all day. XIRI handles our nightly operatory terminal cleaning with chair-safe disinfectants, restocks our dispensers, and gives my office manager NFC proof every morning.",
+        role: 'Practice Owner (DDS) & Office Manager',
+        facility: 'Multi-Chair Dental Practice',
         location: 'Nassau County, NY',
-        initials: 'R.M.',
+        initials: 'D.S.',
         rating: 5,
         imageSrc: '/testimonials/medical-office.jpg',
-        imageAlt: 'Medical office operations team reviewing supplies and compliance workflow',
-        industry: 'medical-offices',
+        imageAlt: 'Dental practice owner and office manager reviewing nightly cleaning verification',
+        industry: 'dental-offices',
     },
     {
         quote: "The nightly verification reports give us peace of mind we never had before. We know exactly what was cleaned, what was restocked, and whether protocols were followed — without having to check ourselves.",

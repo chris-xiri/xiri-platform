@@ -91,17 +91,17 @@ const CARDS: ValuePropCard[] = [
         id: "proof-of-work",
         outcome: "Verified Every Night",
         angle: "NFC-verified accountability.",
-        headline: "Proof of Work. Every Zone. Every Night.",
+        headline: "Proof of Work. Every Operatory. Every Night.",
         reliefTitle: "Know — Don't Wonder",
-        relief: "Every zone in your building has an NFC tag. Cleaners tap their phone to check in, then follow a zone-specific task checklist. You see exactly what happened — which rooms, which tasks, how long — before you walk in the next morning.",
-        focusTitle: "Compliance Built In",
-        singleTenantFocus: "NFC check-ins generate a digital compliance log automatically. OSHA self-certification prompts, SDS acknowledgment, and PPE confirmations are built into the flow — no binders, no spreadsheets, no chasing paperwork.",
+        relief: "Every zone in your dental office or building has an NFC tag. Cleaners tap their phone to check in, then follow a zone-specific terminal cleaning checklist. Dentist-owners and office managers see exactly what happened — which operatories, which tasks, how long — before the first patient arrives.",
+        focusTitle: "CDC & OSHA Compliance Built In",
+        singleTenantFocus: "NFC check-ins generate a digital compliance log automatically. OSHA bloodborne pathogen prompts, EPA List N contact-time confirmation, and PPE checks are built into the flow — no binders, no spreadsheets, and your hygienists never have to clean floors.",
         badge: "NFC Proof of Work",
         role: "Verification System",
         visual: (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
                 <div className="bg-slate-900 text-white p-3 flex justify-between items-center">
-                    <span className="text-[10px] font-mono">ZONE REPORT • Last Night</span>
+                    <span className="text-[10px] font-mono">DENTAL SUITE REPORT • Last Night</span>
                     <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
                         <span className="text-[10px] font-bold text-green-300">10/10 Complete</span>
@@ -109,10 +109,10 @@ const CARDS: ValuePropCard[] = [
                 </div>
                 <div className="p-3 space-y-1.5">
                     {[
-                        { zone: 'Lobby', time: '7:02 PM', tasks: '4/4' },
-                        { zone: 'Restroom A', time: '7:18 PM', tasks: '6/6' },
-                        { zone: 'Break Room', time: '7:35 PM', tasks: '5/5' },
-                        { zone: 'Conference Rm', time: '7:48 PM', tasks: '3/3' },
+                        { zone: 'Operatories 1–4', time: '8:12 PM', tasks: '7/7' },
+                        { zone: 'Sterilization Lab', time: '8:34 PM', tasks: '6/6' },
+                        { zone: 'Patient Restroom', time: '8:49 PM', tasks: '6/6' },
+                        { zone: 'Reception & Waiting', time: '9:04 PM', tasks: '5/5' },
                     ].map((z, i) => (
                         <div key={i} className="flex items-center justify-between text-[11px] py-1 border-b border-gray-50 last:border-0">
                             <div className="flex items-center gap-2">
@@ -128,7 +128,7 @@ const CARDS: ValuePropCard[] = [
                 </div>
                 <div className="border-t border-gray-100 p-2 bg-sky-50 flex items-center gap-2">
                     <svg className="w-4 h-4 text-sky-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                    <span className="text-[10px] font-bold text-sky-800">OSHA self-cert + SDS confirmed at check-in</span>
+                    <span className="text-[10px] font-bold text-sky-800">CDC DHCP + OSHA 1910.1030 confirmed at check-in</span>
                 </div>
             </div>
         )
@@ -136,6 +136,7 @@ const CARDS: ValuePropCard[] = [
 ];
 
 const FACILITY_TYPES = [
+    { name: 'Dental Practice & Operatories', type: 'Dental', icon: '🦷' },
     { name: 'Urgent Care Center', type: 'Medical', icon: '🏥' },
     { name: 'Auto Dealership', type: 'Automotive', icon: '🚘' },
     { name: 'Private School', type: 'Education', icon: '🎓' },

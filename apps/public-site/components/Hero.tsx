@@ -25,18 +25,32 @@ interface HeroProps {
 
 const DEFAULT_MEDIA_SLIDES: HeroMediaSlide[] = [
     {
-        imageSrc: '/hero/office-lobby-cleaning.png',
-        alt: 'Professional cleaning crew servicing an office lobby after hours',
-        facilityName: 'Corporate Office',
-        facilityType: 'Commercial Facility',
-        serviceFocus: 'Nightly Commercial Cleaning'
+        imageSrc: '/hero/dental-operatory-cleaning.png',
+        alt: 'Dental operatory being disinfected by a trained cleaning technician',
+        facilityName: 'Dental Practice & Operatories',
+        facilityType: 'Dental Facility',
+        serviceFocus: 'Terminal Cleaning & Operatory Disinfection'
     },
     {
         imageSrc: '/hero/medical-waiting-room-disinfecting.png',
         alt: 'Janitorial professional disinfecting a medical waiting room',
-        facilityName: 'Urgent Care Center',
-        facilityType: 'Medical Facility',
+        facilityName: 'Dental & Medical Reception',
+        facilityType: 'Clinical Suite',
         serviceFocus: 'Disinfection & High-Touch Sanitizing'
+    },
+    {
+        imageSrc: '/hero/restroom-sanitation.png',
+        alt: 'Sanitized modern office restroom with professional cleaning cart',
+        facilityName: 'Patient & Staff Restrooms',
+        facilityType: 'Clinical & Commercial',
+        serviceFocus: 'Restroom Sanitation & Smart Supply Restock'
+    },
+    {
+        imageSrc: '/hero/office-lobby-cleaning.png',
+        alt: 'Professional cleaning crew servicing an office lobby after hours',
+        facilityName: 'Professional Suite',
+        facilityType: 'Commercial Facility',
+        serviceFocus: 'Nightly Commercial Cleaning'
     },
     {
         imageSrc: '/hero/school-hallway-cleaning.png',
@@ -44,20 +58,6 @@ const DEFAULT_MEDIA_SLIDES: HeroMediaSlide[] = [
         facilityName: 'Private School',
         facilityType: 'Education Facility',
         serviceFocus: 'After-Hours Hallway Cleaning'
-    },
-    {
-        imageSrc: '/hero/restroom-sanitation.png',
-        alt: 'Sanitized modern office restroom with professional cleaning cart',
-        facilityName: 'Corporate Campus',
-        facilityType: 'Commercial Facility',
-        serviceFocus: 'Restroom Sanitation Protocol'
-    },
-    {
-        imageSrc: '/hero/conference-room-cleaning.png',
-        alt: 'After-hours conference room cleaning in a corporate office',
-        facilityName: 'Corporate HQ',
-        facilityType: 'Commercial Facility',
-        serviceFocus: 'Conference Room Detail Cleaning'
     }
 ];
 
