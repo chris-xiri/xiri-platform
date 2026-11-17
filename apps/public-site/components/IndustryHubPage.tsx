@@ -421,6 +421,9 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
                                     <Link href="/guides/dental-office-terminal-cleaning-checklist" className="text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white px-3.5 py-2 rounded-lg transition-colors">
                                         Dental Terminal Cleaning Checklist →
                                     </Link>
+                                    <Link href="/guides/why-dental-hygienists-shouldnt-clean-the-office" className="text-xs font-bold bg-teal-500/20 border border-teal-400/30 hover:bg-teal-500/30 text-teal-200 px-3.5 py-2 rounded-lg transition-colors">
+                                        RDH Burnout &amp; Cost Study →
+                                    </Link>
                                     <Link href="/tools/janitorial-rfp/dental-offices" className="text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-3.5 py-2 rounded-lg transition-colors">
                                         Free Dental RFP Builder →
                                     </Link>

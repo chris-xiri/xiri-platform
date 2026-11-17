@@ -1,0 +1,75 @@
+{
+  "title": "Dental Office Terminal Cleaning Checklist (CDC DHCP & OSHA 1910.1030)",
+  "heroTitle": "The Complete Dental Office Terminal Cleaning Checklist (2026 Clinical Standard)",
+  "heroSubtitle": "A zone-by-zone nightly terminal cleaning protocol for dentist-owners, dental office managers, and hygienist teams — aligned with CDC Dental Infection Control Guidelines, OSHA 29 CFR 1910.1030, and chair-safe upholstery standards.",
+  "metaDescription": "Download and implement the 2026 Dental Office Terminal Cleaning Checklist. Covers operatory disinfection, dental chair upholstery protection, sterilization lab zones, amalgam effluent rules, and NFC verification.",
+  "datePublished": "2026-11-16",
+  "dateModified": "2026-11-16",
+  "sections": [
+    {
+      "title": "What Is Terminal Cleaning in a Dental Office?",
+      "content": "In a dental practice, daytime room turnover between patients only addresses immediate clinical contact surfaces (chair headrests, bracket tables, light handles, and suction lines). Terminal cleaning is the comprehensive, end-of-day top-to-bottom decontamination of every operatory, sterilization lab, imaging suite, restroom, and reception zone after the final patient leaves. Because ultrasonic scalers and high-speed handpieces generate aerosolized blood, saliva, and microbial bio-burden that settle up to 6–8 feet across cabinetry and floors, CDC Guidelines for Infection Control in Dental Health-Care Settings (DHCP) and OSHA's Bloodborne Pathogen Standard (29 CFR 1910.1030) require systematic nightly environmental sanitation."
+    },
+    {
+      "title": "Zone 1: Dental Operatories (Nightly Terminal Protocol)",
+      "content": "Every dental operatory must be cleaned from high-to-low and clean-to-dirty using a dedicated Yellow microfiber cloth and mop head (never reused in restrooms or common areas):",
+      "items": [
+        "Dental Chair Upholstery Protection — Never apply sodium hypochlorite (bleach), high-concentration alcohol, or unapproved quaternary ammonium sprays directly to A-dec, Belmont, or Pelton & Crane vinyl/leather dental chairs. Clinical staff handle barrier changes and manufacturer-approved chair wipes; nightly terminal crews disinfect the chair base, rheostat foot controls, and surrounding floor perimeter",
+        "Operatory Cabinetry, Countertops & Sinks — Wipe and disinfect all non-instrument countertops, glove/towel dispensers, sink basins, and hands-free faucets using an EPA List N intermediate-level (tuberculocidal) disinfectant with verified wet dwell time (typically 3–10 minutes)",
+        "Curing Lights, X-Ray Pass-Throughs & Lead Aprons — Sanitize exterior housing of wall-mounted X-ray control panels, lead apron hangers, and computer keyboards/mice",
+        " Biohazard & Sharps Perimeter Check — Verify red-bag biohazard waste and wall-mounted/countertop sharps containers are sealed and below the fill line; never reach inside containers",
+        "Hard Floor Decontamination — Dust-mop and wet-mop VCT, LVT, or sheet vinyl operatory floors from the back wall toward the entry door using a fresh microfiber pad per operatory group and hospital-grade neutral disinfectant"
+      ]
+    },
+    {
+      "title": "Zone 2: Sterilization Lab & Instrument Processing Suite",
+      "content": "The central sterilization area is the compliance heart of any dental practice. Cleaners must strictly respect the one-way workflow from Receiving/Decontamination (Dirty) to Packaging/Autoclave/Storage (Clean):",
+      "items": [
+        "Strict Clean-to-Dirty Sequence — Always wipe and mop the Clean/Sterile storage side first before moving to the Ultrasonic/Decontamination sink side to prevent back-contamination",
+        "Autoclave & Ultrasonic Exterior Perimeter — Clean counter surfaces surrounding autoclaves and ultrasonic cleaners without disturbing sterile pouches, biological spore test incubators, or chemical indicator logs",
+        "Hands-Free Sinks & Eyewash Stations — Disinfect deep utility sinks, splash guards, and verify clear floor access around the OSHA-mandated emergency eyewash station",
+        "Amalgam Separator & Trap Area Awareness — Per EPA 40 CFR Part 441 (Dental Effluent Guidelines), never dump mop bucket water or harsh oxidizing chemicals down clinical vacuum lines or amalgam separator traps"
+      ]
+    },
+    {
+      "title": "Zone 3: Panorex / CBCT Imaging, Consult Rooms & Reception",
+      "content": "Patient case acceptance for implants, veneers, and Invisalign is heavily influenced by visible and olfactory cleanliness in your non-clinical zones:",
+      "items": [
+        "CBCT / Panorex Suite — Disinfect chin rests, bite-block holders (non-clinical exterior), lead apron racks, and glass viewing windows",
+        "Treatment Coordinator & Consult Offices — Dust and sanitize presentation monitors, consultation tables, and guest seating",
+        "Waiting Room & Front Desk Check-In — Disinfect iPad check-in kiosks, pens, clipboard surfaces, door push-plates, coffee/beverage stations, and waiting room chair armrests using Green microfiber cloths",
+        "Patient & Staff Restrooms — Full Red-coded microfiber sanitation of toilets, urinals, sinks, mirrors, and floor drains, plus automated restocking of Georgia-Pacific soap, sanitizer, and paper towel dispensers"
+      ]
+    },
+    {
+      "title": "Why NFC Zone Verification Replaces Paper Checklists",
+      "content": "Paper cleaning logs taped to the back of a supply closet door are routinely bulk-signed at the end of the week and fail scrutiny during state dental board or OSHA inspections. XIRI mounts tamper-proof NFC tags in each zone of your dental office (Operatories, Sterilization Lab, Restrooms, Waiting Room). Cleaners must physically tap their smartphone at each zone to unlock that zone's checklist and confirm EPA List N dwell times and OSHA PPE compliance — generating a timestamped morning report for the Dentist-Owner and Dental Office Manager."
+    }
+  ],
+  "calloutTitle": "Get a Custom Nightly Terminal Cleaning Scope for Your Dental Practice",
+  "calloutContent": "XIRI Facility Solutions serves dental practices and oral surgery suites across Nassau County, Suffolk County, and Queens. We combine CDC/OSHA-trained nightly crews, chair-safe disinfection, Georgia-Pacific restroom supply management, and NFC proof-of-work under one predictable monthly invoice.",
+  "relatedServices": [
+    "medical-office-cleaning",
+    "disinfecting-services",
+    "floor-care",
+    "janitorial-services"
+  ],
+  "faqs": [
+    {
+      "question": "What disinfectant level does the CDC require for dental office terminal cleaning?",
+      "answer": "Under CDC Guidelines for Infection Control in Dental Health-Care Settings, surfaces with potential blood or OPIM contamination require an EPA-registered hospital disinfectant with an intermediate-level (tuberculocidal / mycobactericidal) claim, applied for the manufacturer's full contact dwell time."
+    },
+    {
+      "question": "Why shouldn't commercial cleaners spray bleach or alcohol on dental chairs?",
+      "answer": "Sodium hypochlorite (bleach) and isopropyl alcohol rapidly strip plasticizers from medical-grade vinyl and leather on A-dec, Belmont, and Pelton & Crane chairs, causing cracking, discoloration, and voided manufacturer warranties. Seams and cracks also harbor bacteria, creating an infection control violation."
+    },
+    {
+      "question": "Should dental hygienists and assistants perform nightly terminal cleaning?",
+      "answer": "No. While clinical staff (RDHs and DAs) must handle between-patient clinical barrier changes and instrument sterilization during operating hours, having $55–$65/hr hygienists mop operatory floors, scrub restrooms, or haul trash at the end of the day costs more than professional terminal cleaning and is a leading cause of dental staff burnout."
+    },
+    {
+      "question": "Does XIRI sign a HIPAA Business Associate Agreement (BAA) for dental offices?",
+      "answer": "Yes. Because our background-checked night crews work in operatories and reception areas where patient schedules or monitors are located, XIRI executes a HIPAA Business Associate Agreement (BAA) and enforces strict privacy protocols."
+    }
+  ]
+}

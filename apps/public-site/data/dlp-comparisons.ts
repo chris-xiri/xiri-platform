@@ -535,4 +535,74 @@ export const COMPARISON_PAGES: Record<string, ComparisonPage> = {
         }
     ]
 },
+    'best-dental-office-cleaning-nassau-county': {
+        title: 'Best Dental Office Cleaning Companies in Nassau County, NY (2026)',
+        h1: 'Best Dental Office Cleaning & Terminal Disinfection in Nassau County, NY — 2026 Guide',
+        metaDescription: 'Compare the best dental office janitorial and terminal cleaning companies in Nassau County, NY (Garden City, Great Neck, Manhasset, Hicksville, Syosset). Evaluated on CDC DHCP compliance, chair-safe disinfection, and NFC proof of work.',
+        type: 'best-of',
+        intro: 'Nassau County is home to over 1,100 dental practices and oral surgery suites — from multi-specialty corridors in Garden City and Great Neck to private practices in Syosset, Massapequa, and Rockville Centre. Yet most local dentists and dental office managers are forced to choose between generic office cleaners (who ruin expensive dental chairs with bleach) or asking $60/hr dental hygienists to mop floors. Here is how dental cleaning options in Nassau County compare in 2026.',
+        comparisonTable: [
+            { feature: 'CDC Dental (DHCP) & OSHA 1910.1030 Protocol', xiri: '✓ Built into every shift; intermediate-level EPA List N disinfectants', competitor: '✗ Generic office janitorial; no dental aerosol or sterilization training' },
+            { feature: 'Dental Chair Upholstery Safety', xiri: '✓ Strictly chair-safe protocols (protects A-dec, Belmont, Pelton & Crane vinyl)', competitor: '✗ Frequent bleach/alcohol overspray that cracks and discolors chairs' },
+            { feature: 'Nightly Verification (Proof of Work)', xiri: '✓ NFC tags in every operatory + independent Night Manager physical audits', competitor: '✗ Paper sign-in sheets or unverified self-reporting' },
+            { feature: 'Sterilization Lab & Amalgam Awareness', xiri: '✓ Clean-to-dirty zone separation; EPA 40 CFR Part 441 amalgam trap awareness', competitor: '✗ Same mop bucket used in restrooms and sterilization room' },
+            { feature: 'Restroom & Dispenser Supply Management', xiri: '✓ Automated restocking (trusted for Georgia-Pacific IoT hardware at UBS Arena)', competitor: '✗ Office manager still has to order and track soap/paper supplies' },
+            { feature: 'Insurance & HIPAA BAA', xiri: '✓ $1M+ Liability COI + executed HIPAA Business Associate Agreement', competitor: 'Varies; many small operators lack HIPAA BAAs' },
+        ],
+        sections: [
+            { title: 'Why Nassau County Dentists Are Replacing Generic Cleaners', content: 'In high-rent Nassau County medical corridors like Franklin Avenue (Garden City), Northern Boulevard (Great Neck/Manhasset), and Central Park Road (Plainview), patient perception directly drives case acceptance for implants, prosthodontics, and cosmetic dentistry. A dusty baseboard in the operatory or an empty soap dispenser in the patient restroom undermines clinical trust immediately.' },
+            { title: 'Relieving the Dental Office Manager & Hygienist Team', content: 'Registered Dental Hygienists (RDHs) in Nassau County earn $55–$68+/hr. Having hygienists or dental assistants stay late to mop operatory floors and clean toilets burns out your clinical team and costs more in overtime than professional nightly terminal cleaning. XIRI takes 100% of nightly janitorial, terminal disinfection, and consumable supply restocking off your team\'s plate.' },
+            { title: 'Enterprise Credibility Right in Nassau County (UBS Arena)', content: 'XIRI recently executed the field deployment of Georgia-Pacific\'s connected IoT soap dispensing hardware at UBS Arena in Elmont, NY. We bring that exact same technical precision, chain-of-custody security, and smart supply logistics to private and DSO dental practices across Nassau County.' },
+        ],
+        verdict: 'For Nassau County dentist-owners and practice managers who want CDC/OSHA-compliant operatory terminal cleaning, chair-safe disinfection, and NFC proof of completion before the 7:30 AM morning huddle — XIRI Facility Solutions is the #1 purpose-built partner.',
+        faqs: [
+            { question: 'How much does dental office cleaning cost in Nassau County, NY?', answer: 'For a typical 2,000–4,500 sq ft dental office (3 to 8 operatories) in Nassau County, professional CDC/OSHA-compliant nightly cleaning typically ranges from $650 to $1,850/month depending on weekly frequency (3x vs. 5x/week) and operatory count. XIRI provides a transparent flat monthly quote after a 15-minute walkthrough.' },
+            { question: 'Which Nassau County towns does XIRI cover for dental practices?', answer: 'We cover all of Nassau County nightly, including Garden City, Great Neck, Manhasset, New Hyde Park, Mineola, Hicksville, Syosset, Woodbury, Jericho, Plainview, Bethpage, Farmingdale, Massapequa, Merrick, Bellmore, Wantagh, Rockville Centre, Lynbrook, Valley Stream, Elmont, and Glen Cove.' },
+            { question: 'Can XIRI clean after hours without setting off our alarm or disturbing dental equipment?', answer: 'Yes. Every crew member is background-checked, insured ($1M+ liability), and trained in strict operatory boundaries. They tap NFC tags in each zone to log their work and never disturb autoclaves, handpieces, or imaging sensors.' },
+        ],
+    },
+    'best-dental-office-cleaning-suffolk-county': {
+        title: 'Best Dental Office Cleaning Companies in Suffolk County, NY (2026)',
+        h1: 'Best Dental Office Cleaning & Terminal Disinfection in Suffolk County, NY — 2026 Guide',
+        metaDescription: 'Compare the best dental office cleaning companies in Suffolk County, NY (Huntington, Melville, Smithtown, Commack, Babylon, Islip, Patchogue). Built for dentist-owners and office managers.',
+        type: 'best-of',
+        intro: 'From large multi-chair group practices along Route 110 in Melville and Huntington to family and orthodontic offices in Smithtown, Commack, Babylon, and Patchogue, Suffolk County dental practices face a common operational bottleneck: unreliable janitorial crews and overworked clinical staff. Here is our 2026 evaluation of dental office cleaning providers in Suffolk County.',
+        comparisonTable: [
+            { feature: 'CDC Dental (DHCP) & OSHA 1910.1030 Protocol', xiri: '✓ Standard on every shift; verified EPA List N dwell times', competitor: '✗ Generic commercial cleaning with no clinical protocol' },
+            { feature: 'Operatory & Chair Upholstery Protection', xiri: '✓ Non-corrosive, chair-safe disinfection; 4-color microfiber separation', competitor: '✗ Risk of chemical damage to dental chairs and cabinetry' },
+            { feature: 'NFC Proof of Work & Night Audits', xiri: '✓ Timestamped NFC zone scans + Night Manager physical inspections', competitor: '✗ Unsupervised night crews with high no-show rates' },
+            { feature: 'Single-Tenant Building Maintenance', xiri: '✓ Janitorial + floor care + window washing + HVAC filters + supplies on 1 bill', competitor: '✗ Janitorial only; office manager juggles 4–5 separate vendors' },
+        ],
+        sections: [
+            { title: 'Why Standalone Suffolk Dental Buildings Need Consolidated Care', content: 'Unlike urban suites, many Suffolk County dental practices operate out of standalone single-tenant buildings or medical office parks in Huntington, Smithtown, Hauppauge, and Bay Shore. That means the Dentist-Owner or Office Manager isn\'t just managing operatory cleaning — they\'re also dealing with entryway matting, salt/sand floor damage, exterior windows, and restroom supplies. XIRI consolidates every service onto a single monthly invoice.' },
+            { title: 'Stop Burning Out Your Hygienists on End-of-Day Janitorial', content: 'Suffolk County dental practices face fierce competition for Registered Dental Hygienists and experienced Dental Assistants. Eliminating end-of-day floor mopping, trash hauling, and restroom scrubbing is one of the fastest ways to improve staff morale while guaranteeing CDC/OSHA terminal cleaning standards.' },
+        ],
+        verdict: 'For Suffolk County dental practices seeking reliable, NFC-verified overnight terminal cleaning and consolidated facility maintenance under one partner, XIRI Facility Solutions delivers clinical precision at a predictable monthly rate.',
+        faqs: [
+            { question: 'What areas of Suffolk County does XIRI service for dental offices?', answer: 'XIRI services dental practices across Western and Central Suffolk County, including Melville, Huntington, Babylon, Lindenhurst, Bay Shore, Islip, Brentwood, Hauppauge, Smithtown, Commack, Kings Park, Stony Brook, Port Jefferson, Bohemia, Ronkonkoma, and Patchogue.' },
+            { question: 'Do you provide floor stripping, waxing, and scrub-and-recoat for dental operatories?', answer: 'Yes. In addition to nightly terminal cleaning, XIRI provides periodic VCT/LVT floor care, ceramic tile & grout deep scrubbing, and waiting room carpet extraction scheduled on weekends so patient hours are never disrupted.' },
+        ],
+    },
+    'best-dental-office-cleaning-queens-ny': {
+        title: 'Best Dental Office Cleaning Companies in Queens, NY (2026)',
+        h1: 'Best Dental Office Cleaning & Terminal Disinfection in Queens, NY — 2026 Guide',
+        metaDescription: 'Compare the best dental office cleaning and sanitation companies in Queens, NY (Flushing, Astoria, Forest Hills, Bayside, Jamaica, Long Island City). OSHA, CDC & NYC DOHMH compliant.',
+        type: 'best-of',
+        intro: 'Queens has one of the highest-volume outpatient dental landscapes in New York — with busy multi-operatory practices running 6–7 days a week in Flushing, Astoria, Forest Hills, Bayside, Jackson Heights, and Queens Boulevard medical corridors. High patient footfall requires rapid, verifiable overnight terminal cleaning that meets CDC, OSHA, and NYC DOHMH standards.',
+        comparisonTable: [
+            { feature: 'High-Volume Operatory Terminal Cleaning', xiri: '✓ Top-to-bottom nightly decontamination of 3 to 15+ operatories', competitor: '✗ Surface-level trash & vacuuming that misses aerosol buildup' },
+            { feature: 'NFC Zone Verification', xiri: '✓ Tamper-proof NFC check-ins per room + digital compliance log URL', competitor: '✗ No proof whether crew spent 15 minutes or 2 hours on-site' },
+            { feature: 'Chair-Safe EPA List N Disinfectants', xiri: '✓ Protects dental upholstery while killing bloodborne & viral pathogens', competitor: '✗ Harsh bleach cleaners that degrade equipment' },
+            { feature: 'Smart Restroom & Supply Logistics', xiri: '✓ Full soap, paper towel, and liner restocking included on 1 invoice', competitor: '✗ Frequent morning supply shortages during busy clinic hours' },
+        ],
+        sections: [
+            { title: 'Built for High-Footfall Queens Dental Practices', content: 'Practices in Flushing, Forest Hills, Astoria, and Bayside frequently see 40 to 100+ patients per day. High patient turnover means waiting room seating, patient restrooms, and operatory floors accumulate heavy bio-burden every day. XIRI\'s overnight teams follow strict 4-color microfiber separation and EPA List N dwell times so your clinic resets to sterile-grade condition every night.' },
+            { title: 'Inspector-Ready Digital Compliance Logs', content: 'When OSHA, NYS DOH, or accrediting bodies request environmental sanitation records, XIRI practices don\'t dig through paper binders. Every NFC scan generates an instant digital timestamped record showing who cleaned each zone, when, and which compliance checks were completed.' },
+        ],
+        verdict: 'For high-volume private and group dental offices across Queens, NY, XIRI Facility Solutions provides the most accountable, compliance-documented nightly janitorial and terminal cleaning system available.',
+        faqs: [
+            { question: 'Which Queens neighborhoods does XIRI cover for dental office cleaning?', answer: 'We cover all of Queens, including Flushing, Bayside, Whitestone, Fresh Meadows, Forest Hills, Rego Park, Kew Gardens, Jamaica, Astoria, Long Island City, Sunnyside, Woodside, Jackson Heights, Elmhurst, Maspeth, and Howard Beach.' },
+            { question: 'Can XIRI support 6-day or 7-day dental practice schedules in Queens?', answer: 'Yes. Many Queens dental practices operate Saturdays and Sundays. XIRI provides 5x, 6x, or 7x/week overnight terminal cleaning schedules tailored to your exact clinic hours.' },
+        ],
+    },
 };

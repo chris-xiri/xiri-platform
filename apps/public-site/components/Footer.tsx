@@ -20,13 +20,14 @@ const FOOTER_SECTIONS = [
     {
         title: 'Solutions & Guides',
         links: [
+            { label: 'Dental Office Terminal Cleaning Hub', href: '/industries/healthcare/dental-offices' },
+            { label: 'UBS Arena × GP IoT Case Study', href: '/case-studies/ubs-arena-georgia-pacific' },
+            { label: 'Dental Terminal Cleaning Checklist', href: '/guides/dental-office-terminal-cleaning-checklist' },
+            { label: 'Why Hygienists Shouldn\'t Clean', href: '/guides/why-dental-hygienists-shouldnt-clean-the-office' },
             { label: 'Medical Facility Management', href: '/solutions/medical-facility-management' },
             { label: 'Single-Tenant Maintenance', href: '/solutions/single-tenant-maintenance' },
-            { label: 'Vendor Management Alternative', href: '/solutions/vendor-management-alternative' },
             { label: 'JCAHO Cleaning Guide', href: '/guides/jcaho-cleaning-requirements' },
-            { label: 'Accreditation 360 Guide', href: '/guides/accreditation-360-preparation-guide' },
             { label: 'Cleaning Cost Guide', href: '/guides/commercial-cleaning-cost-guide' },
-            { label: 'In-House vs Outsourced', href: '/guides/inhouse-vs-outsourced-facility-management' },
         ],
     },
     {
