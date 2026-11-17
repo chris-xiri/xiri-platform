@@ -126,24 +126,42 @@ export default function RootLayout({
           "@type": "Organization",
           "@id": `${SITE.url}/#organization`,
           "name": SITE.name,
+          "legalName": SITE.legalName,
           "url": SITE.url,
           "logo": `${SITE.url}/icon.png`,
-          "description": "Medical-grade facility management for single-tenant buildings.",
-          "serviceType": "Facility Management",
+          "description": "Medical-grade facility management, dental office terminal cleaning, and NFC-verified janitorial services for single-tenant buildings in Nassau County, Suffolk County, and Queens, NY.",
+          "serviceType": [
+            "Dental Office Janitorial & Terminal Cleaning",
+            "Medical Office Cleaning",
+            "Commercial Janitorial Services",
+            "Facility Management",
+            "NFC Cleaning Verification"
+          ],
+          "knowsAbout": [
+            "CDC Guidelines for Infection Control in Dental Health-Care Settings (DHCP)",
+            "OSHA Bloodborne Pathogens Standard (29 CFR 1910.1030)",
+            "Dental Operatory & Sterilization Lab Terminal Cleaning",
+            "NFC Proof of Work Cleaning Verification",
+            "Georgia-Pacific Connected IoT Restroom Dispensing Systems",
+            "JCAHO & AAAHC Physical Environment Compliance"
+          ],
           "telephone": SITE.phone,
           "sameAs": [
             SITE.social.facebook,
             SITE.social.linkedin
           ],
-          "areaServed": {
-            "@type": "State",
-            "name": "New York"
-          },
+          "areaServed": [
+            { "@type": "AdministrativeArea", "name": "Nassau County, NY" },
+            { "@type": "AdministrativeArea", "name": "Suffolk County, NY" },
+            { "@type": "AdministrativeArea", "name": "Queens, NY" },
+            { "@type": "State", "name": "New York" }
+          ],
           "contactPoint": {
             "@type": "ContactPoint",
             "contactType": "sales",
             "email": SITE.email,
-            "telephone": SITE.phone
+            "telephone": SITE.phone,
+            "areaServed": ["US-NY"]
           }
         }} />
         <JsonLd data={{

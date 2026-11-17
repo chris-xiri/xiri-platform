@@ -15,11 +15,13 @@ export default function robots(): MetadataRoute.Robots {
             },
             // Explicitly allow AI search crawlers (signals intent to be cited)
             { userAgent: 'GPTBot', allow: '/' },
+            { userAgent: 'OAI-SearchBot', allow: '/' },
             { userAgent: 'ChatGPT-User', allow: '/' },
             { userAgent: 'PerplexityBot', allow: '/' },
             { userAgent: 'ClaudeBot', allow: '/' },
             { userAgent: 'anthropic-ai', allow: '/' },
             { userAgent: 'Google-Extended', allow: '/' },
+            { userAgent: 'Applebot-Extended', allow: '/' },
             { userAgent: 'PetalBot', disallow: '/' },
             { userAgent: 'HuaweiBot', disallow: '/' },
         ],

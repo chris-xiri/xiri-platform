@@ -8,6 +8,7 @@ export const SEO_ROBOTS_DISALLOW = [
 
 export const SITEMAP_STATIC_ROUTES = [
     "",
+    "/case-studies/ubs-arena-georgia-pacific",
     "/contractors",
     "/directory/locations",
     "/directory/solutions",
@@ -15,6 +16,7 @@ export const SITEMAP_STATIC_ROUTES = [
     "/services",
     "/services/facility-management",
     "/solutions",
+    "/solutions/cleaning-verification",
     "/blog",
     "/calculator",
     "/refer",
