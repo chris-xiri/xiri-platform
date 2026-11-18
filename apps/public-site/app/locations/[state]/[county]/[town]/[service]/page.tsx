@@ -63,13 +63,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const townName = location.name.split(',')[0];
     const isDental = offering.slug === 'dental-offices';
     const title = isDental
-        ? `Dental Office Janitorial & Terminal Cleaning in ${townName}, ${state.toUpperCase()} | XIRI`
-        : `${offering.name} Cleaning in ${townName}, ${state.toUpperCase()} | Free Walkthrough`;
+        ? `Dental Office Cleaning ${townName}, NY — Chair-Safe & NFC Verified | XIRI`
+        : `${offering.name} Cleaning ${townName}, ${state.toUpperCase()} — $1M Insured & Verified | XIRI`;
     const description = isDental
-        ? `Nightly verified dental office janitorial & terminal cleaning in ${townName} (${location.region}). CDC DHCP & OSHA 1910.1030 compliant, chair-safe EPA List N disinfection, NFC proof-of-work.`
+        ? `Nightly verified dental office janitorial & terminal cleaning in ${townName} (${location.region}). A-dec chair-safe, removes sticky CaviWipe LVT residue & stool scuffs, CDC/OSHA logged.`
         : location.localInsight 
-            ? `${location.localInsight} Professional ${offering.name.toLowerCase()} cleaning & sanitation in ${townName}. Get local pricing and request a verified quote.`
-            : `Expert ${offering.name.toLowerCase()} cleaning in ${townName}, ${state.toUpperCase()}. $1M insured, OSHA compliant, nightly verified. Get a free quote.`;
+            ? `${location.localInsight} Professional ${offering.name.toLowerCase()} cleaning & sanitation in ${townName}. $1M insured, NFC verified. Free walkthrough →`
+            : `Expert ${offering.name.toLowerCase()} cleaning in ${townName}, ${state.toUpperCase()}. $1M insured, OSHA compliant, nightly NFC verified. Get a free quote →`;
 
     return {
         title,
@@ -357,26 +357,26 @@ export default async function LocalOfferingPage({ params }: Props) {
                                 <tbody className="divide-y divide-slate-100">
                                     <tr>
                                         <td className="py-4 px-4 font-semibold text-slate-900">Operatory &amp; Chair Safety</td>
-                                        <td className="py-4 px-4 bg-sky-50/60 text-sky-950 font-medium">Chair-safe EPA List N &amp; 4-color microfiber separation</td>
-                                        <td className="py-4 px-4 text-slate-500">Harsh bleach/quat sprays that crack dental upholstery</td>
+                                        <td className="py-4 px-4 bg-sky-50/60 text-sky-950 font-medium">Hands-off A-dec/Belmont Ultraleather &amp; iTero/CBCT; dry-buff chair base &amp; J-box</td>
+                                        <td className="py-4 px-4 text-slate-500">Harsh bleach/quat sprays crack upholstery &amp; flood floor J-boxes</td>
                                         <td className="py-4 px-4 text-slate-500">Rushed turnover between patients</td>
                                     </tr>
                                     <tr>
-                                        <td className="py-4 px-4 font-semibold text-slate-900">Sterilization &amp; Amalgam Zones</td>
-                                        <td className="py-4 px-4 bg-sky-50/60 text-sky-950 font-medium">CDC DHCP &amp; OSHA 1910.1030 terminal cleaning</td>
-                                        <td className="py-4 px-4 text-slate-500">Same mop used in restroom and sterilization lab</td>
+                                        <td className="py-4 px-4 font-semibold text-slate-900">Sticky LVT Floors &amp; Waiting Carpets</td>
+                                        <td className="py-4 px-4 bg-sky-50/60 text-sky-950 font-medium">Strips sticky CaviWipe/Cavitron film, removes stool caster scuffs &amp; HEPA-lifts carpet lanes</td>
+                                        <td className="py-4 px-4 text-slate-500">Dirty string mop smears sticky residue &amp; leaves black baseboard lines</td>
+                                        <td className="py-4 px-4 text-slate-500">No commercial carpet extraction or scuff buffing</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-4 px-4 font-semibold text-slate-900">Steril Galley, Lab Dust &amp; Amalgam</td>
+                                        <td className="py-4 px-4 bg-sky-50/60 text-sky-950 font-medium">Midmark/Statim clean-to-dirty workflow, lab stone dust HEPA &amp; EPA 40 CFR 441 amalgam safe</td>
+                                        <td className="py-4 px-4 text-slate-500">Same mop in restroom &amp; steril lab; dumps mop water in plaster/amalgam traps</td>
                                         <td className="py-4 px-4 text-slate-500">Takes clinical staff away from instrument prep</td>
                                     </tr>
                                     <tr>
-                                        <td className="py-4 px-4 font-semibold text-slate-900">Nightly Verification</td>
-                                        <td className="py-4 px-4 bg-sky-50/60 text-sky-950 font-medium">NFC scan in every operatory + morning compliance log</td>
-                                        <td className="py-4 px-4 text-slate-500">Unverified; discover missed rooms at 7:30 AM huddle</td>
-                                        <td className="py-4 px-4 text-slate-500">No third-party audit trail for state board</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="py-4 px-4 font-semibold text-slate-900">Restroom &amp; Soap Supplies</td>
-                                        <td className="py-4 px-4 bg-sky-50/60 text-sky-950 font-medium">Managed Georgia-Pacific dispenser &amp; paper restocking</td>
-                                        <td className="py-4 px-4 text-slate-500">Office manager still orders &amp; tracks supplies</td>
+                                        <td className="py-4 px-4 font-semibold text-slate-900">Supine Patient View &amp; Supplies</td>
+                                        <td className="py-4 px-4 bg-sky-50/60 text-sky-950 font-medium">Dusts overhead track lights/HVAC vents + restocks Georgia-Pacific dispensers + NFC log</td>
+                                        <td className="py-4 px-4 text-slate-500">Patients stare at dusty ceiling vents; office manager chases empty soap</td>
                                         <td className="py-4 px-4 text-slate-500">$55–$65/hr RDH wage wasted on janitorial chores</td>
                                     </tr>
                                 </tbody>

@@ -418,14 +418,14 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
                                     <p className="text-xs sm:text-sm text-slate-300 mt-1">Why Long Island &amp; Queens dental offices switch to XIRI</p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    <Link href="/guides/dental-office-terminal-cleaning-checklist" className="text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white px-3.5 py-2 rounded-lg transition-colors">
-                                        Dental Terminal Cleaning Checklist →
+                                    <Link href="/guides/dental-office-equipment-flooring-care-guide" className="text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white px-3.5 py-2 rounded-lg transition-colors">
+                                        20-Asset Chair, LVT &amp; Carpet Guide →
+                                    </Link>
+                                    <Link href="/guides/dental-office-terminal-cleaning-checklist" className="text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-3.5 py-2 rounded-lg transition-colors">
+                                        Terminal Cleaning Checklist →
                                     </Link>
                                     <Link href="/guides/why-dental-hygienists-shouldnt-clean-the-office" className="text-xs font-bold bg-teal-500/20 border border-teal-400/30 hover:bg-teal-500/30 text-teal-200 px-3.5 py-2 rounded-lg transition-colors">
-                                        RDH Burnout &amp; Cost Study →
-                                    </Link>
-                                    <Link href="/tools/janitorial-rfp/dental-offices" className="text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-3.5 py-2 rounded-lg transition-colors">
-                                        Free Dental RFP Builder →
+                                        RDH Burnout Study →
                                     </Link>
                                 </div>
                             </div>
@@ -466,6 +466,53 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+
+                        {/* The 20-Item Dental Asset Protection & Flooring Pain-Point Matrix */}
+                        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                                <div>
+                                    <span className="text-xs font-bold uppercase tracking-widest text-sky-600">
+                                        Hands-Off Clinical / Deep-Clean Environmental Charter
+                                    </span>
+                                    <h3 className="text-xl sm:text-2xl font-heading font-bold text-slate-900 mt-1">
+                                        Built Around Your $150k+ Operatory Equipment, LVT Floors &amp; Waiting Room Carpets
+                                    </h3>
+                                </div>
+                                <Link
+                                    href="/guides/dental-office-equipment-flooring-care-guide"
+                                    className="inline-flex items-center gap-1.5 text-sm font-bold text-sky-600 hover:text-sky-700 whitespace-nowrap"
+                                >
+                                    Read Full 20-Asset Care Guide <ArrowRight className="w-4 h-4" />
+                                </Link>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 text-sm">
+                                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                                    <p className="font-bold text-slate-900">1. Sticky LVT &amp; Stool Scuffs</p>
+                                    <p className="text-slate-600 text-xs leading-relaxed">
+                                        We strip sticky <strong>CaviWipe / Optim 1 &amp; Cavitron aerosol buildup</strong> from <strong>Forbo, Tarkett &amp; Armstrong Medintech LVT/sheet vinyl</strong> using neutral-pH microfiber rinses, remove black rubber caster scuffs under <strong>Crown/A-dec saddle stools</strong>, and hand-detail coved baseboards.
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                                    <p className="font-bold text-slate-900">2. Waiting Room Carpet Wear</p>
+                                    <p className="text-slate-600 text-xs leading-relaxed">
+                                        High patient footfall crushes carpet traffic lanes and tracks NY winter rock salt. We use nightly <strong>CRI-approved HEPA brush-roll agitation</strong>, seasonal ice-melt salt neutralization, and low-moisture encapsulation to keep reception carpets and consult suites spotless.
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                                    <p className="font-bold text-slate-900">3. Chairs, Scanners &amp; J-Boxes</p>
+                                    <p className="text-slate-600 text-xs leading-relaxed">
+                                        Strict <strong>Hands-Off Policy</strong> on <strong>A-dec / Belmont / Midmark Ultraleather upholstery</strong>, <strong>iTero / CEREC Primescan / Trios carts</strong>, and <strong>Planmeca / Carestream CBCT C-arms</strong>. We dry-buff chair bases and hand-wipe around <strong>rheostat foot pedals</strong> and <strong>floor J-boxes</strong>.
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                                    <p className="font-bold text-slate-900">4. Steril Galley, Lab &amp; Amalgam</p>
+                                    <p className="text-slate-600 text-xs leading-relaxed">
+                                        We respect Dirty-to-Clean zones around <strong>Midmark M11 &amp; SciCan Statim autoclaves</strong>, HEPA-extract white <strong>gypsum stone &amp; alginate dust</strong> from your model-trimmer lab, and never dump mop water or bleach into <strong>Solmetex NXT Hg5 amalgam separator lines (EPA 40 CFR 441)</strong>.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
