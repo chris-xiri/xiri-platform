@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { ArrowRight, X, Loader2 } from 'lucide-react';
+import { ArrowRight, X, Loader2, MessageSquare } from 'lucide-react';
 
 import { trackEvent } from '@/lib/tracking';
-import { CTA } from '@/lib/constants';
+import { CTA, SITE } from '@/lib/constants';
 
 /**
  * StickyMobileCTA — fixed bottom bar on mobile for key landing pages.
@@ -118,39 +118,49 @@ export function StickyMobileCTA() {
                     : 'bg-gradient-to-r from-sky-700 to-sky-800 border-sky-600'
             }`}>
                 {mode === 'tenant' ? (
-                    <form onSubmit={handleTenantSubmit} className="flex flex-col gap-2">
-                        <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Work Email"
-                            className="w-full h-12 px-4 rounded-lg bg-white/95 text-slate-900 text-base font-bold placeholder:text-slate-400 placeholder:font-normal focus:ring-2 focus:ring-white/50 outline-none"
-                        />
+                    <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
+                            <a
+                                href={`sms:${SITE.phone}?&body=${encodeURIComponent(`Hi XIRI, I'd like to schedule a site walkthrough / cleaning quote (${pathname || '/'}).`)}`}
+                                onClick={() => trackEvent('sms_walkthrough_click', { source: 'sticky_mobile', page: pathname || '/' })}
+                                className="flex-1 h-11 px-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs sm:text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                            >
+                                <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                                <span>Text {SITE.phoneDisplay}</span>
+                            </a>
+                        </div>
+                        <form onSubmit={handleTenantSubmit} className="flex items-center gap-1.5">
+                            <input
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Work Email"
+                                className="flex-1 min-w-0 h-11 px-3 rounded-lg bg-white/95 text-slate-900 text-sm font-semibold placeholder:text-slate-400 placeholder:font-normal focus:ring-2 focus:ring-white/50 outline-none"
+                            />
                             <input
                                 type="text"
                                 value={zip}
                                 onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                                placeholder="Zip Code"
+                                placeholder="Zip"
                                 maxLength={5}
                                 required
-                                className="flex-1 h-12 px-4 rounded-lg bg-white/95 text-slate-900 text-base font-bold placeholder:text-slate-400 placeholder:font-normal focus:ring-2 focus:ring-white/50 outline-none"
+                                className="w-20 h-11 px-2.5 rounded-lg bg-white/95 text-slate-900 text-sm font-semibold placeholder:text-slate-400 placeholder:font-normal focus:ring-2 focus:ring-white/50 outline-none text-center"
                             />
                             <button
                                 type="submit"
                                 disabled={loading || zip.length < 5 || !email}
-                                className="h-12 px-5 bg-white text-sky-700 font-bold text-sm rounded-lg hover:bg-sky-50 active:bg-sky-100 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5 whitespace-nowrap"
+                                className="h-11 px-3.5 bg-white text-sky-700 font-bold text-xs sm:text-sm rounded-lg hover:bg-sky-50 active:bg-sky-100 transition-colors disabled:opacity-60 flex items-center justify-center gap-1 whitespace-nowrap"
                             >
                                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                                     <>
-                                        Free Audit
-                                        <ArrowRight className="w-4 h-4" />
+                                        Audit
+                                        <ArrowRight className="w-3.5 h-3.5" />
                                     </>
                                 )}
                             </button>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 ) : (
                     <button
                         onClick={handleContractorClick}

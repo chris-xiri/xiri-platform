@@ -265,9 +265,15 @@ export default async function SolutionPage({ params }: Props) {
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
+                                        <a
+                                            href={`sms:${SITE.phone}?&body=${encodeURIComponent(`Hi XIRI, I'd like to schedule a walkthrough / quote for ${dlp.title}.`)}`}
+                                            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm"
+                                        >
+                                            Text {SITE.phoneDisplay}
+                                        </a>
                                         <a href={`tel:${SITE.phone}`} className="inline-flex items-center gap-2 bg-white border border-sky-300 text-sky-800 hover:bg-sky-100 font-bold px-4 py-2.5 rounded-xl text-sm transition-colors">
                                             <Phone className="w-4 h-4 text-sky-600" />
-                                            {SITE.phoneDisplay}
+                                            Call Desk
                                         </a>
                                         <a href="#audit" className="inline-flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors">
                                             Request Scope <ArrowRight className="w-4 h-4" />

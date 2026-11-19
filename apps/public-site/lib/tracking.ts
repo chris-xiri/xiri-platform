@@ -71,11 +71,12 @@ export type EventName =
     | 'referral_form_success'
     | 'referral_form_error'
 
-    // AI Sales Assistant
+    // AI Sales Assistant & SMS Walkthrough
     | 'ai_chat_opened'
     | 'ai_chat_message'
     | 'ai_chat_lead_captured'
-    | 'ask_any_ai_click';
+    | 'ask_any_ai_click'
+    | 'sms_walkthrough_click';
 
 export interface EventProperties {
     [key: string]: string | number | boolean | undefined;

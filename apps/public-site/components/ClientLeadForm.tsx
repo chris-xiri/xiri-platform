@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight, MessageSquare } from "lucide-react";
 
 import { trackEvent } from "@/lib/tracking";
-import { CTA } from '@/lib/constants';
+import { CTA, SITE } from '@/lib/constants';
 
 interface ClientLeadFormProps {
     industryName?: string;
@@ -30,6 +30,25 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
         }
     }, [industryName]);
 
+    const smsBody = industryName
+        ? `Hi XIRI, I'd like to schedule a site walkthrough / quote for our ${industryName} facility.${zip ? ` Zip: ${zip}` : ''}`
+        : `Hi XIRI, I'd like to schedule a site walkthrough / cleaning quote for our building.${zip ? ` Zip: ${zip}` : ''}`;
+    const smsHref = `sms:${SITE.phone}?&body=${encodeURIComponent(smsBody)}`;
+
+    const handleSmsClick = () => {
+        trackEvent('sms_walkthrough_click', {
+            source: industryName || 'homepage_lead_form',
+            zip_entered: zip || 'none',
+        });
+        if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+            (window as any).gtag('event', 'generate_lead', {
+                source: `sms_${industryName || 'homepage'}`,
+                zip_code: zip || 'sms',
+                currency: 'USD',
+            });
+        }
+    };
+
     const handleStart = (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
@@ -52,8 +71,6 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
                 currency: 'USD',
             });
         }
-
-
 
         // Valid -> Start Audit Flow with real page & vertical attribution
         const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
@@ -145,9 +162,25 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
                 </button>
             </form>
 
-            <p className="text-xs text-center text-gray-400 mt-4">
-                No commitment. Takes 30 seconds.
-            </p>
+            {/* Zero-Friction SMS Walkthrough Option */}
+            <div className="mt-5 pt-5 border-t border-gray-100">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                        Skip the form · Text us directly
+                    </span>
+                </div>
+                <a
+                    href={smsHref}
+                    onClick={handleSmsClick}
+                    className="w-full py-3.5 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold text-sm sm:text-base transition-colors flex items-center justify-center gap-2.5 shadow-sm"
+                >
+                    <MessageSquare className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                    <span>Text {SITE.phoneDisplay} for a Walkthrough</span>
+                </a>
+                <p className="text-[11px] text-center text-gray-400 mt-2.5">
+                    Text your facility type &amp; town — our operations desk replies in minutes.
+                </p>
+            </div>
         </div>
     );
 }

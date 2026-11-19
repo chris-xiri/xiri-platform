@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, MessageSquare } from 'lucide-react';
 import { LeadFormModal } from './LeadFormModal';
 import { AskAnyAI } from './AskAnyAI';
 import { trackEvent } from '@/lib/tracking';
-import { CTA } from '@/lib/constants';
+import { CTA, SITE } from '@/lib/constants';
 
 interface MidPageCTAProps {
     headline?: string;
@@ -65,13 +65,27 @@ export function MidPageCTA({
                     <p className={`text-lg mb-6 max-w-2xl mx-auto ${s.subtext}`}>
                         {subtext}
                     </p>
-                    <button
-                        onClick={handleClick}
-                        className={`inline-flex items-center gap-2 px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer ${s.button}`}
-                    >
-                        {ctaText}
-                        <ArrowRight className="w-5 h-5" />
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <button
+                            onClick={handleClick}
+                            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer ${s.button}`}
+                        >
+                            {ctaText}
+                            <ArrowRight className="w-5 h-5" />
+                        </button>
+                        <a
+                            href={`sms:${SITE.phone}?&body=${encodeURIComponent("Hi XIRI, I'd like to schedule a site walkthrough / cleaning quote for our facility.")}`}
+                            onClick={() => trackEvent('sms_walkthrough_click', { source: `mid_page_${trackingId}` })}
+                            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full text-base font-bold transition-all duration-300 border ${
+                                variant === 'light'
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                                    : 'bg-white/10 border-white/25 text-white hover:bg-white/20'
+                            }`}
+                        >
+                            <MessageSquare className="w-5 h-5 text-emerald-400" />
+                            <span>Or Text {SITE.phoneDisplay}</span>
+                        </a>
+                    </div>
 
                     {/* Ask Any AI — secondary, low-commitment CTA */}
                     {showAskAI && (

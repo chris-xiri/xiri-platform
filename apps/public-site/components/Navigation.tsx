@@ -130,19 +130,31 @@ export default function Navigation() {
             {!pathname.startsWith('/contractors') && !pathname.startsWith('/calculator') && (
                 <div className="bg-[#0f172a] text-white text-[12px] md:text-[13px] font-bold tracking-[0.15em] text-center py-2 md:py-2.5 relative z-50 border-b border-white/10">
                     <div className="max-w-7xl mx-auto px-4 flex items-center justify-center whitespace-nowrap">
-                        {/* Mobile: Compact two-signal version */}
+                        {/* Mobile: Compact signal + 1-Tap SMS */}
                         <span className="md:hidden">FULLY INSURED</span>
                         <span className="md:hidden mx-2 text-sky-500 opacity-60">·</span>
-                        <span className="md:hidden text-sky-400">AUDIT-READY 24/7</span>
+                        <a
+                            href="sms:+1-516-399-0350?&body=Hi%20XIRI%2C%20I%27d%20like%20to%20schedule%20a%20site%20walkthrough%20%2F%20quote."
+                            onClick={() => trackEvent('sms_walkthrough_click', { source: 'top_trust_bar_mobile' })}
+                            className="md:hidden text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
+                        >
+                            TEXT (516) 399-0350
+                        </a>
 
-                        {/* Desktop: Full message */}
+                        {/* Desktop: Full message + SMS Walkthrough link */}
                         <span className="hidden md:inline">NATIONWIDE SCALE</span>
                         <span className="hidden md:inline mx-4 text-sky-500 opacity-60">|</span>
                         <span className="hidden md:inline">LOCAL PRECISION</span>
                         <span className="hidden md:inline mx-4 text-sky-500 opacity-60">|</span>
                         <span className="hidden md:inline">FULLY INSURED</span>
                         <span className="hidden md:inline mx-4 text-sky-500 opacity-60">|</span>
-                        <span className="hidden md:inline text-sky-400">AUDIT-READY 24/7</span>
+                        <a
+                            href="sms:+1-516-399-0350?&body=Hi%20XIRI%2C%20I%27d%20like%20to%20schedule%20a%20site%20walkthrough%20%2F%20quote."
+                            onClick={() => trackEvent('sms_walkthrough_click', { source: 'top_trust_bar_desktop' })}
+                            className="hidden md:inline text-emerald-400 hover:text-emerald-300 transition-colors"
+                        >
+                            TEXT FOR WALKTHROUGH: (516) 399-0350
+                        </a>
                     </div>
                 </div>
             )}
