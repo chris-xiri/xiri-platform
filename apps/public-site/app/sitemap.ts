@@ -161,11 +161,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
         sitemapEntries.push({ url: `${BASE_URL}/solutions/${slug}`, lastModified: RELEASE_DATE, changeFrequency: 'monthly', priority: 0.75 });
     });
     Object.keys(DLP_SOLUTIONS).forEach((slug) => {
+        const isHighIntentDlp = ['dental-suite-sanitization', 'esd-safe-floor-care', 'iot-restroom-dispenser-installation'].includes(slug);
         sitemapEntries.push({
             url: `${BASE_URL}/solutions/${slug}`,
             lastModified: RELEASE_DATE,
             changeFrequency: 'monthly',
-            priority: slug === 'dental-suite-sanitization' ? 0.95 : 0.75,
+            priority: isHighIntentDlp ? 0.96 : 0.78,
+        });
+    });
+
+    // 5b. High-Intent Technical DLP × Location Pages (Zero-competition local conversion magnets)
+    const HIGH_INTENT_DLP_LOCATION_SLUGS = [
+        'dental-suite-sanitization',
+        'esd-safe-floor-care',
+        'iot-restroom-dispenser-installation',
+        'terminal-cleaning-surgery-centers',
+        'jcaho-survey-ready-disinfection',
+    ];
+    HIGH_INTENT_DLP_LOCATION_SLUGS.forEach((dlpSlug) => {
+        locations.forEach((location) => {
+            sitemapEntries.push({
+                url: `${BASE_URL}/solutions/${dlpSlug}-in-${(location as any).slug}`,
+                lastModified: RELEASE_DATE,
+                changeFrequency: 'monthly',
+                priority: dlpSlug === 'dental-suite-sanitization' ? 0.92 : 0.88,
+            });
         });
     });
 

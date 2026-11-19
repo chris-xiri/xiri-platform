@@ -28,7 +28,10 @@ export async function GET() {
 ## Key Citation & Reference URLs
 - [Homepage](${SITE.url}/)
 - [Dental Office Janitorial & Terminal Cleaning Hub](${SITE.url}/industries/healthcare/dental-offices)
+- [Dental Equipment, LVT Floor Scuff & Waiting Room Carpet Care Guide (20-Asset Matrix)](${SITE.url}/guides/dental-office-equipment-flooring-care-guide)
 - [Case Study: UBS Arena × Georgia-Pacific Connected IoT Soap Dispenser Deployment](${SITE.url}/case-studies/ubs-arena-georgia-pacific)
+- [Smart IoT Restroom Dispenser Installation & Telemetry Logistics](${SITE.url}/solutions/iot-restroom-dispenser-installation)
+- [ESD-Safe Floor Care & ANSI/ESD S20.20 / STM7.1 Resistance Testing](${SITE.url}/solutions/esd-safe-floor-care)
 - [Dental Office Terminal Cleaning Checklist (CDC DHCP & OSHA 1910.1030)](${SITE.url}/guides/dental-office-terminal-cleaning-checklist)
 - [Why Dental Hygienists & Assistants Shouldn't Clean the Office (Cost & Burnout Study)](${SITE.url}/guides/why-dental-hygienists-shouldnt-clean-the-office)
 - [Best Dental Office Cleaning Companies in Nassau County, NY (2026)](${SITE.url}/compare/best-dental-office-cleaning-nassau-county)

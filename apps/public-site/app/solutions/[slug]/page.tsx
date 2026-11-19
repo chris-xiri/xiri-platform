@@ -6,13 +6,13 @@ import { CTAButton } from '@/components/CTAButton';
 import { JsonLd } from '@/components/JsonLd';
 import { FAQ } from '@/components/FAQ';
 import { DLPSidebar } from '@/components/DLPSidebar';
+import { ClientLeadForm } from '@/components/ClientLeadForm';
+import { CaseStudySpotlight } from '@/components/CaseStudySpotlight';
+import { AskAnyAI } from '@/components/AskAnyAI';
 import seoData from '@/data/seo-data.json';
 import { CheckCircle, ArrowRight, Building2, Stethoscope, Shield, Users, FileText, Phone } from 'lucide-react';
 import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
-
 import { SOLUTIONS } from '@/data/solutions';
-
-
 import { DLP_SOLUTIONS, SPOKE_HUBS } from '@/data/dlp-solutions';
 import { SITE } from '@/lib/constants';
 
@@ -57,11 +57,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const cross = parseCrossProductSlug(slug);
     if (cross) {
         const townName = cross.location.name.split(',')[0].trim();
-        const title = `${cross.dlp.title} in ${cross.location.name} | XIRI Facility Solutions`;
+        const title = `${cross.dlp.title} in ${townName}, NY — $1M Insured & Verified | XIRI`;
         const localHook = (cross.location as any).localInsight
             ? `${(cross.location as any).localInsight.slice(0, 50)} `
             : '';
-        const description = `${localHook}${cross.dlp.title} in ${townName}, ${cross.location.region || 'NY'}. Compliance-grade protocols, $1M insured, nightly verified. Free site audit →`.slice(0, 155);
+        const description = `${localHook}${cross.dlp.title} in ${townName}, ${cross.location.region || 'NY'}. Compliance-grade protocols, $1M insured, nightly NFC verified. Free walkthrough →`.slice(0, 155);
         return {
             title,
             description,
@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (!page) return {};
 
     return {
-        title: `${page.title} | XIRI Facility Solutions`,
+        title: `${page.title} — $1M Insured & Verified | XIRI Facility Solutions`,
         description: page.metaDescription,
         alternates: {
             canonical: `${SITE.url}/solutions/${slug}`,
@@ -114,7 +114,7 @@ export default async function SolutionPage({ params }: Props) {
                     }} />
                 )}
                 <AuthorityBreadcrumb items={[{ label: 'Solutions', href: '/solutions' }, { label: solution.title }]} />
-                <Hero title={solution.heroTitle} subtitle={solution.heroSubtitle} ctaText="Get a Free Site Audit" />
+                <Hero title={solution.heroTitle} subtitle={solution.heroSubtitle} ctaText="Get a Free Site Audit" ctaLink="#audit" />
                 <section className="py-16 bg-slate-50 border-y border-slate-200">
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                         <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">{solution.problemTitle}</h2>
@@ -174,36 +174,27 @@ export default async function SolutionPage({ params }: Props) {
                         </div>
                     </section>
                 )}
+                <CaseStudySpotlight variant="compact" />
                 <FAQ items={solution.faqs} />
-                {/* ═══ CALCULATOR CTA ═══ */}
-                <section className="py-12 bg-sky-50 border-y border-sky-100">
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <h2 className="text-2xl font-bold text-slate-900 mb-3">
-                            💰 What Should Your Facility Management Cost?
-                        </h2>
-                        <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
-                            Use our free janitorial cleaning cost calculator to see commercial cleaning rates for your facility type, size, and state.
-                        </p>
-                        <Link
-                            href="/calculator"
-                            className="inline-block bg-sky-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-200"
-                        >
-                            Try the Cost Calculator →
-                        </Link>
-                    </div>
-                </section>
-                <section className="py-16 bg-slate-900 text-white">
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <h2 className="text-3xl font-bold mb-4">Ready to Simplify Your Facility?</h2>
-                        <p className="text-xl text-slate-300 mb-8">Book a free site audit. We&apos;ll walk your facility, build a custom scope, and show you exactly what XIRI looks like for your building.</p>
-                        <CTAButton href="/#audit" text="Get Your Free Site Audit" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                <section id="audit" className="py-20 bg-sky-900 text-white">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4">Ready to Simplify Your Facility?</h2>
+                            <p className="text-xl text-sky-100 mb-6">Book a free site audit. We&apos;ll walk your facility, build a custom scope, and show you exactly what XIRI looks like for your building.</p>
+                            <a href={`tel:${SITE.phone}`} className="inline-flex items-center gap-2 text-sky-200 hover:text-white font-semibold">
+                                <Phone className="w-5 h-5" /> Or call our Technical Project Desk: {SITE.phoneDisplay}
+                            </a>
+                        </div>
+                        <div>
+                            <ClientLeadForm industryName={solution.title} prefilledService={solution.relevantServices[0]} />
+                        </div>
                     </div>
                 </section>
             </div>
         );
     }
 
-    // ── Spoke Hub Pages (3) ──
+    // ── Spoke Hub Pages ──
     const hub = SPOKE_HUBS[slug];
     if (hub) {
         const hubDlps = hub.dlpSlugs.map(s => ({ slug: s, ...DLP_SOLUTIONS[s] })).filter(Boolean);
@@ -211,7 +202,7 @@ export default async function SolutionPage({ params }: Props) {
             <div className="min-h-screen bg-white">
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: hub.title, description: hub.metaDescription, url: `${SITE.url}/solutions/${slug}` }} />
                 <AuthorityBreadcrumb items={[{ label: 'Solutions', href: '/solutions' }, { label: hub.title }]} />
-                <Hero title={hub.heroTitle} subtitle={hub.heroSubtitle} ctaText="Get a Free Site Audit" />
+                <Hero title={hub.heroTitle} subtitle={hub.heroSubtitle} ctaText="Get a Free Site Audit" ctaLink="#audit" />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex flex-col lg:flex-row gap-12">
@@ -233,31 +224,57 @@ export default async function SolutionPage({ params }: Props) {
                         </div>
                     </div>
                 </section>
-                <section className="py-16 bg-slate-900 text-white">
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <h2 className="text-3xl font-bold mb-4">Need a Specialized Solution?</h2>
-                        <p className="text-xl text-slate-300 mb-8">Book a free site audit. We&apos;ll assess your facility&apos;s specific compliance requirements and build a protocol that fits.</p>
-                        <CTAButton href="/#audit" text="Get Your Free Site Audit" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                <CaseStudySpotlight variant="compact" />
+                <section id="audit" className="py-20 bg-sky-900 text-white">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4">Need a Specialized Solution?</h2>
+                            <p className="text-xl text-sky-100 mb-6">Book a free site audit. We&apos;ll assess your facility&apos;s specific compliance requirements and build a protocol that fits.</p>
+                        </div>
+                        <div>
+                            <ClientLeadForm industryName={hub.title} />
+                        </div>
                     </div>
                 </section>
             </div>
         );
     }
 
-    // ── DLP Pages (12) ──
+    // ── DLP Pages (Dental, ESD Floor Care, IoT Hardware, etc.) ──
     const dlp = DLP_SOLUTIONS[slug];
     if (dlp) {
         const relevantServices = seoData.services.filter(s => dlp.relevantServices.includes(s.slug));
         return (
             <div className="min-h-screen bg-white">
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: dlp.title, description: dlp.metaDescription, url: `${SITE.url}/solutions/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'Service', name: dlp.title, description: dlp.metaDescription, url: `${SITE.url}/solutions/${slug}`, provider: { '@type': 'Organization', '@id': `${SITE.url}/#organization` } }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: dlp.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
                 <AuthorityBreadcrumb items={[{ label: 'Solutions', href: '/solutions' }, { label: dlp.title }]} />
-                <Hero title={dlp.heroTitle} subtitle={dlp.heroSubtitle} ctaText="Get a Free Site Audit" />
+                <Hero title={dlp.heroTitle} subtitle={dlp.heroSubtitle} ctaText={`Scope My ${dlp.title}`} ctaLink="#audit" />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex flex-col lg:flex-row gap-12">
                             <div className="flex-1">
+                                {/* Direct Project / Technical Desk Callout */}
+                                <div className="mb-10 bg-sky-50 border border-sky-200 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div>
+                                        <p className="text-xs font-bold uppercase tracking-wider text-sky-600 mb-1">
+                                            Technical &amp; Compliance Project Desk · Nassau, Suffolk &amp; Queens
+                                        </p>
+                                        <p className="text-sm sm:text-base text-slate-800 font-medium">
+                                            Need an immediate quote or site walkthrough for <strong>{dlp.title}</strong>?
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
+                                        <a href={`tel:${SITE.phone}`} className="inline-flex items-center gap-2 bg-white border border-sky-300 text-sky-800 hover:bg-sky-100 font-bold px-4 py-2.5 rounded-xl text-sm transition-colors">
+                                            <Phone className="w-4 h-4 text-sky-600" />
+                                            {SITE.phoneDisplay}
+                                        </a>
+                                        <a href="#audit" className="inline-flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors">
+                                            Request Scope <ArrowRight className="w-4 h-4" />
+                                        </a>
+                                    </div>
+                                </div>
+
                                 {/* Content Sections */}
                                 {dlp.sections.map((section, i) => (
                                     <div key={i} className="mb-10">
@@ -269,7 +286,7 @@ export default async function SolutionPage({ params }: Props) {
                                 {/* Compliance Checklist (Layer 2) */}
                                 <div className="bg-slate-50 rounded-xl p-8 border border-slate-200 mb-10">
                                     <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                                        <Shield className="w-5 h-5 text-sky-600" /> Compliance Checklist
+                                        <Shield className="w-5 h-5 text-sky-600" /> Technical &amp; Compliance Checklist
                                     </h3>
                                     <div className="space-y-4">
                                         {dlp.complianceChecklist.map((item, i) => (
@@ -298,6 +315,8 @@ export default async function SolutionPage({ params }: Props) {
                                         </div>
                                     </div>
                                 )}
+
+                                <AskAnyAI variant="card" heading={`Ask AI About XIRI's ${dlp.title} Protocol`} />
                             </div>
                             <div className="lg:w-72 flex-shrink-0">
                                 <DLPSidebar category={dlp.sidebarCategory} currentSlug={slug} />
@@ -305,29 +324,21 @@ export default async function SolutionPage({ params }: Props) {
                         </div>
                     </div>
                 </section>
+                <CaseStudySpotlight variant="compact" />
                 <FAQ items={dlp.faqs} />
-                {/* ═══ CALCULATOR CTA ═══ */}
-                <section className="py-12 bg-sky-50 border-y border-sky-100">
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <h2 className="text-2xl font-bold text-slate-900 mb-3">
-                            💰 Estimate Your Cleaning Cost
-                        </h2>
-                        <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
-                            Use our free commercial cleaning cost calculator to see what janitorial services should cost for your office, medical facility, or commercial space.
-                        </p>
-                        <Link
-                            href="/calculator"
-                            className="inline-block bg-sky-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-200"
-                        >
-                            Try the Cost Calculator →
-                        </Link>
-                    </div>
-                </section>
-                <section className="py-16 bg-slate-900 text-white">
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <h2 className="text-3xl font-bold mb-4">Ready to Upgrade Your Protocol?</h2>
-                        <p className="text-xl text-slate-300 mb-8">Book a free site audit. We&apos;ll assess your facility and build a compliance-ready cleaning protocol.</p>
-                        <CTAButton href="/#audit" text="Get Your Free Site Audit" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                {/* ═══ INLINE LEAD FORM ═══ */}
+                <section id="audit" className="py-20 bg-sky-900 text-white">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4">Get a Quote for {dlp.title}</h2>
+                            <p className="text-xl text-sky-100 mb-6">Enter your email and facility zip code in Nassau County, Suffolk County, or Queens. Our technical operations team will schedule a walkthrough and build your custom protocol within 48 hours.</p>
+                            <a href={`tel:${SITE.phone}`} className="inline-flex items-center gap-2 text-sky-200 hover:text-white font-semibold">
+                                <Phone className="w-5 h-5" /> Direct Project Desk: {SITE.phoneDisplay}
+                            </a>
+                        </div>
+                        <div>
+                            <ClientLeadForm industryName={dlp.title} prefilledService={dlp.relevantServices[0]} />
+                        </div>
                     </div>
                 </section>
             </div>
@@ -338,6 +349,7 @@ export default async function SolutionPage({ params }: Props) {
     const cross = parseCrossProductSlug(slug);
     if (cross) {
         const { dlp, dlpSlug, location } = cross;
+        const townName = location.name.split(',')[0].trim();
         const relevantServices = seoData.services.filter(s => dlp.relevantServices.includes(s.slug));
         return (
             <div className="min-h-screen bg-white">
@@ -352,7 +364,7 @@ export default async function SolutionPage({ params }: Props) {
                     url: `${SITE.url}/solutions/${slug}`,
                     telephone: '+1-516-399-0350',
                     priceRange: '$$',
-                    address: { '@type': 'PostalAddress', addressLocality: location.name.split(',')[0], addressRegion: location.state, addressCountry: 'US' },
+                    address: { '@type': 'PostalAddress', addressLocality: townName, addressRegion: location.state, addressCountry: 'US' },
                     ...(location.latitude ? { geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude } } : {}),
                     openingHoursSpecification: { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], opens: '00:00', closes: '23:59' },
                 }} />
@@ -362,34 +374,24 @@ export default async function SolutionPage({ params }: Props) {
                     name: `${dlp.title} in ${location.name}`,
                     description: dlp.metaDescription,
                     provider: { '@type': 'LocalBusiness', '@id': `${SITE.url}/solutions/${slug}#business` },
-                    areaServed: { '@type': 'Place', name: `${location.name.split(',')[0]}, ${location.state}` },
+                    areaServed: { '@type': 'Place', name: `${townName}, ${location.state}` },
                     serviceType: dlp.title,
                 }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: dlp.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
                 <AuthorityBreadcrumb items={[
                     { label: 'Solutions', href: '/solutions' },
                     { label: dlp.title, href: `/solutions/${dlpSlug}` },
-                    { label: location.name.split(',')[0] },
+                    { label: townName },
                 ]} />
-                <Hero title={`${dlp.heroTitle} in ${location.name.split(',')[0]}`} subtitle={dlp.heroSubtitle} ctaText="Get a Free Site Audit" />
+                <Hero title={`${dlp.heroTitle} in ${townName}`} subtitle={dlp.heroSubtitle} ctaText={`Get a ${townName} Quote`} ctaLink="#audit" />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex flex-col lg:flex-row gap-12">
                             <div className="flex-1">
-                                {/* Embedded Map (Layer 3) */}
-                                {location.latitude && (
-                                    <div className="mb-10 rounded-xl overflow-hidden border border-slate-200">
-                                        <iframe
-                                            title={`Map of ${location.name}`}
-                                            width="100%" height="300" style={{ border: 0 }} loading="lazy" referrerPolicy="no-referrer-when-downgrade"
-                                            src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${location.latitude},${location.longitude}&zoom=14`}
-                                        />
-                                    </div>
-                                )}
                                 {/* Local Context */}
                                 <div className="mb-10 bg-sky-50 rounded-xl p-6 border border-sky-100">
                                     <h2 className="text-xl font-bold text-slate-900 mb-3 flex items-center gap-2">
-                                        <Building2 className="w-5 h-5 text-sky-600" /> Serving {location.name.split(',')[0]}
+                                        <Building2 className="w-5 h-5 text-sky-600" /> Serving {townName} ({location.zipCodes?.join(', ') || location.region})
                                     </h2>
                                     <p className="text-slate-600">
                                         XIRI provides {dlp.title.toLowerCase()} services for facilities in {location.name} and the surrounding {location.region || ''} area.
@@ -406,7 +408,7 @@ export default async function SolutionPage({ params }: Props) {
                                 {/* Compliance Checklist */}
                                 <div className="bg-slate-50 rounded-xl p-8 border border-slate-200 mb-10">
                                     <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                                        <Shield className="w-5 h-5 text-sky-600" /> Compliance Checklist
+                                        <Shield className="w-5 h-5 text-sky-600" /> Technical &amp; Compliance Checklist
                                     </h3>
                                     <div className="space-y-4">
                                         {dlp.complianceChecklist.map((item, i) => (
@@ -423,7 +425,7 @@ export default async function SolutionPage({ params }: Props) {
                                 {/* Related Services */}
                                 {relevantServices.length > 0 && (
                                     <div className="mb-10">
-                                        <h3 className="text-xl font-bold text-slate-900 mb-4">Related Services in {location.name.split(',')[0]}</h3>
+                                        <h3 className="text-xl font-bold text-slate-900 mb-4">Related Services in {townName}</h3>
                                         <div className="grid sm:grid-cols-2 gap-3">
                                             {relevantServices.map((s: any) => (
                                                 <Link key={s.slug} href={`/services/${s.slug}`} className="group flex items-center justify-between bg-white rounded-lg p-4 border border-slate-200 hover:border-sky-300 transition-colors">
@@ -447,12 +449,20 @@ export default async function SolutionPage({ params }: Props) {
                         </div>
                     </div>
                 </section>
+                <CaseStudySpotlight variant="compact" />
                 <FAQ items={dlp.faqs} />
-                <section className="py-16 bg-slate-900 text-white">
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <h2 className="text-3xl font-bold mb-4">Need {dlp.title} in {location.name.split(',')[0]}?</h2>
-                        <p className="text-xl text-slate-300 mb-8">Book a free site audit. We&apos;ll assess your facility and build a compliance-ready protocol.</p>
-                        <CTAButton href="/#audit" text="Get Your Free Site Audit" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                <section id="audit" className="py-20 bg-sky-900 text-white">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4">Need {dlp.title} in {townName}?</h2>
+                            <p className="text-xl text-sky-100 mb-6">Book a free site audit in {townName}. We&apos;ll assess your facility and build a compliance-ready protocol.</p>
+                            <a href={`tel:${SITE.phone}`} className="inline-flex items-center gap-2 text-sky-200 hover:text-white font-semibold">
+                                <Phone className="w-5 h-5" /> Direct Project Desk: {SITE.phoneDisplay}
+                            </a>
+                        </div>
+                        <div>
+                            <ClientLeadForm industryName={`${dlp.title} - ${townName}`} prefilledService={dlp.relevantServices[0]} />
+                        </div>
                     </div>
                 </section>
             </div>
@@ -461,4 +471,3 @@ export default async function SolutionPage({ params }: Props) {
 
     notFound();
 }
-
