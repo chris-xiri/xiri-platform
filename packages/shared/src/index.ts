@@ -119,7 +119,10 @@ export interface LeadMergeVars extends FacilityPhrases {
     contactEmail: string;
     facilityType: string;
     address: string;
+    city: string;
     squareFootage: string;
+    practiceType: string;
+    keyObservation: string;
 }
 
 export interface ContractorMergeVars {
@@ -148,18 +151,21 @@ export interface ReferralMergeVars {
  */
 export const EMAIL_MERGE_VARIABLES = {
     lead: {
-        businessName: 'Garden City Medical Associates',
-        contactName: 'Dr. Smith',
-        contactFirstName: 'Dr.',
-        contactEmail: 'dr.smith@gcmedical.com',
-        facilityType: 'Medical Urgent Care',
-        address: '123 Main St, Garden City, NY 11530',
+        businessName: 'Garden City Dental & Orthodontics',
+        contactName: 'Sarah Chen',
+        contactFirstName: 'Sarah',
+        contactEmail: 'sarah@gcdentalny.com',
+        facilityType: 'Dental Office',
+        address: '123 Franklin Ave, Garden City, NY 11530',
+        city: 'Garden City',
         squareFootage: '3,200 sq ft',
+        practiceType: 'dental practice',
+        keyObservation: 'a 6-operatory private dental practice in Garden City focusing on family and cosmetic dentistry',
         // Facility-phrase sample values — satisfies will error if a key is missing
-        spaceNoun: 'clinic',
-        cadencePhrase: 'nightly clinical-grade sanitation',
-        facilityCategory: 'healthcare facilities',
-        serviceHook: 'infection-control cleaning that keeps your clinic audit-ready',
+        spaceNoun: 'office',
+        cadencePhrase: 'nightly dental suite cleaning',
+        facilityCategory: 'dental practices',
+        serviceHook: 'sterilization-area and operatory cleaning that safeguards your OSHA compliance',
         coreOpsPhrase: 'patient care',
     } satisfies LeadMergeVars,
     contractor: {
@@ -193,8 +199,8 @@ export interface VariableGroup {
 export const EMAIL_VARIABLE_GROUPS: Record<string, VariableGroup[]> = {
     lead: [
         { label: 'Contact', icon: 'user', vars: ['contactName', 'contactFirstName', 'contactEmail'] },
-        { label: 'Company', icon: 'building-2', vars: ['businessName', 'facilityType', 'address', 'squareFootage'] },
-        { label: 'Facility', icon: 'sparkles', vars: ['spaceNoun', 'cadencePhrase', 'facilityCategory', 'serviceHook', 'coreOpsPhrase'] },
+        { label: 'Company', icon: 'building-2', vars: ['businessName', 'facilityType', 'address', 'city', 'squareFootage'] },
+        { label: 'SDR Intelligence', icon: 'sparkles', vars: ['practiceType', 'keyObservation', 'spaceNoun', 'cadencePhrase', 'facilityCategory', 'serviceHook', 'coreOpsPhrase'] },
     ],
     contractor: [
         { label: 'Contact', icon: 'user', vars: ['contactName'] },
@@ -385,7 +391,17 @@ export function inferFacilityType(searchQuery?: string): FacilityType | null {
     if (q.includes('dialysis')) return 'medical_dialysis';
     if (q.includes('urgent care')) return 'medical_urgent_care';
     if (q.includes('surgery') || q.includes('surgical')) return 'medical_surgery';
-    if (q.includes('dental') || q.includes('dentist')) return 'medical_dental';
+    if (
+        q.includes('dental') ||
+        q.includes('dentist') ||
+        q.includes('orthodont') ||
+        q.includes('endodont') ||
+        q.includes('periodont') ||
+        q.includes('prosthodont') ||
+        q.includes('oral surg') ||
+        q.includes('invisalign') ||
+        q.includes('braces')
+    ) return 'medical_dental';
     if (q.includes('veterinary') || q.includes('vet clinic') || q.includes('animal hospital')) return 'medical_veterinary';
     if (q.includes('physical therapy') || q.includes('physical therapist') || q.includes('physiotherapy') || q.includes('pt clinic') || q.includes('rehab center') || q.includes('rehabilitation')) return 'medical_physical_therapy';
     if (q.includes('chiropractic') || q.includes('chiropractor')) return 'medical_private';
@@ -404,6 +420,24 @@ export function inferFacilityType(searchQuery?: string): FacilityType | null {
     if (q.includes('funeral') || q.includes('mortuary') || q.includes('cremation')) return 'funeral_home';
     if (q.includes('office')) return 'office_general';
     return null;
+}
+
+/**
+ * Determine whether a practice is orthodontic-focused so SDR email sequences
+ * and copy can tailor to open-bay chairs, bonding dust, iTero scanners, and
+ * family/teen waiting areas.
+ */
+export function isOrthodonticPractice(input?: {
+    clinicType?: string | null;
+    businessName?: string | null;
+    searchQuery?: string | null;
+    practiceSpecialty?: string | null;
+}): boolean {
+    if (!input) return false;
+    const typeStr = `${input.clinicType || ''} ${input.practiceSpecialty || ''}`.toLowerCase();
+    if (typeStr.includes('ortho')) return true;
+    const text = `${input.businessName || ''} ${input.searchQuery || ''}`.toLowerCase();
+    return /\b(orthodont|braces|aligner|invisalign)\b/.test(text) || text.includes('orthodont');
 }
 
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'walkthrough' | 'proposal' | 'quoted' | 'won' | 'lost' | 'churned';

@@ -30,6 +30,7 @@ const db = admin.firestore();
  */
 export const handleUnsubscribe = onRequest({
     cors: true,
+    secrets: ["RESEND_API_KEY"],
 }, async (req, res) => {
     // Support both new (?id=&type=) and legacy (?vendorId=) formats
     const entityType = (req.query.type as string) || 'vendor';

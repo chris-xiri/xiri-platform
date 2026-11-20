@@ -8,7 +8,9 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { sendEmail, getTemplate, replaceVariables, injectFacilityPhrases } from "../utils/emailUtils";
+import { sendEmail, getTemplate, replaceVariables, injectFacilityPhrases, parseAddress } from "../utils/emailUtils";
+import { cleanBusinessName, isOrthodonticPractice } from "@xiri/shared";
+import { extractContactFirstName } from "../utils/leadSequenceEngine";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -135,12 +137,27 @@ export const sendSingleLeadEmail = onCall(
     }
 
     // ── Build merge variables ──
-    const variables: Record<string, string> = {
+    const cleanBiz = cleanBusinessName(businessName) || businessName;
+    const parsedAddr = parseAddress(lead.address);
+    const city = lead.city || parsedAddr.city || (lead.address ? lead.address.split(',')[0].trim() : 'Metro NY');
+    const isOrtho = isOrthodonticPractice({
+        clinicType: lead.dossier?.clinicType,
+        practiceSpecialty: lead.practiceSpecialty,
         businessName,
-        contactName,
-        facilityType: lead.facilityType || '',
+        searchQuery: lead.searchQuery,
+    });
+    const variables: Record<string, string> = {
+        businessName: cleanBiz,
+        cleanBizName: cleanBiz,
+        contactName: contactName || 'there',
+        contactFirstName: extractContactFirstName(contactName),
+        contactEmail,
+        facilityType: lead.facilityType || 'medical_dental',
         address: lead.address || '',
-        squareFootage: lead.squareFootage || '',
+        city,
+        squareFootage: lead.squareFootage ? String(lead.squareFootage) : '',
+        practiceType: isOrtho ? 'orthodontic practice' : 'dental practice',
+        keyObservation: lead.dossier?.keyObservation || '',
         email: contactEmail,
     };
 
@@ -156,11 +173,11 @@ export const sendSingleLeadEmail = onCall(
     const mergedBody = replaceVariables(templateBody, variables);
 
     // Convert plain text body to HTML (preserve line breaks)
-    const htmlBody = mergedBody
+    const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${mergedBody
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/\n/g, '<br>');
+        .replace(/\n/g, '<br/>')}</div>`;
 
     logger.info(`[SendSingle] Sending "${templateId}" to ${contactEmail} for lead ${leadId}`);
 
@@ -170,10 +187,14 @@ export const sendSingleLeadEmail = onCall(
         mergedSubject,
         htmlBody,
         undefined, // attachments
-        'XIRI Facility Solutions <chris@xiri.ai>',
+        'Chris Leung — XIRI <chris@xiri.ai>',
         leadId,
         templateId,
         'lead',
+        {
+            contactId: contactId || undefined,
+            skipHeader: true,
+        },
     );
 
     if (!result.success) {

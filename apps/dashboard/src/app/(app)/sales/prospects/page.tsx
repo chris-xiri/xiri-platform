@@ -108,13 +108,16 @@ export default function ProspectsPage() {
     const [configSaving, setConfigSaving] = useState(false);
     const [editQueries, setEditQueries] = useState<string[]>([]);
     const [editLocations, setEditLocations] = useState<string[]>([]);
-    const [editTarget, setEditTarget] = useState(100);
-    const [editMaxDailyOutreach, setEditMaxDailyOutreach] = useState(25);
+    const [editTarget, setEditTarget] = useState(60);
+    const [editMaxDailyOutreach, setEditMaxDailyOutreach] = useState(30);
+    const [editAutoEnrollEnabled, setEditAutoEnrollEnabled] = useState(true);
+    const [editAutoEnrollMinIcp, setEditAutoEnrollMinIcp] = useState(75);
     const [editEnabled, setEditEnabled] = useState(true);
     const [editExclude, setEditExclude] = useState<string[]>([]);
     const [editSdrProfiler, setEditSdrProfiler] = useState<string>(DEFAULT_UI_SDR_PROFILER_PROMPT);
     const [editSdrCopywriter, setEditSdrCopywriter] = useState<string>(DEFAULT_UI_SDR_COPYWRITER_PROMPT);
     const [editSdrIntentTriage, setEditSdrIntentTriage] = useState<string>(DEFAULT_UI_SDR_INTENT_TRIAGE_PROMPT);
+    const [expandedDrafts, setExpandedDrafts] = useState<Set<string>>(new Set());
 
     // Client Trigger (Job Board) config state
     const [triggerConfig, setTriggerConfig] = useState<ClientTriggerConfig | null>(null);
@@ -177,16 +180,32 @@ export default function ProspectsPage() {
     useEffect(() => {
         const loadConfig = async () => {
             try {
-                const snap = await getDoc(doc(db, 'prospecting_config', 'default'));
+                const [snap, profilerSnap, copywriterSnap, triageSnap] = await Promise.all([
+                    getDoc(doc(db, 'prospecting_config', 'default')),
+                    getDoc(doc(db, 'prompts', 'sdr_profiler')),
+                    getDoc(doc(db, 'prompts', 'sdr_copywriter')),
+                    getDoc(doc(db, 'prompts', 'sdr_intent_triage')),
+                ]);
                 if (snap.exists()) {
                     const data = snap.data() as ProspectingConfig;
                     setConfig(data);
                     setEditQueries(data.queries || []);
                     setEditLocations(data.locations || []);
-                    setEditTarget(data.dailyTarget || 100);
-                    setEditMaxDailyOutreach(data.maxDailyOutreach ?? 25);
+                    setEditTarget(data.dailyTarget || 60);
+                    setEditMaxDailyOutreach(data.maxDailyOutreach ?? 30);
+                    setEditAutoEnrollEnabled(data.autoEnrollEnabled !== false);
+                    setEditAutoEnrollMinIcp(data.autoEnrollMinIcp ?? 75);
                     setEditEnabled(data.enabled !== false);
                     setEditExclude(data.excludePatterns || []);
+                }
+                if (profilerSnap.exists() && profilerSnap.data()?.content) {
+                    setEditSdrProfiler(profilerSnap.data()!.content);
+                }
+                if (copywriterSnap.exists() && copywriterSnap.data()?.content) {
+                    setEditSdrCopywriter(copywriterSnap.data()!.content);
+                }
+                if (triageSnap.exists() && triageSnap.data()?.content) {
+                    setEditSdrIntentTriage(triageSnap.data()!.content);
                 }
             } catch (err) {
                 console.error('Failed to load prospecting config:', err);
@@ -237,22 +256,27 @@ export default function ProspectsPage() {
         if (templates.length > 0 && sequences.length > 0) return;
         try {
             const [tSnap, sSnap] = await Promise.all([
-                getDocs(query(collection(db, 'templates'), where('category', '==', 'lead_outreach'))),
+                getDocs(collection(db, 'templates')),
                 getDocs(collection(db, 'sequences')),
             ]);
-            setTemplates(tSnap.docs.map(d => ({
-                id: d.id,
-                name: d.data().name || d.id,
-                subject: d.data().subject || '',
-                category: d.data().category,
-            })));
-            setSequences(sSnap.docs.map(d => ({
-                id: d.id,
-                name: d.data().name || d.id,
-                description: d.data().description,
-                stepCount: d.data().steps?.length || 0,
-                category: d.data().category,
-            })));
+            const BLOCKED_CATEGORIES = new Set(['vendor', 'vendor_email']);
+            setTemplates(tSnap.docs
+                .filter(d => !BLOCKED_CATEGORIES.has(d.data().category))
+                .map(d => ({
+                    id: d.id,
+                    name: d.data().name || d.id,
+                    subject: d.data().subject || '',
+                    category: d.data().category,
+                })));
+            setSequences(sSnap.docs
+                .filter(d => !BLOCKED_CATEGORIES.has(d.data().category))
+                .map(d => ({
+                    id: d.id,
+                    name: d.data().name || d.id,
+                    description: d.data().description,
+                    stepCount: d.data().steps?.length || 0,
+                    category: d.data().category,
+                })));
         } catch (err) {
             console.error('Failed to load templates/sequences:', err);
         }
@@ -852,19 +876,47 @@ export default function ProspectsPage() {
                 queries: dedup(editQueries),
                 locations: dedup(editLocations),
                 dailyTarget: editTarget,
+                maxDailyOutreach: editMaxDailyOutreach,
+                autoEnrollEnabled: editAutoEnrollEnabled,
+                autoEnrollMinIcp: editAutoEnrollMinIcp,
                 enabled: editEnabled,
                 excludePatterns: dedup(editExclude),
+                updatedAt: new Date(),
             };
-            await setDoc(doc(db, 'prospecting_config', 'default'), newConfig, { merge: true });
+            await Promise.all([
+                setDoc(doc(db, 'prospecting_config', 'default'), newConfig, { merge: true }),
+                setDoc(doc(db, 'prompts', 'sdr_profiler'), {
+                    name: 'Agent 1: Dental & Ortho ICP Profiler',
+                    content: editSdrProfiler,
+                    updatedAt: new Date(),
+                }, { merge: true }),
+                setDoc(doc(db, 'prompts', 'sdr_copywriter'), {
+                    name: 'Agent 2: Dental & Ortho Funnel Copywriter (Touch 1)',
+                    content: editSdrCopywriter,
+                    updatedAt: new Date(),
+                }, { merge: true }),
+                setDoc(doc(db, 'prompts', 'sdr_intent_triage'), {
+                    name: 'Agent 3: Inbound Reply & Intent Triage Guard',
+                    content: editSdrIntentTriage,
+                    updatedAt: new Date(),
+                }, { merge: true }),
+            ]);
             setConfig(prev => prev ? { ...prev, ...newConfig } : newConfig as ProspectingConfig);
             setEditQueries(newConfig.queries);
             setEditLocations(newConfig.locations);
             setEditExclude(newConfig.excludePatterns);
-            toast({ title: 'Config saved', description: 'Duplicates automatically removed.' });
+            toast({ title: 'SDR Studio & Config saved', description: 'Prompts, auto-enroll threshold, daily cap, and ICP targets updated.' });
         } catch (err) {
             toast({ title: 'Save failed', description: String(err) });
         }
         setConfigSaving(false);
+    };
+
+    const handleResetDentalPrompts = () => {
+        setEditSdrProfiler(DEFAULT_UI_SDR_PROFILER_PROMPT);
+        setEditSdrCopywriter(DEFAULT_UI_SDR_COPYWRITER_PROMPT);
+        setEditSdrIntentTriage(DEFAULT_UI_SDR_INTENT_TRIAGE_PROMPT);
+        toast({ title: 'Dental & Ortho Metro NY prompts loaded', description: 'Click Save Config to persist them to Firestore.' });
     };
 
     // ── Save client trigger config ─────────────────────────────────
@@ -908,11 +960,14 @@ export default function ProspectsPage() {
                 setConfig(data);
                 setEditQueries(data.queries || []);
                 setEditLocations(data.locations || []);
-                setEditTarget(data.dailyTarget || 100);
+                setEditTarget(data.dailyTarget || 60);
+                setEditMaxDailyOutreach(data.maxDailyOutreach ?? 30);
+                setEditAutoEnrollEnabled(data.autoEnrollEnabled !== false);
+                setEditAutoEnrollMinIcp(data.autoEnrollMinIcp ?? 75);
                 setEditEnabled(data.enabled !== false);
                 setEditExclude(data.excludePatterns || []);
             }
-            toast({ title: 'Config seeded!', description: 'ICP engine queries and locations are now active.' });
+            toast({ title: 'Dental & Ortho Metro NY ICP seeded!', description: 'Long Island, NYC 5 Boroughs, Yonkers & Westchester targets are now active.' });
         } catch (err) {
             toast({ title: 'Seed failed', description: String(err), variant: 'destructive' });
         }
@@ -945,6 +1000,13 @@ export default function ProspectsPage() {
                 case 'remove_location':
                     setEditLocations(prev => prev.filter(l => l !== action.location));
                     await setDoc(configRef, { locations: editLocations.filter(l => l !== action.location) }, { merge: true });
+                    break;
+                case 'add_location':
+                    if (!editLocations.includes(action.location)) {
+                        const next = [...editLocations, action.location];
+                        setEditLocations(next);
+                        await setDoc(configRef, { locations: next }, { merge: true });
+                    }
                     break;
                 case 'add_exclude': {
                     const next = [...editExclude, action.pattern];
@@ -1065,7 +1127,7 @@ export default function ProspectsPage() {
                 </div>
             </div>
 
-            {/* ICP Config Panel */}
+            {/* ICP Config & Autonomous SDR Studio Panel */}
             <ConfigPanel
                 configOpen={configOpen}
                 onClose={() => setConfigOpen(false)}
@@ -1076,6 +1138,12 @@ export default function ProspectsPage() {
                 setEditLocations={setEditLocations}
                 editTarget={editTarget}
                 setEditTarget={setEditTarget}
+                editMaxDailyOutreach={editMaxDailyOutreach}
+                setEditMaxDailyOutreach={setEditMaxDailyOutreach}
+                editAutoEnrollEnabled={editAutoEnrollEnabled}
+                setEditAutoEnrollEnabled={setEditAutoEnrollEnabled}
+                editAutoEnrollMinIcp={editAutoEnrollMinIcp}
+                setEditAutoEnrollMinIcp={setEditAutoEnrollMinIcp}
                 editEnabled={editEnabled}
                 setEditEnabled={setEditEnabled}
                 editExclude={editExclude}
@@ -1087,6 +1155,13 @@ export default function ProspectsPage() {
                 setEditTriggerExclude={setEditTriggerExclude}
                 onSaveTriggerConfig={handleSaveTriggerConfig}
                 isSavingTrigger={triggerConfigSaving}
+                editSdrProfiler={editSdrProfiler}
+                setEditSdrProfiler={setEditSdrProfiler}
+                editSdrCopywriter={editSdrCopywriter}
+                setEditSdrCopywriter={setEditSdrCopywriter}
+                editSdrIntentTriage={editSdrIntentTriage}
+                setEditSdrIntentTriage={setEditSdrIntentTriage}
+                onResetDentalPrompts={handleResetDentalPrompts}
             />
 
             {/* AI Recommendations Panel */}
@@ -1558,6 +1633,61 @@ export default function ProspectsPage() {
                                         )}
                                         {prospect.triggerData && (
                                             <div className="text-[10px] text-indigo-800 truncate font-medium">Hiring: {prospect.triggerData.jobTitle}</div>
+                                        )}
+                                        {(prospect.dossier || prospect.autoEnrolled || prospect.practiceSpecialty) && (
+                                            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                                {typeof prospect.dossier?.icpScore === 'number' && (
+                                                    <Badge className={`text-[10px] px-1.5 py-0 h-4 font-semibold border ${prospect.dossier.icpScore >= 75 ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : prospect.dossier.icpScore >= 50 ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-700 border-slate-300'}`}>
+                                                        ICP {prospect.dossier.icpScore}
+                                                    </Badge>
+                                                )}
+                                                {(prospect.dossier?.clinicType || prospect.practiceSpecialty) && (
+                                                    <Badge className={`text-[10px] px-1.5 py-0 h-4 font-semibold border ${(prospect.dossier?.clinicType || prospect.practiceSpecialty) === 'ortho' ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-sky-100 text-sky-900 border-sky-300'}`}>
+                                                        {(prospect.dossier?.clinicType || prospect.practiceSpecialty) === 'ortho'
+                                                            ? 'Orthodontics'
+                                                            : String(prospect.dossier?.clinicType || prospect.practiceSpecialty).replace(/_/g, ' ')}
+                                                    </Badge>
+                                                )}
+                                                {prospect.dossier?.estimatedOperatories ? (
+                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 text-muted-foreground">
+                                                        ~{prospect.dossier.estimatedOperatories} chairs
+                                                    </Badge>
+                                                ) : null}
+                                                {prospect.autoEnrolled && (
+                                                    <Badge className="text-[10px] px-1.5 py-0 h-4 bg-violet-100 text-violet-900 border border-violet-300 font-semibold">
+                                                        <Zap className="w-2.5 h-2.5 mr-0.5" />Auto-Enrolled
+                                                    </Badge>
+                                                )}
+                                                {prospect.outreachDraft && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setExpandedDrafts(prev => {
+                                                                const next = new Set(prev);
+                                                                if (next.has(prospect.id)) next.delete(prospect.id);
+                                                                else next.add(prospect.id);
+                                                                return next;
+                                                            });
+                                                        }}
+                                                        className="text-[10px] px-1.5 py-0 h-4 inline-flex items-center gap-0.5 rounded border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 font-medium"
+                                                    >
+                                                        <Sparkles className="w-2.5 h-2.5" />
+                                                        {expandedDrafts.has(prospect.id) ? 'Hide AI Draft' : 'Preview AI Email'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                        {prospect.dossier?.keyObservation && (
+                                            <p className="text-[11px] text-muted-foreground line-clamp-2 italic">
+                                                {prospect.dossier.keyObservation}
+                                            </p>
+                                        )}
+                                        {expandedDrafts.has(prospect.id) && prospect.outreachDraft && (
+                                            <div className="mt-1.5 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-xs space-y-1" onClick={e => e.stopPropagation()}>
+                                                <div className="font-semibold text-foreground">Subject: {prospect.outreachDraft.subject}</div>
+                                                <div className="text-muted-foreground whitespace-pre-line text-[11px] leading-relaxed">{prospect.outreachDraft.body}</div>
+                                            </div>
                                         )}
                                     </div>
                                     {/* Contact Zone */}

@@ -20,7 +20,7 @@ import * as logger from "firebase-functions/logger";
 import * as crypto from "crypto";
 import { db } from "../utils/firebase";
 import { searchJobPostings, JOB_TRIGGER_QUERIES, DEFAULT_EXCLUDED_EMPLOYERS } from "../agents/clientTriggerSourcer";
-import { runEnrichmentWaterfall } from "../utils/enrichmentProviders";
+import { searchWebForEmail } from "../utils/websiteScraper";
 import { DASHBOARD_CORS } from "../utils/cors";
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -95,12 +95,13 @@ async function loadSeenSet(): Promise<Set<string>> {
         }
     }
 
-    // 2. All CRM companies
+    // 2. All CRM companies (check both businessName and legacy name)
     const companiesSnap = await db.collection("companies")
-        .select("name", "phone", "website", "address")
+        .select("businessName", "name", "phone", "website", "address")
         .get();
     for (const doc of companiesSnap.docs) {
         const d = doc.data();
+        if (d.businessName) seen.add(normalizeName(d.businessName));
         if (d.name) seen.add(normalizeName(d.name));
         if (d.phone) {
             const cleaned = d.phone.replace(/[^0-9]/g, '');
@@ -219,16 +220,22 @@ async function runClientTriggerPipeline() {
                         continue;
                     }
 
-                    // Try to enrich with website + email
+                    // Try to enrich with email/phone via Serper web search
                     let enrichedData: any = {};
                     try {
-                        const enrichResult = await runEnrichmentWaterfall(
+                        const webResult = await searchWebForEmail(
                             job.employerName,
-                            job.location,
-                            undefined, // no website yet
-                            { serperApiKey: process.env.SERPER_API_KEY!, hunterApiKey: process.env.HUNTER_API_KEY }
+                            job.location || location,
+                            undefined,
+                            process.env.SERPER_API_KEY!
                         );
-                        enrichedData = enrichResult;
+                        enrichedData = {
+                            contactEmail: webResult.email || null,
+                            phone: webResult.phone || null,
+                            facebookUrl: webResult.facebookUrl || null,
+                            emailSource: webResult.source || 'serper_search',
+                            emailConfidence: webResult.email ? 'medium' : 'low',
+                        };
                     } catch (err: any) {
                         logger.warn(`[ClientTrigger] Enrichment failed for "${job.employerName}": ${err.message}`);
                     }

@@ -129,6 +129,11 @@ export const addProspectsToCrm = onCall({
                 linkedinUrl: prospect.linkedinUrl || null,
                 rating: prospect.rating || null,
                 facilityType,
+                practiceSpecialty: prospect.practiceSpecialty || prospect.dossier?.clinicType || null,
+                dossier: prospect.dossier || null,
+                outreachDraft: prospect.outreachDraft || null,
+                searchQuery: prospect.searchQuery || null,
+                searchLocation: prospect.searchLocation || null,
                 source: isReferral ? 'referral' : (prospect.source || 'prospector'),
                 ...(isReferral ? {
                     leadType: 'referral_partnership',

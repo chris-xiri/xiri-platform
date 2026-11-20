@@ -80,8 +80,29 @@ const ALLOWED_SERVICE_COUNTY_TOKENS = new Set(
     SERVICE_REGIONS.map(r => normalizeToken(r.county))
 );
 const ALLOWED_SERVICE_CITY_TOKENS = new Set(
-    SERVICE_REGIONS.flatMap(r => r.towns.map(t => normalizeToken(t)))
+    SERVICE_REGIONS.flatMap(r => [
+        ...r.postalCities.map(c => normalizeToken(c)),
+        ...r.towns.map(t => normalizeToken(t.split(',')[0])),
+    ])
 );
+const ALLOWED_ZIP_PREFIXES = new Set(
+    SERVICE_REGIONS.flatMap(r => r.zipPrefixes)
+);
+
+function extractZipPrefix(address: string): string | null {
+    const match = address.match(/\b(\d{5})(?:-\d{4})?\b/);
+    return match ? match[1].slice(0, 3) : null;
+}
+
+function findRegionForRequestedLocation(requestedLocation: string): (typeof SERVICE_REGIONS)[number] | null {
+    const normalized = normalizeToken(requestedLocation);
+    for (const region of SERVICE_REGIONS) {
+        if (normalized.includes(normalizeToken(region.county))) return region;
+        if (region.postalCities.some(c => normalized.includes(normalizeToken(c)))) return region;
+        if (region.towns.some(t => normalized.includes(normalizeToken(t.split(',')[0])))) return region;
+    }
+    return null;
+}
 
 function extractCityTokenFromAddress(address: string): string | null {
     const parts = address.split(',').map(p => normalizeWhitespace(p)).filter(Boolean);
@@ -103,6 +124,9 @@ function extractCountyTokenFromAddress(address: string): string | null {
 function isInsideCoreServiceArea(vendorLocation: string | undefined): boolean {
     if (!vendorLocation) return false;
     if (!addressHasState(vendorLocation, ALLOWED_SERVICE_STATE)) return false;
+
+    const zipPrefix = extractZipPrefix(vendorLocation);
+    if (zipPrefix && ALLOWED_ZIP_PREFIXES.has(zipPrefix)) return true;
 
     const city = extractCityTokenFromAddress(vendorLocation);
     if (city && ALLOWED_SERVICE_CITY_TOKENS.has(city)) return true;
@@ -146,7 +170,23 @@ function vendorMatchesLocationConstraint(vendorLocation: string | undefined, req
         return false;
     }
 
-    if (hasCityConstraint && !addressContainsCity(vendorLocation, constraint.city!)) {
+    if (hasCityConstraint) {
+        // Direct town/city match (e.g. Garden City, Yonkers, White Plains, Flushing)
+        if (addressContainsCity(vendorLocation, constraint.city!)) return true;
+
+        // NYC Borough neighborhood match (e.g. searching "Upper East Side, Manhattan, NY"
+        // returns "123 E 75th St, New York, NY 10021" — match via region's postalCities or zipPrefixes)
+        const region = findRegionForRequestedLocation(requestedLocation);
+        if (region) {
+            const addrCity = extractCityTokenFromAddress(vendorLocation);
+            const zipPrefix = extractZipPrefix(vendorLocation);
+            if (addrCity && region.postalCities.some(c => normalizeToken(c) === addrCity)) {
+                return true;
+            }
+            if (zipPrefix && region.zipPrefixes.includes(zipPrefix)) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -230,7 +270,7 @@ export const searchVendors = async (
     }
 
     // ─── Google Maps ───
-    const apiKey = process.env.SERPER_API_KEY || "02ece77ffd27d2929e3e79604cb27e1dfaa40fe7";
+    const apiKey = process.env.SERPER_API_KEY;
     if (!apiKey) {
         console.warn("SERPER_API_KEY is not set. Returning mock data.");
         return getMockVendors(query, location);

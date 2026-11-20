@@ -222,6 +222,8 @@ export const resendWebhook = onRequest({
         const clickedUrl = event?.data?.click?.link || event?.data?.click?.url || '';
         const isUnsubscribeClick = eventType === 'email.clicked' &&
             (clickedUrl.includes('/handleUnsubscribe') || clickedUrl.includes('unsubscribe'));
+        const isHighIntentContentClick = eventType === 'email.clicked' && !isUnsubscribeClick &&
+            /\/(guides|tools|calculator|audit|solutions|case-studies|compare|industries)\b/i.test(clickedUrl);
 
         if (isUnsubscribeClick) {
             logger.info(`Resend webhook: unsubscribe link clicked for ${entityType} ${entityId} — skipping engagement escalation`);
@@ -230,7 +232,9 @@ export const resendWebhook = onRequest({
         // Use a modified mapping for unsubscribe clicks
         const effectiveMapping = isUnsubscribeClick
             ? { ...mapping, activityType: 'EMAIL_UNSUBSCRIBE_CLICKED', deliveryStatus: mapping.deliveryStatus, description: 'Recipient clicked the unsubscribe link.' }
-            : mapping;
+            : isHighIntentContentClick
+                ? { ...mapping, description: `Recipient clicked high-intent CTA: ${clickedUrl}` }
+                : mapping;
 
         // ─── Log activity to the correct collection ───
         const activitiesCollection = entityType === 'vendor' ? 'vendor_activities' : 'lead_activities';
@@ -246,7 +250,9 @@ export const resendWebhook = onRequest({
                 deliveryStatus: effectiveMapping.deliveryStatus,
                 rawEvent: eventType,
                 to: event?.data?.to?.[0] || undefined,
-                ...(isUnsubscribeClick ? { clickedUrl, isUnsubscribeClick: true } : {}),
+                ...(clickedUrl ? { clickedUrl } : {}),
+                ...(isUnsubscribeClick ? { isUnsubscribeClick: true } : {}),
+                ...(isHighIntentContentClick ? { isHighIntentContentClick: true } : {}),
             }
         };
 
@@ -313,6 +319,8 @@ export const resendWebhook = onRequest({
         } else if (eventType === 'email.clicked' && !isUnsubscribeClick) {
             // Only count genuine content clicks, not unsubscribe link clicks
             engagementUpdate['emailEngagement.clickCount'] = admin.firestore.FieldValue.increment(1);
+            if (clickedUrl) engagementUpdate['emailEngagement.lastClickedUrl'] = clickedUrl;
+            if (isHighIntentContentClick) engagementUpdate['emailEngagement.highIntentClicked'] = true;
         }
 
         // If bounced, also update outreach status
@@ -370,6 +378,8 @@ export const resendWebhook = onRequest({
                 contactEngagement['emailEngagement.openCount'] = admin.firestore.FieldValue.increment(1);
             } else if (eventType === 'email.clicked' && !isUnsubscribeClick) {
                 contactEngagement['emailEngagement.clickCount'] = admin.firestore.FieldValue.increment(1);
+                if (clickedUrl) contactEngagement['emailEngagement.lastClickedUrl'] = clickedUrl;
+                if (isHighIntentContentClick) contactEngagement['emailEngagement.highIntentClicked'] = true;
             }
 
             try {

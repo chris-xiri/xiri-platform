@@ -61,7 +61,7 @@ const MIN_SENDS_FOR_ANALYSIS = 10; // Need at least 10 sends for meaningful data
 const LOW_OPEN_RATE_THRESHOLD = 0.30; // < 30% = underperforming
 
 // All template categories the optimizer should check
-const OPTIMIZABLE_CATEGORIES = ['vendor', 'tenant_lead', 'referral_partnership', 'enterprise_lead'];
+const OPTIMIZABLE_CATEGORIES = ['vendor', 'dental_lead', 'ortho_lead', 'tenant_lead', 'in_house_conversion', 'nurture', 'referral_partnership', 'enterprise_lead'];
 
 async function optimizeUnderperformingTemplates(): Promise<string[]> {
     const optimized: string[] = [];

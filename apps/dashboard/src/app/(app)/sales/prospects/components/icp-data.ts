@@ -1,12 +1,8 @@
 /**
- * Client-side ICP metadata — lightweight copy of prospectingTargets.ts
- * for display purposes in the ConfigPanel.
- *
- * This avoids coupling the Next.js dashboard build to the Cloud Functions package.
- * Keep in sync with: packages/functions/src/utils/prospectingTargets.ts
+ * Client-side ICP metadata — synced with packages/functions/src/utils/prospectingTargets.ts
+ * Focus: Private Dental & Orthodontic Practices across Long Island, NYC 5 Boroughs,
+ *        Yonkers, and Westchester County.
  */
-
-// ── ICP Category metadata for grouping queries by tier ──────────────
 
 export interface ICPCategory {
   label: string;
@@ -15,43 +11,48 @@ export interface ICPCategory {
 }
 
 export const ICP_CATEGORIES: ICPCategory[] = [
-  // Tier 1: Medical & Healthcare
-  { label: 'Dental', queries: ['dental office', 'orthodontist', 'pediatric dentist', 'oral surgeon office', 'endodontist'], tier: 1 },
-  { label: 'Medical Office', queries: ['medical office', 'doctor office', 'family medicine practice', 'pediatrician office', 'internal medicine office'], tier: 1 },
-  { label: 'Specialist Medical', queries: ['dermatologist office', 'eye doctor optometrist', 'ENT doctor office', 'allergist office', 'podiatrist office'], tier: 1 },
-  { label: 'Urgent Care & Surgery', queries: ['urgent care clinic', 'outpatient surgery center', 'walk-in clinic'], tier: 1 },
-  { label: 'Veterinary', queries: ['veterinary clinic', 'animal hospital', 'pet emergency vet'], tier: 1 },
-  { label: 'Physical Therapy & Rehab', queries: ['physical therapy center', 'chiropractor office', 'rehabilitation center'], tier: 1 },
-  { label: 'Dialysis', queries: ['dialysis center'], tier: 1 },
+  // Tier 1: Core Focus — Dental & Orthodontics
+  {
+    label: 'General & Family Dental',
+    queries: ['dental office', 'general dentist', 'family dentist', 'cosmetic dentist', 'dental practice'],
+    tier: 1,
+  },
+  {
+    label: 'Orthodontics',
+    queries: ['orthodontist', 'orthodontic practice', 'orthodontics clinic', 'invisalign orthodontist', 'braces orthodontist'],
+    tier: 1,
+  },
 
-  // Tier 2: Commercial
-  { label: 'Automotive', queries: ['car dealership', 'auto repair shop', 'auto body shop', 'tire shop'], tier: 2 },
-  { label: 'Childcare & Education', queries: ['daycare center', 'preschool', 'childcare center', 'Montessori school'], tier: 2 },
-  { label: 'Tutoring & Learning', queries: ['tutoring center', 'learning center', 'test prep center'], tier: 2 },
-  { label: 'Fitness & Wellness', queries: ['gym fitness center', 'CrossFit gym', 'yoga studio', 'pilates studio', 'martial arts studio'], tier: 2 },
-  { label: 'Retail Storefront', queries: ['retail store', 'boutique shop', 'bridal shop', 'furniture store'], tier: 2 },
-  { label: 'Salon & Personal Care', queries: ['hair salon', 'barbershop', 'nail salon', 'spa day spa', 'med spa'], tier: 2 },
-  { label: 'Religious Centers', queries: ['church', 'synagogue', 'mosque', 'temple'], tier: 2 },
-  { label: 'Funeral Homes', queries: ['funeral home', 'funeral parlor'], tier: 2 },
-  { label: 'Pet Services', queries: ['pet grooming', 'doggy daycare', 'pet boarding kennel'], tier: 2 },
+  // Tier 2: High-LTV Dental Specialties
+  {
+    label: 'Pediatric Dentistry',
+    queries: ['pediatric dentist', 'children dentist', 'kids dental office'],
+    tier: 2,
+  },
+  {
+    label: 'Oral Surgery & Implants',
+    queries: ['oral surgeon', 'oral and maxillofacial surgery', 'dental implant specialist'],
+    tier: 2,
+  },
+  {
+    label: 'Endo / Perio / Prostho',
+    queries: ['endodontist', 'periodontist', 'prosthodontist'],
+    tier: 2,
+  },
 
-  // Tier 3: Professional Services
-  { label: 'Legal', queries: ['law firm office', 'attorney office'], tier: 3 },
-  { label: 'Insurance & Finance', queries: ['insurance agency office', 'accounting firm office', 'tax preparation office'], tier: 3 },
-  { label: 'Real Estate', queries: ['real estate office'], tier: 3 },
-  { label: 'Pharmacy', queries: ['pharmacy', 'compounding pharmacy'], tier: 3 },
-  { label: 'Dance & Performing Arts', queries: ['dance studio', 'music school', 'performing arts studio'], tier: 3 },
-  { label: 'Private Schools', queries: ['private school', 'preparatory school'], tier: 3 },
-  { label: 'Light Industrial', queries: ['warehouse', 'light manufacturing facility'], tier: 3 },
+  // Tier 3: Optional Adjacent Medical
+  {
+    label: 'Private Medical & Urgent Care',
+    queries: ['medical office', 'urgent care clinic', 'outpatient surgery center', 'dermatologist office'],
+    tier: 3,
+  },
 ];
 
 export const TIER_LABELS: Record<number, { label: string; color: string; bgColor: string }> = {
-  1: { label: 'Medical & Healthcare', color: 'text-red-900', bgColor: 'bg-red-100 border-red-300' },
-  2: { label: 'Commercial', color: 'text-blue-900', bgColor: 'bg-blue-100 border-blue-300' },
-  3: { label: 'Professional Services', color: 'text-violet-900', bgColor: 'bg-violet-100 border-violet-300' },
+  1: { label: 'Core Dental & Orthodontics', color: 'text-emerald-900', bgColor: 'bg-emerald-100 border-emerald-300' },
+  2: { label: 'Dental Specialties', color: 'text-blue-900', bgColor: 'bg-blue-100 border-blue-300' },
+  3: { label: 'Adjacent Healthcare (Optional)', color: 'text-violet-900', bgColor: 'bg-violet-100 border-violet-300' },
 };
-
-// ── Service regions for grouping locations by county ─────────────────
 
 export interface ServiceCounty {
   county: string;
@@ -70,19 +71,22 @@ export const SERVICE_COUNTIES: ServiceCounty[] = [
       'Port Washington', 'Syosset', 'Glen Cove', 'Farmingdale',
       'Merrick', 'Bellmore', 'Wantagh', 'Plainview', 'Bethpage',
       'Oceanside', 'East Meadow', 'Franklin Square', 'Lynbrook',
-      'New Hyde Park', 'Jericho', 'Carle Place',
+      'New Hyde Park', 'Jericho', 'Carle Place', 'Roslyn', 'Woodbury',
+      'Baldwin', 'Cedarhurst', 'Hewlett', 'Lawrence', 'Seaford', 'Williston Park',
     ],
   },
   {
     county: 'Suffolk',
     state: 'NY',
     towns: [
-      'Huntington', 'Babylon', 'Bay Shore', 'Islip', 'Brentwood',
-      'Smithtown', 'Commack', 'Hauppauge', 'Patchogue', 'Ronkonkoma',
-      'Lake Grove', 'Riverhead', 'Deer Park', 'Lindenhurst',
-      'West Islip', 'Centereach', 'Bohemia', 'Holbrook',
-      'Medford', 'Sayville', 'East Northport', 'Kings Park',
-      'Port Jefferson', 'Stony Brook', 'Coram', 'Selden',
+      'Huntington', 'Melville', 'Babylon', 'Bay Shore', 'Islip',
+      'Brentwood', 'Smithtown', 'Commack', 'Hauppauge', 'Patchogue',
+      'Ronkonkoma', 'Lake Grove', 'Riverhead', 'Deer Park', 'Lindenhurst',
+      'West Islip', 'Centereach', 'Bohemia', 'Holbrook', 'Medford',
+      'Sayville', 'East Northport', 'Northport', 'Kings Park',
+      'Port Jefferson', 'Stony Brook', 'East Setauket', 'Coram', 'Selden',
+      'Southampton', 'East Hampton', 'Westhampton Beach', 'Amityville',
+      'Copiague', 'Miller Place', 'Rocky Point', 'Shirley',
     ],
   },
   {
@@ -94,13 +98,75 @@ export const SERVICE_COUNTIES: ServiceCounty[] = [
       'Elmhurst', 'Ridgewood', 'Fresh Meadows', 'Whitestone',
       'College Point', 'Woodside', 'Kew Gardens', 'Howard Beach',
       'Ozone Park', 'Richmond Hill', 'Maspeth', 'Glendale',
+      'Sunnyside', 'Middle Village', 'Douglaston', 'Little Neck',
+    ],
+  },
+  {
+    county: 'Brooklyn',
+    state: 'NY',
+    towns: [
+      'Park Slope, Brooklyn', 'Brooklyn Heights, Brooklyn', 'Williamsburg, Brooklyn',
+      'Bay Ridge, Brooklyn', 'Bensonhurst, Brooklyn', 'Dyker Heights, Brooklyn',
+      'Midwood, Brooklyn', 'Sheepshead Bay, Brooklyn', 'Borough Park, Brooklyn',
+      'Carroll Gardens, Brooklyn', 'Cobble Hill, Brooklyn', 'Greenpoint, Brooklyn',
+      'Fort Greene, Brooklyn', 'Downtown Brooklyn', 'Dumbo, Brooklyn',
+      'Flatbush, Brooklyn', 'Crown Heights, Brooklyn', 'Prospect Heights, Brooklyn',
+      'Marine Park, Brooklyn', 'Mill Basin, Brooklyn', 'Sunset Park, Brooklyn',
+      'Bushwick, Brooklyn', 'Bedford-Stuyvesant, Brooklyn',
+    ],
+  },
+  {
+    county: 'Manhattan',
+    state: 'NY',
+    towns: [
+      'Upper East Side, Manhattan', 'Upper West Side, Manhattan',
+      'Midtown East, Manhattan', 'Midtown West, Manhattan',
+      'Murray Hill, Manhattan', 'Gramercy, Manhattan',
+      'Chelsea, Manhattan', 'Flatiron, Manhattan',
+      'SoHo, Manhattan', 'Tribeca, Manhattan',
+      'Greenwich Village, Manhattan', 'East Village, Manhattan',
+      'Financial District, Manhattan', 'Lower East Side, Manhattan',
+      'Harlem, Manhattan', 'Washington Heights, Manhattan',
+      'Battery Park City, Manhattan', 'Kips Bay, Manhattan',
+      'Hell\'s Kitchen, Manhattan', 'Yorkville, Manhattan',
+    ],
+  },
+  {
+    county: 'Bronx',
+    state: 'NY',
+    towns: [
+      'Riverdale, Bronx', 'Morris Park, Bronx', 'Pelham Bay, Bronx',
+      'Throgs Neck, Bronx', 'Kingsbridge, Bronx', 'Fordham, Bronx',
+      'Parkchester, Bronx', 'Concourse, Bronx', 'Woodlawn, Bronx',
+      'Mott Haven, Bronx', 'Country Club, Bronx', 'Baychester, Bronx',
+    ],
+  },
+  {
+    county: 'Staten Island',
+    state: 'NY',
+    towns: [
+      'New Dorp, Staten Island', 'Great Kills, Staten Island',
+      'St. George, Staten Island', 'Todt Hill, Staten Island',
+      'Eltingville, Staten Island', 'Annadale, Staten Island',
+      'Tottenville, Staten Island', 'West Brighton, Staten Island',
+      'Huguenot, Staten Island', 'Bull\'s Head, Staten Island',
+    ],
+  },
+  {
+    county: 'Westchester & Yonkers',
+    state: 'NY',
+    towns: [
+      'Yonkers', 'White Plains', 'New Rochelle', 'Scarsdale',
+      'Rye', 'Harrison', 'Mamaroneck', 'Larchmont',
+      'Bronxville', 'Eastchester', 'Tuckahoe', 'Mount Vernon',
+      'Pelham', 'Tarrytown', 'Sleepy Hollow', 'Dobbs Ferry',
+      'Hastings-on-Hudson', 'Irvington', 'Ardsley', 'Hartsdale',
+      'Armonk', 'Chappaqua', 'Mount Kisco', 'Rye Brook',
+      'Port Chester', 'Yorktown Heights', 'Ossining', 'Peekskill',
     ],
   },
 ];
 
-/**
- * Get all ICP queries as a flat set (lowercased) for quick lookups.
- */
 export function getAllICPQueries(): Set<string> {
   const set = new Set<string>();
   for (const cat of ICP_CATEGORIES) {
@@ -111,23 +177,23 @@ export function getAllICPQueries(): Set<string> {
   return set;
 }
 
-/**
- * Find which county a location belongs to (by town name matching).
- */
 export function findCountyForLocation(location: string): string | null {
+  const lower = location.toLowerCase();
+  if (lower.includes('brooklyn')) return 'Brooklyn';
+  if (lower.includes('manhattan') || lower.includes('new york, ny')) return 'Manhattan';
+  if (lower.includes('bronx')) return 'Bronx';
+  if (lower.includes('staten island')) return 'Staten Island';
+  if (lower.includes('yonkers') || lower.includes('westchester')) return 'Westchester & Yonkers';
+
   const townPart = location.split(',')[0].trim().toLowerCase();
   for (const county of SERVICE_COUNTIES) {
-    if (county.towns.some(t => t.toLowerCase() === townPart)) {
+    if (county.towns.some(t => t.split(',')[0].trim().toLowerCase() === townPart)) {
       return county.county;
     }
   }
   return null;
 }
 
-/**
- * Group an array of location strings by county.
- * Locations not matching any county go into "Other".
- */
 export function groupLocationsByCounty(locations: string[]): Record<string, string[]> {
   const groups: Record<string, string[]> = {};
   for (const loc of locations) {
@@ -138,15 +204,10 @@ export function groupLocationsByCounty(locations: string[]): Record<string, stri
   return groups;
 }
 
-/**
- * Group queries by their ICP tier.
- * Queries not in any ICP category go into tier 0 ("Custom").
- */
 export function groupQueriesByTier(queries: string[]): Record<number, { category: string; query: string }[]> {
   const groups: Record<number, { category: string; query: string }[]> = {};
   const queryLower = new Map(queries.map(q => [q.toLowerCase(), q]));
 
-  // Match known ICP queries
   const matched = new Set<string>();
   for (const cat of ICP_CATEGORIES) {
     for (const catQuery of cat.queries) {
@@ -159,7 +220,6 @@ export function groupQueriesByTier(queries: string[]): Record<number, { category
     }
   }
 
-  // Unmatched queries go to tier 0
   for (const q of queries) {
     if (!matched.has(q.toLowerCase())) {
       if (!groups[0]) groups[0] = [];
@@ -170,13 +230,9 @@ export function groupQueriesByTier(queries: string[]): Record<number, { category
   return groups;
 }
 
-/**
- * Find ICP categories that have ZERO queries in the current config.
- * Returns categories that could be added.
- */
 export function findMissingICPCategories(currentQueries: string[]): ICPCategory[] {
   const currentLower = new Set(currentQueries.map(q => q.toLowerCase()));
   return ICP_CATEGORIES.filter(cat =>
-    !cat.queries.some(q => currentLower.has(q.toLowerCase()))
+    cat.tier <= 2 && !cat.queries.some(q => currentLower.has(q.toLowerCase()))
   );
 }

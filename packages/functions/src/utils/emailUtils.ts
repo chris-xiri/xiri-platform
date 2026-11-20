@@ -9,7 +9,10 @@ import { isEmailSuppressed } from './suppressionUtils';
 
 const db = admin.firestore();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key");
+
+function getResendClient(): Resend {
+    return new Resend(process.env.RESEND_API_KEY || "re_dummy_key");
+}
 
 interface EmailTemplate {
     subject: string;
@@ -230,7 +233,7 @@ export async function sendTemplatedEmail(
         // Send email via Resend
         let resendId: string | undefined;
         try {
-            const { data } = await resend.emails.send({
+            const { data } = await getResendClient().emails.send({
                 from: 'XIRI Facility Solutions <onboarding@xiri.ai>',
                 replyTo: 'chris@xiri.ai',
                 to: vendor?.email || '',
@@ -283,7 +286,7 @@ const FUNCTIONS_BASE_URL = 'https://us-central1-xiri-facility-solutions.cloudfun
 /* ─── Single source of truth for company email branding ──────── */
 export const COMPANY_NAME = 'XIRI Group LLC';
 export const COMPANY_ADDRESS = '418 Broadway, Ste N · Albany, NY 12207';
-export const SERVICE_AREA = 'Serving Queens, Nassau & Suffolk Counties';
+export const SERVICE_AREA = 'Serving Long Island, NYC 5 Boroughs, Yonkers & Westchester';
 export const LOGO_URL = 'https://xiri.ai/logo-vertical.svg';
 
 /**
@@ -378,10 +381,11 @@ export function buildSimpleFooter(extraLine?: string): string {
 /**
  * Build CAN-SPAM compliant email footer with unsubscribe link.
  */
-function buildEmailFooter(entityId?: string, entityType?: 'vendor' | 'lead'): string {
+function buildEmailFooter(entityId?: string, entityType?: 'vendor' | 'lead', contactId?: string): string {
     if (!entityId || !entityType) return '';
 
-    const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}`;
+    const cidParam = contactId ? `&contactId=${encodeURIComponent(contactId)}` : '';
+    const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}${cidParam}`;
 
     return `
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
@@ -448,7 +452,7 @@ export async function sendEmail(
         const header = skipHeader ? '' : buildEmailHeader();
         const sigConfig = await getEmailSignatureConfig();
         const signature = buildEmailSignature(sigConfig);
-        const footer = buildEmailFooter(resolvedEntityId, resolvedEntityType);
+        const footer = buildEmailFooter(resolvedEntityId, resolvedEntityType, resolvedContactId);
         const htmlWithFooter = header + html + signature + (footer || '');
 
         // Build tags array for webhook tracking
@@ -464,12 +468,13 @@ export async function sendEmail(
         // Build Resend List-Unsubscribe header for one-click unsubscribe
         const headers: Record<string, string> = {};
         if (resolvedEntityId && resolvedEntityType) {
-            const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${resolvedEntityId}&type=${resolvedEntityType}`;
+            const cidParam = resolvedContactId ? `&contactId=${encodeURIComponent(resolvedContactId)}` : '';
+            const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${resolvedEntityId}&type=${resolvedEntityType}${cidParam}`;
             headers['List-Unsubscribe'] = `<${unsubscribeUrl}>`;
             headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
         }
 
-        const { data, error } = await resend.emails.send({
+        const { data, error } = await getResendClient().emails.send({
             from: from || 'XIRI Facility Solutions <onboarding@xiri.ai>',
             replyTo: 'chris@xiri.ai',
             to,
@@ -525,7 +530,7 @@ export async function sendBatchEmails(
             html: header + e.html + signature,
         }));
 
-        const { data, error } = await resend.batch.send(payload);
+        const { data, error } = await getResendClient().batch.send(payload);
 
         if (error) {
             console.error('❌ Batch send error:', error);

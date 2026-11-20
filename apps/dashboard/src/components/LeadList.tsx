@@ -483,8 +483,8 @@ export default function LeadList({
             const seqSnap = await getDocs(collection(db, 'sequences'));
             const allSeqs = seqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
             // Only show lead-appropriate sequences — exclude vendor sequences
-            const LEAD_CATEGORIES = ['lead', 'referral', 'custom'];
-            setBulkSequences(allSeqs.filter((s: any) => !s.category || LEAD_CATEGORIES.includes(s.category)));
+            const BLOCKED_CATEGORIES = ['vendor', 'vendor_email'];
+            setBulkSequences(allSeqs.filter((s: any) => !s.category || !BLOCKED_CATEGORIES.includes(s.category)));
         } catch (err) {
             console.error('Error loading sequences:', err);
         } finally {

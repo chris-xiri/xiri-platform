@@ -33,6 +33,9 @@ export interface QueuedProspect {
     enrichmentLog?: string[];
     allContacts?: ProspectContact[];
     facilityType?: string;
+    practiceSpecialty?: string;
+    autoEnrolled?: boolean;
+    sequenceId?: string;
     status: string;
     batchDate: string;
     searchQuery: string;
@@ -102,6 +105,8 @@ export interface ProspectingConfig {
     locations: string[];
     dailyTarget: number;
     maxDailyOutreach?: number;
+    autoEnrollEnabled?: boolean;
+    autoEnrollMinIcp?: number;
     enabled: boolean;
     excludePatterns: string[];
     activeIcp?: string;

@@ -27,6 +27,26 @@ const FACILITY_KEYWORDS: Array<{ facilityType: FacilityType; keywords: string[] 
     { facilityType: 'office_general', keywords: ['law office', 'accounting firm', 'insurance agency', 'professional office', 'office suite'] },
 ];
 
+const KNOWN_DSO_PATTERNS = [
+    'aspen dental', 'heartland dental', 'pacific dental', 'tend dental', 'hellotend.com',
+    'dental care alliance', 'clearchoice', 'western dental', 'smile brand',
+    'great expressions', 'interdent', 'riccobene', 'decision one',
+    'dental365', 'godental365', 'prohealth dental', 'sage dental',
+    'gentle dental', 'bright now dental', 'monarch dental', 'castle dental',
+    'comfort dental', 'coast dental', 'kool smiles', 'benevis', 'smiledirect',
+    'orthodontic partners', 'smile doctors', 'specialized dental partners',
+    'nyu college of dentistry', 'columbia dental', 'stony brook dental',
+    'dental lab', 'dental laboratory', 'dental supply', 'henry schein', 'patterson dental',
+];
+
+/**
+ * Fast pre-filter to detect corporate DSO dental chains before scraping.
+ */
+export function isKnownDsoChain(businessName: string, website?: string | null): boolean {
+    const haystack = `${businessName} ${website || ''}`.toLowerCase();
+    return KNOWN_DSO_PATTERNS.some(pat => haystack.includes(pat));
+}
+
 function stripHtml(html: string): string {
     return html
         .replace(/<script[\s\S]*?<\/script>/gi, ' ')

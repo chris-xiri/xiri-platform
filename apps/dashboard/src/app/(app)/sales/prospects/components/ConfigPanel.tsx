@@ -19,12 +19,16 @@ interface ConfigPanelProps {
     editLocations: string[];
     editTarget: number;
     editMaxDailyOutreach: number;
+    editAutoEnrollEnabled: boolean;
+    editAutoEnrollMinIcp: number;
     editEnabled: boolean;
     editExclude: string[];
     setEditQueries: (val: string[]) => void;
     setEditLocations: (val: string[]) => void;
     setEditTarget: (val: number) => void;
     setEditMaxDailyOutreach: (val: number) => void;
+    setEditAutoEnrollEnabled: (val: boolean) => void;
+    setEditAutoEnrollMinIcp: (val: number) => void;
     setEditEnabled: (val: boolean) => void;
     setEditExclude: (val: string[]) => void;
     onSave: () => void;
@@ -121,12 +125,16 @@ export function ConfigPanel({
     editLocations,
     editTarget,
     editMaxDailyOutreach,
+    editAutoEnrollEnabled,
+    editAutoEnrollMinIcp,
     editEnabled,
     editExclude,
     setEditQueries,
     setEditLocations,
     setEditTarget,
     setEditMaxDailyOutreach,
+    setEditAutoEnrollEnabled,
+    setEditAutoEnrollMinIcp,
     setEditEnabled,
     setEditExclude,
     onSave,
@@ -550,6 +558,30 @@ export function ConfigPanel({
                                     <span className="text-xs text-muted-foreground">emails/weekday</span>
                                 </div>
                                 <p className="text-[11px] text-muted-foreground">Cap automated cold outreach to {editMaxDailyOutreach} emails per weekday.</p>
+                            </div>
+                            <div className="pt-3 border-t space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-sm font-semibold">Autonomous SDR Auto-Enroll</Label>
+                                        <p className="text-xs text-muted-foreground">Auto-import & enroll high-ICP dental/ortho practices into email funnels.</p>
+                                    </div>
+                                    <ToggleSwitch checked={editAutoEnrollEnabled} onToggle={setEditAutoEnrollEnabled} />
+                                </div>
+                                {editAutoEnrollEnabled && (
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-emerald-600" />
+                                        <span className="text-xs text-muted-foreground">Min ICP Score:</span>
+                                        <Input
+                                            type="number"
+                                            min={50}
+                                            max={100}
+                                            value={editAutoEnrollMinIcp}
+                                            onChange={(e) => setEditAutoEnrollMinIcp(parseInt(e.target.value) || 75)}
+                                            className="w-20 h-8"
+                                        />
+                                        <span className="text-xs text-muted-foreground">/ 100 (DSOs always rejected)</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

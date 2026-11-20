@@ -1,7 +1,7 @@
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { enqueueTask, cancelVendorTasks } from "../utils/queueUtils";
+import { enqueueTask, cancelVendorTasks, cancelLeadTasks, cancelLeadScheduledEmails } from "../utils/queueUtils";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -147,5 +147,65 @@ export const onVendorAdvancedPastOutreach = onDocumentUpdated({
             },
         });
         logger.info(`Cancelled ${cancelledCount} pending outreach tasks for vendor ${vendorId}.`);
+    }
+});
+
+/**
+ * Cancel Lead Cold Outreach When Company Advances or Is Lost/Suppressed
+ *
+ * Watches `companies/{companyId}` and immediately cancels all pending `outreach_queue`
+ * tasks + any legacy Resend scheduled emails whenever a practice enters active human
+ * sales pipeline (`qualified`, `walkthrough`, `proposal`, `quoted`, `won`), is marked
+ * `lost`, or gets `unsubscribedAt` set.
+ */
+const COMPANY_STOP_STATUSES = new Set([
+    'qualified',
+    'walkthrough',
+    'proposal',
+    'quoted',
+    'won',
+    'lost',
+]);
+
+export const onCompanyAdvancedPastOutreach = onDocumentUpdated({
+    document: "companies/{companyId}",
+    secrets: ["RESEND_API_KEY"],
+}, async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    const statusChanged = before.status !== after.status;
+    const newlySuppressed = !before.unsubscribedAt && !!after.unsubscribedAt;
+    const movedToStopStage = statusChanged && COMPANY_STOP_STATUSES.has(after.status);
+
+    if (!movedToStopStage && !newlySuppressed) return;
+
+    const companyId = event.params.companyId;
+    const businessName = after.businessName || after.name || 'Unknown';
+    const reason = newlySuppressed ? 'unsubscribed' : `status changed to ${after.status}`;
+
+    logger.info(`[DripGuard] Company ${companyId} (${businessName}) ${reason} — cancelling pending cold outreach.`);
+
+    const [cancelledQueue, cancelledResend] = await Promise.all([
+        cancelLeadTasks(db, companyId),
+        cancelLeadScheduledEmails(db, companyId, 'companies'),
+    ]);
+
+    if (cancelledQueue > 0 || cancelledResend > 0) {
+        await db.collection("lead_activities").add({
+            leadId: companyId,
+            type: "DRIP_CANCELLED",
+            description: `Automatically halted cold funnel (${cancelledQueue} queued + ${cancelledResend} scheduled emails cancelled) — ${reason}.`,
+            createdAt: new Date(),
+            metadata: {
+                previousStatus: before.status || null,
+                newStatus: after.status || null,
+                cancelledQueue,
+                cancelledResend,
+                reason,
+            },
+        });
+        logger.info(`[DripGuard] Cancelled ${cancelledQueue} queue + ${cancelledResend} Resend emails for ${companyId}.`);
     }
 });

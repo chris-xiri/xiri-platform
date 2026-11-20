@@ -14,7 +14,8 @@
 import { searchVendors, RawVendor } from './sourcer';
 import { scrapeWebsite, searchWebForEmail } from '../utils/websiteScraper';
 import { runEnrichmentWaterfall } from '../utils/enrichmentProviders';
-import { classifyFacilityType } from '../utils/facilityClassifier';
+import { classifyFacilityType, isKnownDsoChain } from '../utils/facilityClassifier';
+import { generateOutreachDraft } from '../utils/promptUtils';
 import type { EnrichedProspect, EmailSource, ProspectContact } from '@xiri/shared';
 import { inferFacilityType, type FacilityType } from '@xiri/shared';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -316,7 +317,7 @@ export async function prospectAndEnrich(
 
     // Pipeline-level time guard — stop at 7 min to leave 2 min for cleanup/writes
     const PIPELINE_TIME_BUDGET_MS = 7 * 60 * 1000; // 420s
-    const PER_BUSINESS_TIMEOUT_MS = 8_000;  // 8s per business (was 30s — parallel batches make this safe)
+    const PER_BUSINESS_TIMEOUT_MS = 20_000; // 20s per business for scrape + Gemini profiler + copywriter
     const CONCURRENCY = 5;                  // Process 5 businesses concurrently
     const pipelineStart = Date.now();
 
@@ -422,6 +423,16 @@ async function enrichSingleBusiness(
 
     log.push(`Starting enrichment for "${vendor.name}"`);
 
+    if (isKnownDsoChain(vendor.name, vendor.website)) {
+        prospect.dossier = {
+            isDsoChain: true,
+            icpScore: 0,
+            qualificationReason: `Pre-filtered corporate DSO chain or non-ICP entity (${vendor.name})`,
+        };
+        log.push(`Skipped: Known corporate DSO chain (${vendor.name}) — pre-filtered before scraping`);
+        return prospect;
+    }
+
     if (!vendor.website) {
         log.push('No website available — skipping to Layer 2 (web search)');
 
@@ -436,7 +447,7 @@ async function enrichSingleBusiness(
             log.push('Skipping Layer 3 — no domain available for enrichment APIs');
         }
 
-        return prospect;
+        return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -448,10 +459,22 @@ async function enrichSingleBusiness(
         prospect.facilityType = await classifyFacilityType(vendor.website, vendor.name, input.query, secrets.geminiApiKey, log);
         targetTitles = getDecisionMakerTitles(prospect.facilityType, input.query);
 
-        const scrapeResult = await scrapeWebsite(vendor.website, secrets.geminiApiKey);
+        const scrapeResult = await scrapeWebsite(vendor.website, secrets.geminiApiKey, {
+            businessName: vendor.name,
+            address: vendor.location,
+            website: vendor.website,
+        });
 
         if (scrapeResult.success && scrapeResult.data) {
             const data = scrapeResult.data;
+            if (data.dossier) {
+                prospect.dossier = data.dossier;
+                log.push(`SDR Profiler Dossier: clinicType=${data.dossier.clinicType || 'unknown'}, icpScore=${data.dossier.icpScore ?? 'n/a'}, ops=${data.dossier.estimatedOperatories ?? '?'}, isDso=${!!data.dossier.isDsoChain}`);
+                if (data.dossier.isDsoChain) {
+                    log.push(`Disqualified by SDR Profiler: Corporate DSO (${data.dossier.dsoName || vendor.name})`);
+                    return prospect;
+                }
+            }
             const multiLocation = looksLikeMultiLocationBrand(vendor.name, vendor.website, data.organizationScope);
             if (multiLocation) {
                 avoidTitles = CORPORATE_ONLY_TITLES;
@@ -509,7 +532,7 @@ async function enrichSingleBusiness(
                         if (generic) prospect.genericEmail = generic.email;
                     }
 
-                    return prospect; // Done — personal email found and validated
+                    return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log); // Done — personal email found and validated
                 }
             }
 
@@ -541,7 +564,7 @@ async function enrichSingleBusiness(
                     prospect.emailSource = 'mailto';
                     prospect.emailConfidence = 'high';
                     log.push(`Found personal email from mailto scan: ${personalFromMailto.email}`);
-                    return prospect;
+                    return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
                 }
 
                 const freeProviderMailto = data.allEmails.find(e => e.type === 'personal' && validateEmailForBusiness(e.email, vendor.website) === 'free_provider');
@@ -574,9 +597,9 @@ async function enrichSingleBusiness(
     // LAYER 2: Serper Web Search (Facebook + directories)
     // ═══════════════════════════════════════════════════════
     await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log, false, targetTitles, secrets.geminiApiKey);
-    if (prospect.contactEmail) return prospect;
+    if (prospect.contactEmail) return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
     await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log, true, targetTitles, secrets.geminiApiKey);
-    if (prospect.contactEmail) return prospect;
+    if (prospect.contactEmail) return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
 
     // ═══════════════════════════════════════════════════════
     // LAYER 2.5: LinkedIn Decision-Maker Discovery
@@ -655,7 +678,7 @@ async function enrichSingleBusiness(
                     prospect.contactTitle = prospect.contactTitle || waterfallResult.position;
                     prospect.emailSource = waterfallResult.provider as EmailSource;
                     prospect.emailConfidence = 'medium';
-                    return prospect;
+                    return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
                 } else {
                     // Generic from waterfall (pattern guess or API)
                     prospect.genericEmail = prospect.genericEmail || waterfallResult.email;
@@ -706,11 +729,37 @@ async function enrichSingleBusiness(
         }
     }
 
-    return prospect;
+    return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
 }
 
 function inferPreferredDecisionMakerTitles(searchQuery?: string): string[] {
     return getDecisionMakerTitles(undefined, searchQuery);
+}
+
+async function finalizeProspect(
+    prospect: EnrichedProspect,
+    geminiApiKey: string | undefined,
+    location: string,
+    log: string[]
+): Promise<EnrichedProspect> {
+    if ((prospect.contactEmail || prospect.genericEmail) && !(prospect as any).outreachDraft) {
+        try {
+            const draft = await generateOutreachDraft({
+                businessName: prospect.businessName,
+                contactName: prospect.contactName,
+                contactTitle: prospect.contactTitle,
+                location: prospect.address || location,
+                clinicType: prospect.dossier?.clinicType || prospect.facilityType,
+                keyObservation: prospect.dossier?.keyObservation,
+                geminiApiKey,
+            });
+            (prospect as any).outreachDraft = draft;
+            log.push(`Generated Agent 2 outreach draft (Subject: "${draft.subject}")`);
+        } catch (err: any) {
+            log.push(`Draft generation notice: ${err?.message || err}`);
+        }
+    }
+    return prospect;
 }
 
 /**

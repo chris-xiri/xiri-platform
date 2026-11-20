@@ -18,7 +18,9 @@ import { db } from "../utils/firebase";
 import { prospectAndEnrich } from "../agents/prospector";
 import { DASHBOARD_CORS } from "../utils/cors";
 import { generateProspectingConfig, getConfigSummary } from "../utils/prospectingTargets";
-import type { EnrichedProspect } from "@xiri/shared";
+import { enqueueLeadSequence } from "../utils/leadSequenceEngine";
+import { parseAddress } from "../utils/emailUtils";
+import { isOrthodonticPractice, type EnrichedProspect } from "@xiri/shared";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -71,6 +73,9 @@ interface ProspectingConfig {
     queries: string[];
     locations: string[];
     dailyTarget: number;
+    maxDailyOutreach?: number;
+    autoEnrollEnabled?: boolean;
+    autoEnrollMinIcp?: number;
     enabled: boolean;
     excludePatterns: string[];
     lastRunAt?: FirebaseFirestore.Timestamp;
@@ -78,6 +83,8 @@ interface ProspectingConfig {
         discovered: number;
         withEmail: number;
         added: number;
+        autoEnrolled?: number;
+        dsoFiltered?: number;
         duplicatesSkipped: number;
         queryYield?: Record<string, { discovered: number; qualified: number }>;
         locationYield?: Record<string, { discovered: number; qualified: number }>;
@@ -85,17 +92,20 @@ interface ProspectingConfig {
 }
 
 /**
- * Auto-generated from ICP engine. Covers 75+ queries × 76 towns = 5,700+ combos.
- * All facility types are single-tenant or self-managed cleaning.
+ * Auto-generated from Dental & Orthodontic Metro NY ICP engine.
+ * Covers Long Island (Nassau & Suffolk), NYC 5 Boroughs, Yonkers & Westchester.
  * @see prospectingTargets.ts for the ICP definition
  */
-const AUTO_CONFIG = generateProspectingConfig({ dailyTarget: 100 });
+const AUTO_CONFIG = generateProspectingConfig({ dailyTarget: 60, maxDailyOutreach: 30, autoEnrollEnabled: true, autoEnrollMinIcp: 75 });
 const DEFAULT_CONFIG: ProspectingConfig = {
     queries: AUTO_CONFIG.queries,
     locations: AUTO_CONFIG.locations,
     dailyTarget: AUTO_CONFIG.dailyTarget,
+    maxDailyOutreach: AUTO_CONFIG.maxDailyOutreach,
+    autoEnrollEnabled: AUTO_CONFIG.autoEnrollEnabled,
+    autoEnrollMinIcp: AUTO_CONFIG.autoEnrollMinIcp,
     enabled: true,
-    excludePatterns: [],
+    excludePatterns: AUTO_CONFIG.excludePatterns,
 };
 
 /** Fisher-Yates shuffle — randomize combo order each run */
@@ -317,10 +327,11 @@ async function loadSeenSet(): Promise<Set<string>> {
         }
     }
 
-    // 2. All CRM companies
-    const companiesSnap = await db.collection("companies").select("name", "phone", "website", "address").get();
+    // 2. All CRM companies (check both businessName and legacy name)
+    const companiesSnap = await db.collection("companies").select("businessName", "name", "phone", "website", "address").get();
     for (const doc of companiesSnap.docs) {
         const d = doc.data();
+        if (d.businessName) seen.add(normalizeName(d.businessName));
         if (d.name) seen.add(normalizeName(d.name));
         if (d.phone) {
             const cleaned = d.phone.replace(/[^0-9]/g, '');
@@ -372,6 +383,11 @@ async function runDailyPipeline() {
     const newProspects: Array<{ prospect: EnrichedProspect; query: string; location: string }> = [];
     let totalDiscovered = 0;
     let duplicatesSkipped = 0;
+    let autoEnrolledCount = 0;
+    let dsoFilteredCount = 0;
+    const autoEnrollEnabled = config.autoEnrollEnabled !== false;
+    const autoEnrollMinIcp = typeof config.autoEnrollMinIcp === "number" ? config.autoEnrollMinIcp : 75;
+    const maxDailyOutreach = typeof config.maxDailyOutreach === "number" ? config.maxDailyOutreach : 30;
     
     const queryYield: Record<string, { discovered: number; qualified: number }> = {};
     const locationYield: Record<string, { discovered: number; qualified: number }> = {};
@@ -481,6 +497,13 @@ async function runDailyPipeline() {
                             continue;
                         }
 
+                        // Reject corporate DSO chains & disqualified non-ICP entities
+                        if (prospect.dossier?.isDsoChain) {
+                            logger.info(`[DailyProspector] Filtered DSO/non-ICP: "${prospect.businessName}" (${prospect.dossier.dsoName || prospect.dossier.qualificationReason || 'DSO'})`);
+                            dsoFilteredCount++;
+                            continue;
+                        }
+
                         // Only add prospects that have at least some email
                         if (!prospect.contactEmail && !prospect.genericEmail) {
                             continue;
@@ -500,6 +523,113 @@ async function runDailyPipeline() {
                         const inferredPic = prospect.contactTitle
                             ? null
                             : (inferPicTitleFromFacilityType(prospect.facilityType) || inferPicTitle(queryTerm));
+                        const isOrtho = isOrthodonticPractice({
+                            clinicType: prospect.dossier?.clinicType,
+                            businessName: prospect.businessName,
+                            searchQuery: queryTerm,
+                        });
+                        const practiceSpecialty = prospect.dossier?.clinicType || (isOrtho ? "ortho" : "general");
+                        const bestEmail = prospect.contactEmail || prospect.genericEmail || null;
+                        const icpScore = typeof prospect.dossier?.icpScore === "number"
+                            ? prospect.dossier.icpScore
+                            : (prospect.facilityType === "medical_dental" && prospect.emailConfidence === "high" ? 78 : 0);
+
+                        // Determine autonomous SDR eligibility (ICP >= threshold + valid email + within daily outreach budget)
+                        const qualifiesForAutoEnroll =
+                            autoEnrollEnabled &&
+                            !!bestEmail &&
+                            icpScore >= autoEnrollMinIcp &&
+                            autoEnrolledCount < maxDailyOutreach &&
+                            (prospect.emailConfidence === "high" || prospect.emailConfidence === "medium" || !!prospect.contactEmail);
+
+                        let queueStatus: "pending_review" | "sequenced" = "pending_review";
+                        let enrolledCompanyId: string | null = null;
+                        let enrolledContactId: string | null = null;
+                        let enrolledSequenceId: string | null = null;
+
+                        if (qualifiesForAutoEnroll && bestEmail) {
+                            try {
+                                const now = new Date();
+                                const parsedAddr = parseAddress(prospect.address);
+                                const companyRef = db.collection("companies").doc();
+                                const contactRef = db.collection("contacts").doc();
+                                const rawContactName = (prospect.contactName || "").trim();
+                                const nameParts = rawContactName ? rawContactName.split(/\s+/) : [];
+                                const firstName = nameParts[0] || "";
+                                const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+                                const resolvedTitle = prospect.contactTitle || inferredPic?.title || (isOrtho ? "Office Manager" : "Practice Manager");
+
+                                await companyRef.set({
+                                    businessName: prospect.businessName,
+                                    facilityType: prospect.facilityType || "medical_dental",
+                                    practiceSpecialty,
+                                    address: prospect.address || null,
+                                    city: parsedAddr.city || location.split(",")[0].trim(),
+                                    state: parsedAddr.state || "NY",
+                                    zip: parsedAddr.zip || null,
+                                    phone: prospect.phone || null,
+                                    website: prospect.website || null,
+                                    rating: prospect.rating || null,
+                                    email: bestEmail,
+                                    contactName: rawContactName || resolvedTitle,
+                                    contactTitle: resolvedTitle,
+                                    dossier: prospect.dossier || null,
+                                    outreachDraft: prospect.outreachDraft || null,
+                                    status: "new",
+                                    leadType: "direct",
+                                    source: "auto_sdr",
+                                    searchQuery: queryTerm,
+                                    searchLocation: location,
+                                    prospectQueueId: docId,
+                                    createdAt: now,
+                                    updatedAt: now,
+                                });
+
+                                await contactRef.set({
+                                    companyId: companyRef.id,
+                                    companyName: prospect.businessName,
+                                    name: rawContactName || resolvedTitle,
+                                    firstName,
+                                    lastName,
+                                    email: bestEmail.toLowerCase(),
+                                    phone: prospect.phone || null,
+                                    title: resolvedTitle,
+                                    role: resolvedTitle,
+                                    isPrimary: true,
+                                    lifecycleStatus: "active",
+                                    emailStatus: "unknown",
+                                    emailSource: prospect.emailSource || "none",
+                                    emailConfidence: prospect.emailConfidence || "medium",
+                                    unsubscribed: false,
+                                    source: "auto_sdr",
+                                    createdAt: now,
+                                    updatedAt: now,
+                                });
+
+                                const seqResult = await enqueueLeadSequence({
+                                    db,
+                                    leadId: companyRef.id,
+                                    contactId: contactRef.id,
+                                    initialDelayMinutes: autoEnrolledCount * 3,
+                                    throwOnGuard: false,
+                                    enrolledBy: "auto_sdr",
+                                });
+
+                                if (seqResult.success) {
+                                    queueStatus = "sequenced";
+                                    enrolledCompanyId = companyRef.id;
+                                    enrolledContactId = contactRef.id;
+                                    enrolledSequenceId = seqResult.sequenceId || null;
+                                    autoEnrolledCount++;
+                                    logger.info(
+                                        `[DailyProspector] 🤖 Auto-enrolled "${prospect.businessName}" (ICP=${icpScore}, ${practiceSpecialty}) into ${enrolledSequenceId}`
+                                    );
+                                }
+                            } catch (autoErr: any) {
+                                logger.warn(`[DailyProspector] Auto-enroll failed for "${prospect.businessName}", falling back to pending_review:`, autoErr?.message || autoErr);
+                            }
+                        }
+
                         batch.set(ref, {
                             businessName: prospect.businessName,
                             normalizedName: normalizeName(prospect.businessName),
@@ -507,7 +637,8 @@ async function runDailyPipeline() {
                             phone: prospect.phone || null,
                             website: prospect.website || null,
                             rating: prospect.rating || null,
-                            facilityType: prospect.facilityType || null,
+                            facilityType: prospect.facilityType || "medical_dental",
+                            practiceSpecialty,
 
                             contactEmail: prospect.contactEmail || null,
                             genericEmail: prospect.genericEmail || null,
@@ -515,7 +646,6 @@ async function runDailyPipeline() {
                             contactTitle: prospect.contactTitle || null,
 
                             // Inferred PIC — who likely manages cleaning decisions at this facility type.
-                            // Prefer resolved facilityType; fall back to the raw query term.
                             inferredTitle: inferredPic?.title ?? null,
                             inferredDept: inferredPic?.dept ?? null,
 
@@ -531,7 +661,11 @@ async function runDailyPipeline() {
 
                             allContacts: prospect.allContacts || [],
 
-                            status: "pending_review",
+                            status: queueStatus,
+                            autoEnrolled: queueStatus === "sequenced",
+                            companyId: enrolledCompanyId,
+                            contactId: enrolledContactId,
+                            sequenceId: enrolledSequenceId,
                             batchDate,
                             searchQuery: queryTerm,
                             searchLocation: location,
@@ -572,6 +706,8 @@ async function runDailyPipeline() {
             discovered: totalDiscovered,
             withEmail: newProspects.length,
             added: newProspects.length,
+            autoEnrolled: autoEnrolledCount,
+            dsoFiltered: dsoFilteredCount,
             duplicatesSkipped,
             queryYield,
             locationYield
@@ -621,7 +757,7 @@ async function runDailyPipeline() {
 export const dailyProspector = onSchedule({
     schedule: "0 6 * * *",  // 6:00 AM ET daily
     timeZone: "America/New_York",
-    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
+    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "RESEND_API_KEY"],
     timeoutSeconds: 540,
     memory: "1GiB",
 }, async () => {
@@ -633,7 +769,7 @@ export const dailyProspector = onSchedule({
 
 export const triggerDailyProspector = onCall({
     cors: DASHBOARD_CORS,
-    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
+    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "RESEND_API_KEY"],
     timeoutSeconds: 540,
     memory: "1GiB",
 }, async () => {
@@ -654,6 +790,9 @@ export const updateProspectingConfig = onCall({
     if (data.queries) update.queries = data.queries;
     if (data.locations) update.locations = data.locations;
     if (data.dailyTarget !== undefined) update.dailyTarget = data.dailyTarget;
+    if (data.maxDailyOutreach !== undefined) update.maxDailyOutreach = data.maxDailyOutreach;
+    if (data.autoEnrollEnabled !== undefined) update.autoEnrollEnabled = data.autoEnrollEnabled;
+    if (data.autoEnrollMinIcp !== undefined) update.autoEnrollMinIcp = data.autoEnrollMinIcp;
     if (data.enabled !== undefined) update.enabled = data.enabled;
     if (data.excludePatterns) update.excludePatterns = data.excludePatterns;
 
@@ -686,18 +825,30 @@ export const getProspectingConfig = onCall({
 export const regenerateProspectingConfig = onCall({
     cors: DASHBOARD_CORS,
 }, async (request) => {
-    const data = request.data as { tiers?: (1 | 2 | 3)[]; dailyTarget?: number } | undefined;
+    const data = request.data as {
+        tiers?: (1 | 2 | 3)[];
+        dailyTarget?: number;
+        maxDailyOutreach?: number;
+        autoEnrollEnabled?: boolean;
+        autoEnrollMinIcp?: number;
+    } | undefined;
     const generated = generateProspectingConfig({
-        tiers: data?.tiers ?? [1, 2, 3],
-        dailyTarget: data?.dailyTarget ?? 100,
+        tiers: data?.tiers ?? [1, 2],
+        dailyTarget: data?.dailyTarget ?? 60,
+        maxDailyOutreach: data?.maxDailyOutreach ?? 30,
+        autoEnrollEnabled: data?.autoEnrollEnabled ?? true,
+        autoEnrollMinIcp: data?.autoEnrollMinIcp ?? 75,
     });
 
     const config: ProspectingConfig = {
         queries: generated.queries,
         locations: generated.locations,
         dailyTarget: generated.dailyTarget,
+        maxDailyOutreach: generated.maxDailyOutreach,
+        autoEnrollEnabled: generated.autoEnrollEnabled,
+        autoEnrollMinIcp: generated.autoEnrollMinIcp,
         enabled: true,
-        excludePatterns: [],
+        excludePatterns: generated.excludePatterns,
     };
 
     await db.collection("prospecting_config").doc("default").set(config, { merge: true });

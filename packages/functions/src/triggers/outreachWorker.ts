@@ -2,9 +2,10 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from 'firebase-admin';
 import * as logger from "firebase-functions/logger";
 import { fetchPendingTasks, updateTaskStatus, enqueueTask, claimTask, QueueItem } from "../utils/queueUtils";
-import { skipToWeekday, DEFAULT_SEND_HOUR_UTC } from "../utils/scheduleUtils";
-import { sendEmail } from "../utils/emailUtils";
-import { getFacilityPhrases, cleanBusinessName } from '@xiri/shared';
+import { skipToWeekday, DEFAULT_SEND_HOUR_UTC, buildScheduledDate } from "../utils/scheduleUtils";
+import { sendEmail, parseAddress } from "../utils/emailUtils";
+import { getFacilityPhrases, cleanBusinessName, isOrthodonticPractice } from '@xiri/shared';
+import { extractContactFirstName } from "../utils/leadSequenceEngine";
 
 // ── Smart fallbacks for unresolved merge variables ─────────────────
 const SMART_FALLBACKS: Record<string, string> = {
@@ -113,12 +114,24 @@ export const processOutreachQueue = onSchedule({
 }, async (event) => {
     logger.info("Processing outreach queue...");
 
-    // ── Weekend guard: defer all outreach to next Monday 10 AM ET ──
-    const nowDay = new Date().getUTCDay();
-    if (nowDay === 0 || nowDay === 6) {
-        logger.info(`Weekend detected (day=${nowDay}) — skipping outreach queue processing.`);
+    // ── New York Business-Hours & Weekday Guard (Mon–Fri, 9:00 AM – 4:00 PM ET) ──
+    // Prevents weekend sends AND prevents Sunday-night / 6 AM UTC-drift sends.
+    const now = new Date();
+    const etParts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'short',
+        hour: 'numeric',
+        hour12: false,
+    }).formatToParts(now);
+    const etWeekday = etParts.find(p => p.type === 'weekday')?.value || '';
+    const etHour = parseInt(etParts.find(p => p.type === 'hour')?.value || '0', 10);
+
+    if (etWeekday === 'Sat' || etWeekday === 'Sun') {
+        logger.info(`Weekend in ET (${etWeekday}) — skipping outreach queue processing.`);
         return;
     }
+
+    const isLeadSendWindow = etHour >= 9 && etHour < 16;
 
     // ── Max Daily Outreach Limit Guard (default 25 per weekday) ──
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
@@ -153,6 +166,18 @@ export const processOutreachQueue = onSchedule({
 
         for (const task of tasks) {
             try {
+                // Lead cold outreach sends strictly within 9:00 AM – 4:00 PM ET Mon–Fri
+                if (task.leadId && !isLeadSendWindow) {
+                    logger.info(`[OutreachWorker] Outside NY lead send window (ET hour=${etHour}) — holding lead task ${task.id} until 9 AM ET.`);
+                    continue;
+                }
+
+                // Check daily outreach cap BEFORE claiming lead tasks so nothing gets stuck IN_PROGRESS
+                if (task.leadId && sentToday >= maxDailyOutreach) {
+                    logger.info(`[OutreachWorker] Daily outreach cap reached (${sentToday}/${maxDailyOutreach}). Deferring remaining lead tasks.`);
+                    continue;
+                }
+
                 // ── Claim the task before processing (prevents duplicate sends) ──
                 const claimed = await claimTask(db, task.id!);
                 if (!claimed) {
@@ -161,14 +186,9 @@ export const processOutreachQueue = onSchedule({
                 }
 
                 if (task.leadId) {
-                    // Check if daily cap reached mid-batch
-                    if (sentToday >= maxDailyOutreach) {
-                        logger.info(`[OutreachWorker] Daily outreach cap reached (${sentToday}/${maxDailyOutreach}). Halting current batch.`);
-                        break;
-                    }
-                    // ── Lead Outreach (template-based) ──
-                    await handleLeadSend(task);
-                    sentToday++;
+                    // ── Lead Outreach (template + engagement-branched funnel) ──
+                    const didSend = await handleLeadSend(task);
+                    if (didSend) sentToday++;
                 } else {
                     // ── Vendor Outreach (existing) ──
                     if (task.type === 'GENERATE') {
@@ -622,10 +642,35 @@ async function handleFollowUp(task: QueueItem) {
 
 
 
-async function handleLeadSend(task: QueueItem) {
-    logger.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
+/**
+ * Render plain text email body with clean clickable links (supports [Label](https://...)
+ * and bare https:// URLs) while safely escaping HTML.
+ */
+function renderLeadEmailHtml(body: string): string {
+    const escaped = body
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 
-    // ── Resolve lead document from companies OR leads (match startLeadSequence logic) ──
+    // Convert markdown links [Label](https://...) into styled anchors
+    const withMdLinks = escaped.replace(
+        /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+        '<a href="$2" style="color: #0369a1; text-decoration: underline; font-weight: 500;">$1</a>'
+    );
+
+    // Convert remaining bare https:// URLs not already inside href="..."
+    const withAllLinks = withMdLinks.replace(
+        /(?<!href=")(https?:\/\/[^\s<]+)/g,
+        '<a href="$1" style="color: #0369a1; text-decoration: underline;">$1</a>'
+    );
+
+    return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; font-size: 14px; line-height: 1.7;">${withAllLinks.replace(/\n/g, '<br/>')}</div>`;
+}
+
+async function handleLeadSend(task: QueueItem): Promise<boolean> {
+    logger.info(`[LeadOutreach] Processing task ${task.id} for lead ${task.leadId}`);
+
+    // ── Resolve lead document from companies OR leads ──
     let leadDoc = await db.collection("companies").doc(task.leadId!).get();
     let leadCollection = 'companies';
     if (!leadDoc.exists) {
@@ -635,16 +680,15 @@ async function handleLeadSend(task: QueueItem) {
     if (!leadDoc.exists) {
         logger.info(`[Suppression] Lead ${task.leadId} not found in companies or leads — cancelling task.`);
         await updateTaskStatus(db, task.id!, 'CANCELLED');
-        return;
+        return false;
     }
-    logger.info(`[LeadOutreach] Resolved lead ${task.leadId} from '${leadCollection}' collection.`);
 
     // ── Suppression check: skip lost / unsubscribed leads ──
     const leadData = leadDoc.data()!;
     if (leadData.status === 'lost' || leadData.unsubscribedAt) {
-        logger.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed — skipping send.`);
+        logger.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed — cancelling task.`);
         await updateTaskStatus(db, task.id!, 'CANCELLED');
-        return;
+        return false;
     }
 
     // ── Human Pipeline Guardrail: skip leads in active sales conversations ──
@@ -652,114 +696,164 @@ async function handleLeadSend(task: QueueItem) {
     if (HUMAN_PIPELINE_STATUSES.includes(leadData.status)) {
         logger.info(`[HumanHandoff] Lead ${task.leadId} is in active human sales pipeline ("${leadData.status}") — cancelling automated cold task.`);
         await updateTaskStatus(db, task.id!, 'CANCELLED');
-        return;
+        return false;
     }
 
-    // ── Resolve contact (contact-centric model) ──
+    // ── Resolve contact (contact-centric model) & engagement telemetry ──
     const contactId = task.contactId || task.metadata?.contactId || null;
-    let toEmail = task.metadata?.email;
-    let contactName = task.metadata?.contactName || 'there';
+    let toEmail = task.metadata?.email || leadData.email || '';
+    let contactName = task.metadata?.contactName || leadData.contactName || 'there';
+    let contactData: Record<string, any> | null = null;
 
-    // If contactId is available, use contact-level data and check contact unsub
     if (contactId) {
         const contactDoc = await db.collection('contacts').doc(contactId).get();
         if (contactDoc.exists) {
-            const cData = contactDoc.data()!;
-            if (cData.unsubscribed) {
-                logger.info(`[Suppression] Contact ${contactId} is unsubscribed — skipping send.`);
+            contactData = contactDoc.data()!;
+            if (contactData.unsubscribed || contactData.lifecycleStatus === 'suppressed' || contactData.lifecycleStatus === 'held') {
+                logger.info(`[Suppression] Contact ${contactId} is ${contactData.lifecycleStatus || 'unsubscribed'} — cancelling task.`);
                 await updateTaskStatus(db, task.id!, 'CANCELLED');
-                return;
+                return false;
             }
-            toEmail = cData.email || toEmail;
-            contactName = `${cData.firstName || ''} ${cData.lastName || ''}`.trim() || contactName;
+            toEmail = contactData.email || toEmail;
+            const fullName = `${contactData.firstName || ''} ${contactData.lastName || ''}`.trim();
+            if (fullName) contactName = fullName;
         }
     }
 
     if (!toEmail) {
-        logger.warn(`[LeadOutreach] No email for lead ${task.leadId}, skipping.`);
-        await updateTaskStatus(db, task.id!, 'COMPLETED');
-        return;
+        logger.warn(`[LeadOutreach] No email for lead ${task.leadId}, cancelling task.`);
+        await updateTaskStatus(db, task.id!, 'CANCELLED');
+        return false;
     }
 
-    const templateId = task.metadata?.templateId;
-    if (!templateId) {
+    const baseTemplateId = task.metadata?.templateId;
+    if (!baseTemplateId) {
         logger.error(`[LeadOutreach] No templateId for lead ${task.leadId} task ${task.id}.`);
         await updateTaskStatus(db, task.id!, 'FAILED');
-        return;
+        return false;
     }
 
-    // Fetch template
-    const templateDoc = await db.collection('templates').doc(templateId).get();
+    // ── Dynamic Warm / Cold Branching for Follow-Up Steps (stepIndex >= 1) ──
+    const stepIndex: number = typeof task.metadata?.stepIndex === 'number'
+        ? task.metadata.stepIndex
+        : Math.max(0, (task.metadata?.sequence || 1) - 1);
+
+    const engagement = contactData?.emailEngagement || {};
+    const isWarm = Boolean(
+        engagement.highIntentClicked ||
+        (engagement.clickedCount || 0) > 0 ||
+        (engagement.openedCount || 0) > 0 ||
+        engagement.lastEvent === 'opened' ||
+        engagement.lastEvent === 'clicked'
+    );
+
+    let resolvedTemplateId = baseTemplateId;
+    let branchTag: 'warm' | 'cold' | 'base' = 'base';
+    let templateDoc = null as FirebaseFirestore.DocumentSnapshot | null;
+
+    if (stepIndex >= 1) {
+        const branchSuffix = isWarm ? '_warm' : '_cold';
+        const candidateId = `${baseTemplateId}${branchSuffix}`;
+        const candidateDoc = await db.collection('templates').doc(candidateId).get();
+        if (candidateDoc.exists) {
+            resolvedTemplateId = candidateId;
+            branchTag = isWarm ? 'warm' : 'cold';
+            templateDoc = candidateDoc;
+            logger.info(`[LeadOutreach] Engagement branch (${branchTag}) selected template "${resolvedTemplateId}" for ${toEmail}`);
+        }
+    }
+
+    if (!templateDoc) {
+        templateDoc = await db.collection('templates').doc(baseTemplateId).get();
+    }
+
     if (!templateDoc.exists) {
-        logger.error(`[LeadOutreach] Template ${templateId} not found. Run the seed script.`);
+        logger.error(`[LeadOutreach] Template ${resolvedTemplateId} not found. Run scripts/seed-dental-sdr-funnel.js.`);
         await updateTaskStatus(db, task.id!, 'FAILED');
-        return;
+        return false;
     }
 
     const template = templateDoc.data()!;
 
-    // Build merge variables from task metadata with sanitized business name
-    const rawBizName = task.metadata.businessName || 'your practice';
+    // ── Build full merge variables ──
+    const rawBizName = leadData.businessName || task.metadata?.businessName || 'your practice';
     const cleanBiz = cleanBusinessName(rawBizName) || rawBizName;
+    const rawAddress = leadData.address || task.metadata?.address || '';
+    const parsedAddr = parseAddress(rawAddress);
+    const city = task.metadata?.city || leadData.city || parsedAddr.city || (rawAddress ? rawAddress.split(',')[0].trim() : 'Metro NY');
+    const rawFacilityType = leadData.facilityType || task.metadata?.facilityType || 'medical_dental';
+    const isOrtho = isOrthodonticPractice({
+        clinicType: leadData.dossier?.clinicType || task.metadata?.clinicType,
+        practiceSpecialty: leadData.practiceSpecialty,
+        businessName: rawBizName,
+        searchQuery: leadData.searchQuery,
+    });
 
     const mergeVars: Record<string, string> = {
         contactName,
+        contactFirstName: task.metadata?.contactFirstName || extractContactFirstName(contactName),
+        contactEmail: toEmail,
         businessName: cleanBiz,
         cleanBizName: cleanBiz,
-        facilityType: titleCase(task.metadata.facilityType || 'Medical Office'),
-        address: task.metadata.address || '',
-        squareFootage: task.metadata.squareFootage || '',
+        facilityType: titleCase(rawFacilityType),
+        practiceType: isOrtho ? 'orthodontic practice' : 'dental practice',
+        address: rawAddress,
+        city,
+        state: task.metadata?.state || leadData.state || parsedAddr.state || 'NY',
+        squareFootage: String(leadData.squareFootage || task.metadata?.squareFootage || ''),
+        keyObservation: leadData.dossier?.keyObservation || task.metadata?.keyObservation || '',
+        estimatedOperatories: String(leadData.dossier?.estimatedOperatories || task.metadata?.estimatedOperatories || ''),
     };
 
-    // ── Inject facility-type personalization phrases ─────────────
-    // Resolves {{spaceNoun}}, {{cadencePhrase}}, {{facilityCategory}},
-    // {{serviceHook}}, {{coreOpsPhrase}} from the static phrase map.
-    const rawFacilityType = task.metadata.facilityType || '';
     const phrases = getFacilityPhrases(rawFacilityType);
     for (const [key, value] of Object.entries(phrases)) {
         if (!mergeVars[key]) mergeVars[key] = value;
     }
 
-    // ── Defensive aliases ───────────────────────────────────────────
-    // If the AI template optimizer (or a manual edit) accidentally
-    // introduced vendor-style variables into a lead template, map them
-    // to the closest lead-context equivalents so they still render.
     const defensiveAliases: Record<string, string> = {
         vendorName: mergeVars.businessName,
-        city: task.metadata.city || task.metadata.address?.split(',')[0]?.trim() || '',
-        state: task.metadata.state || '',
-        services: titleCase(task.metadata.facilityType || 'Facility Services'),
-        specialty: titleCase(task.metadata.facilityType || 'Facility Services'),
-        onboardingUrl: 'https://xiri.ai/demo',
+        services: titleCase(rawFacilityType),
+        specialty: isOrtho ? 'Orthodontic Practice' : 'Dental Practice',
+        onboardingUrl: 'https://xiri.ai/audit/start',
     };
     for (const [key, value] of Object.entries(defensiveAliases)) {
         if (!mergeVars[key]) mergeVars[key] = value;
     }
 
-    // Merge template
-    let subject = template.subject || task.metadata.subject || '';
-    let body = template.body || '';
+    // ── Step 0 AI Personalized Draft blending (when enabled on template) ──
+    const draft = leadData.outreachDraft || task.metadata?.outreachDraft;
+    let subject = '';
+    let body = '';
+
+    if (stepIndex === 0 && template.useCustomDraft && draft?.subject && draft?.body) {
+        subject = draft.subject;
+        body = draft.body;
+        logger.info(`[LeadOutreach] Using AI SDR personalized draft for Step 1 to ${toEmail}`);
+    } else {
+        subject = template.subject || task.metadata?.subject || '';
+        body = template.body || template.content || '';
+    }
+
     for (const [key, value] of Object.entries(mergeVars)) {
         const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
         subject = subject.replace(regex, value);
         body = body.replace(regex, value);
     }
 
-    // ── Safety net: replace any remaining unresolved {{variables}} ──
-    // Uses smart fallbacks (e.g. "there" for contactName) instead of
-    // leaving raw curly brackets or blank gaps in the email.
     const subjectSanitized = sanitizeUnresolvedVars(subject);
     const bodySanitized = sanitizeUnresolvedVars(body);
     if (subjectSanitized.replaced.length || bodySanitized.replaced.length) {
-        logger.warn(`[LeadOutreach] Unresolved merge vars in template ${templateId}: ` +
+        logger.warn(`[LeadOutreach] Unresolved merge vars in template ${resolvedTemplateId}: ` +
             `subject=[${subjectSanitized.replaced.join(', ')}], body=[${bodySanitized.replaced.join(', ')}]`);
     }
     subject = subjectSanitized.cleaned;
     body = bodySanitized.cleaned;
 
-    const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${body.replace(/\n/g, '<br/>')}</div>`;
+    // Strip duplicate trailing "Best,\nChris" if signature is appended by sendEmail()
+    body = body.replace(/\n+(?:Best|Thanks|Regards),?\s*\n+Chris(?:\s+Leung)?\s*$/i, '').trim();
 
-    // Resolve sender from email_senders collection
+    const htmlBody = renderLeadEmailHtml(body);
+
     const leadSenderId = task.metadata?.senderId || 'sales';
     const leadSenderFrom = await getSenderFrom(leadSenderId);
 
@@ -767,62 +861,179 @@ async function handleLeadSend(task: QueueItem) {
         toEmail, subject, htmlBody,
         undefined,
         leadSenderFrom,
-        task.leadId ?? undefined, templateId,
-        'lead', // entityType for unsubscribe footer
+        task.leadId ?? undefined, resolvedTemplateId,
+        'lead',
         {
-            contactId: contactId || undefined, // tag email with contactId for webhook resolution
-            skipHeader: true, // Omit visual banner logo for personal 1-to-1 deliverability
+            contactId: contactId || undefined,
+            skipHeader: true,
         },
     );
+
+    const now = new Date();
 
     await db.collection("lead_activities").add({
         leadId: task.leadId,
         contactId: contactId || null,
         type: sendResult.success ? "OUTREACH_SENT" : "OUTREACH_FAILED",
         description: sendResult.success
-            ? `Lead email sent to ${toEmail} (template: ${templateId}).`
-            : `Failed to send lead email to ${toEmail}.`,
-        createdAt: new Date(),
+            ? `Funnel Touch #${stepIndex + 1} (${branchTag}) sent to ${toEmail}: "${subject}"`
+            : `Failed to send Funnel Touch #${stepIndex + 1} to ${toEmail}.`,
+        createdAt: now,
         metadata: {
             to: toEmail,
             subject,
             body,
             html: htmlBody,
-            templateId,
-            sequence: task.metadata.sequence,
+            templateId: resolvedTemplateId,
+            baseTemplateId,
+            branch: branchTag,
+            sequenceId: task.metadata?.sequenceId || null,
+            sequence: stepIndex + 1,
+            stepIndex,
             resendId: sendResult.resendId || null,
             contactId: contactId || null,
         },
     });
 
-    await updateTaskStatus(db, task.id!, sendResult.success ? 'COMPLETED' : 'FAILED');
+    await updateTaskStatus(db, task.id!, sendResult.success ? 'COMPLETED' : 'FAILED', {
+        ...(sendResult.success ? { completedAt: now } as any : {}),
+    });
 
-    if (sendResult.success) {
-        await db.collection(leadCollection).doc(task.leadId!).update({
-            outreachStatus: 'SENT',
-            outreachSentAt: new Date(),
-        });
+    if (!sendResult.success) {
+        return false;
+    }
 
-        // Increment daily outreach counter
-        try {
-            const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-            await db.collection("prospecting_config").doc("outreach_daily_stats").set({
-                date: todayStr,
-                sentCount: admin.firestore.FieldValue.increment(1),
-                lastSentAt: new Date(),
-            }, { merge: true });
-        } catch (counterErr) {
-            logger.warn('Daily outreach counter update failed:', counterErr);
+    // ── Update company & contact progress ──
+    const sequenceId = task.metadata?.sequenceId || leadData.activeSequenceId || null;
+
+    await db.collection(leadCollection).doc(task.leadId!).update({
+        outreachStatus: 'SENT',
+        outreachSentAt: now,
+        lastTouchStep: stepIndex + 1,
+        updatedAt: now,
+    });
+
+    if (contactId) {
+        const contactUpdates: Record<string, any> = {
+            emailStatus: 'sent',
+            lastEmailedAt: now,
+            updatedAt: now,
+        };
+        if (sequenceId) {
+            contactUpdates[`sequenceHistory.${sequenceId}.currentStep`] = stepIndex + 1;
+            contactUpdates[`sequenceHistory.${sequenceId}.lastSentAt`] = now;
         }
+        await db.collection('contacts').doc(contactId).set(contactUpdates, { merge: true });
+    }
 
-        // Increment template stats.sent
+    // ── Increment daily outreach counter ──
+    try {
+        const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+        await db.collection("prospecting_config").doc("outreach_daily_stats").set({
+            date: todayStr,
+            sentCount: admin.firestore.FieldValue.increment(1),
+            lastSentAt: now,
+        }, { merge: true });
+    } catch (counterErr) {
+        logger.warn('Daily outreach counter update failed:', counterErr);
+    }
+
+    // ── Increment template stats.sent ──
+    try {
+        await db.collection('templates').doc(resolvedTemplateId).update({
+            'stats.sent': admin.firestore.FieldValue.increment(1),
+            'stats.lastUpdated': now,
+        });
+    } catch (statsErr) {
+        logger.warn('Template stats.sent update failed:', statsErr);
+    }
+
+    // ── Chain Next Step in Sequence (or Transition to Monthly Nurture) ──
+    if (sequenceId) {
         try {
-            await db.collection('templates').doc(templateId).update({
-                'stats.sent': admin.firestore.FieldValue.increment(1),
-                'stats.lastUpdated': new Date(),
-            });
-        } catch (statsErr) {
-            logger.warn('Template stats.sent update failed:', statsErr);
+            const seqDoc = await db.collection('sequences').doc(sequenceId).get();
+            if (seqDoc.exists) {
+                const seqData = seqDoc.data()!;
+                const steps: Array<{ templateId: string; dayOffset: number; label?: string }> = seqData.steps || [];
+                const nextIndex = stepIndex + 1;
+
+                if (nextIndex < steps.length) {
+                    const currentDay = steps[stepIndex]?.dayOffset ?? 0;
+                    const nextStep = steps[nextIndex];
+                    const deltaDays = Math.max(1, (nextStep.dayOffset ?? (currentDay + 3)) - currentDay);
+                    const nextSendAt = buildScheduledDate(now, deltaDays);
+
+                    await enqueueTask(db, {
+                        leadId: task.leadId,
+                        contactId: contactId || undefined,
+                        type: 'SEND',
+                        scheduledAt: admin.firestore.Timestamp.fromDate(nextSendAt),
+                        metadata: {
+                            ...task.metadata,
+                            sequence: nextIndex + 1,
+                            stepIndex: nextIndex,
+                            totalSteps: steps.length,
+                            templateId: nextStep.templateId,
+                            stepLabel: nextStep.label || `Touch ${nextIndex + 1}`,
+                            outreachDraft: null, // Only Step 0 uses initial custom draft
+                        },
+                    });
+
+                    logger.info(
+                        `[LeadOutreach] Chained "${sequenceId}" Step ${nextIndex + 1}/${steps.length} (${nextStep.templateId}) for ${toEmail} at ${nextSendAt.toISOString()}`
+                    );
+                } else {
+                    // Sequence completed! Mark history completed & optionally chain into monthly nurture
+                    if (contactId) {
+                        await db.collection('contacts').doc(contactId).set({
+                            [`sequenceHistory.${sequenceId}.status`]: 'completed',
+                            [`sequenceHistory.${sequenceId}.completedAt`]: now,
+                        }, { merge: true });
+                    }
+
+                    const nextSequenceId = seqData.nextSequenceId;
+                    if (nextSequenceId && nextSequenceId !== sequenceId) {
+                        const nurtureDoc = await db.collection('sequences').doc(nextSequenceId).get();
+                        const nurtureSteps = nurtureDoc.exists ? (nurtureDoc.data()?.steps || []) : [];
+                        if (nurtureSteps.length > 0) {
+                            const firstNurture = nurtureSteps[0];
+                            const nurtureDelayDays = Math.max(14, firstNurture.dayOffset || 30);
+                            const nurtureSendAt = buildScheduledDate(now, nurtureDelayDays);
+
+                            await enqueueTask(db, {
+                                leadId: task.leadId,
+                                contactId: contactId || undefined,
+                                type: 'SEND',
+                                scheduledAt: admin.firestore.Timestamp.fromDate(nurtureSendAt),
+                                metadata: {
+                                    ...task.metadata,
+                                    sequenceId: nextSequenceId,
+                                    sequenceName: nurtureDoc.data()?.name || nextSequenceId,
+                                    sequence: 1,
+                                    stepIndex: 0,
+                                    totalSteps: nurtureSteps.length,
+                                    templateId: firstNurture.templateId,
+                                    stepLabel: firstNurture.label || 'Monthly Nurture #1',
+                                    outreachDraft: null,
+                                },
+                            });
+
+                            await db.collection(leadCollection).doc(task.leadId!).update({
+                                activeSequenceId: nextSequenceId,
+                                activeSequenceName: nurtureDoc.data()?.name || nextSequenceId,
+                            });
+
+                            logger.info(
+                                `[LeadOutreach] Sequence "${sequenceId}" finished — transitioned ${toEmail} into long-term nurture "${nextSequenceId}" at ${nurtureSendAt.toISOString()}`
+                            );
+                        }
+                    }
+                }
+            }
+        } catch (chainErr) {
+            logger.error(`[LeadOutreach] Failed to chain next step for ${task.leadId}:`, chainErr);
         }
     }
+
+    return true;
 }

@@ -37,8 +37,11 @@ export const onCalculatorLeadCaptured = onDocumentCreated(
             ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(calc.monthlyEstimate)
             : "Unknown";
 
-        const VENDOR_CHAT_WEBHOOK =
-            "https://chat.googleapis.com/v1/spaces/AAQAYd8NzdA/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=WFryLEM_LRyVmM5I0m5A0KghBN8yL3Fw8vZMLgBDjOQ";
+        const VENDOR_CHAT_WEBHOOK = process.env.GOOGLE_CHAT_VENDOR_WEBHOOK_URL || process.env.GOOGLE_CHAT_WEBHOOK_URL;
+        if (!VENDOR_CHAT_WEBHOOK) {
+            logger.warn("[onCalculatorLeadCaptured] GOOGLE_CHAT_WEBHOOK_URL not configured — skipping alert.");
+            return;
+        }
 
         const crmLink = `https://app.xiri.ai/supply/crm/${vendorId}`;
 

@@ -9,6 +9,7 @@ export type RecommendationAction =
   | { type: 'remove_query'; query: string }
   | { type: 'add_query'; query: string }
   | { type: 'remove_location'; location: string }
+  | { type: 'add_location'; location: string }
   | { type: 'add_exclude'; pattern: string }
   | { type: 'add_queries'; queries: string[] };
 
@@ -105,7 +106,7 @@ export function RecommendationsPanel({ config, prospects, onApply, onDismiss }: 
                                 type: 'expand',
                                 title: 'Hot Location',
                                 description: `High yield in ${loc}. Consider adding adjacent town ${missingTowns[0]}.`,
-                                action: { type: 'add_query', query: `${missingTowns[0]}, NY` },
+                                action: { type: 'add_location', location: `${missingTowns[0]}, NY` },
                                 icon: PlusCircle,
                                 colorClass: 'bg-blue-100 border-blue-300 text-blue-950',
                             });

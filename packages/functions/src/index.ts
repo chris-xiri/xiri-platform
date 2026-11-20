@@ -14,7 +14,7 @@ export { sendVendorBookingConfirmation } from "./triggers/sendVendorBookingConfi
 export { enrichFromWebsite } from "./triggers/enrichFromWebsite";
 export { onOnboardingComplete } from "./triggers/onOnboardingComplete";
 export { onCalculatorLeadCaptured } from "./triggers/onCalculatorLeadCaptured";
-export { onAwaitingOnboarding, onVendorAdvancedPastOutreach } from "./triggers/dripScheduler";
+export { onAwaitingOnboarding, onVendorAdvancedPastOutreach, onCompanyAdvancedPastOutreach } from "./triggers/dripScheduler";
 export { handleUnsubscribe } from "./triggers/handleUnsubscribe";
 export { sendOnboardingInvite } from "./triggers/sendOnboardingInvite";
 export { sendQuoteEmail, respondToQuote } from "./triggers/sendQuoteEmail";
@@ -133,9 +133,10 @@ export {
     getPseoDeployStatus,
 } from "./functions/pseoDeployment";
 
-// ── Radar & Intent Triage (onCall) ──
+// ── Radar & Intent Triage (onCall + HTTP Inbound Reply Webhook) ──
 export {
     triageLeadEngagement,
+    inboundReplyWebhook,
 } from "./triggers/radarIntentWebhook";
 
 // ── Email Engagement Digest (scheduled + onCall) ──
