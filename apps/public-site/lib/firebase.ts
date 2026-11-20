@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "demo-key",
@@ -15,11 +16,13 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const db = getFirestore(app);
 const storage = getStorage(app);
+const functions = getFunctions(app, 'us-central1');
 
 // Connect to emulators only when explicitly enabled
 if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
     console.log('Connecting to Firebase Emulators...');
     connectFirestoreEmulator(db, '127.0.0.1', 8085);
+    connectFunctionsEmulator(functions, '127.0.0.1', 5001);
 }
 
-export { app, db, storage };
+export { app, db, storage, functions };

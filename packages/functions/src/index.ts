@@ -109,6 +109,7 @@ export { generateAISequence } from "./functions/sequenceGenerator";
 export { askAI } from "./functions/askAI";
 export { parseCalculatorPrompt } from "./functions/parseCalculatorPrompt";
 export { parseRfpBrief, generateRfp, extractBidData, scoreBidRows, submitRfpLead } from "./functions/rfpBidAnalyzer";
+export { createAuditLead, getAuditLead, updateAuditLead } from "./functions/auditWizard";
 
 // ── pSEO Engine – OAuth & Connection (onCall) ──
 export {

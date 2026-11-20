@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, Building2, Printer, Eye, EyeOff, History, ChevronRight, Pencil, Check, X, Settings } from 'lucide-react';
+import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, Building2, Printer, Eye, EyeOff, History, ChevronRight, Pencil, Check, X, Settings, Handshake } from 'lucide-react';
 import ContractPreview from '@/components/ContractPreview';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -86,12 +86,17 @@ export default function ContractDetailPage() {
                 }
                 setWorkOrders(woData);
 
-                // Fetch lead info
+                // Fetch company / lead info (check canonical `companies` first, fallback to legacy `leads`)
                 const leadId = contractData.leadId;
                 if (leadId) {
-                    const leadDoc = await getDoc(doc(db, 'leads', leadId));
-                    if (leadDoc.exists()) {
-                        setLead({ id: leadDoc.id, ...leadDoc.data() });
+                    const companyDoc = await getDoc(doc(db, 'companies', leadId));
+                    if (companyDoc.exists()) {
+                        setLead({ id: companyDoc.id, ...companyDoc.data() });
+                    } else {
+                        const leadDoc = await getDoc(doc(db, 'leads', leadId));
+                        if (leadDoc.exists()) {
+                            setLead({ id: leadDoc.id, ...leadDoc.data() });
+                        }
                     }
                 }
 
@@ -180,6 +185,46 @@ export default function ContractDetailPage() {
                     )}
                 </div>
             </div>
+
+            {/* Referral Partner & Payout Attribution */}
+            {(contract.referredBy || lead?.referredBy || contract.referralLeadId || lead?.referralLeadId) && (() => {
+                const ref = contract.referredBy || lead?.referredBy;
+                return (
+                    <Card className="border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20">
+                        <CardContent className="pt-4 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <Handshake className="w-4 h-4 text-emerald-700" />
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                                        Referral Partner
+                                    </span>
+                                    {ref?.trade && ref.trade !== 'other' && (
+                                        <Badge variant="outline" className="text-[10px] border-emerald-300 text-emerald-800 capitalize">
+                                            {ref.trade}
+                                        </Badge>
+                                    )}
+                                </div>
+                                <p className="text-sm font-semibold text-foreground">
+                                    {ref?.name || 'Referral Partner'}
+                                    {ref?.email && <span className="font-normal text-muted-foreground"> · {ref.email}</span>}
+                                    {ref?.phone && <span className="font-normal text-muted-foreground"> · {ref.phone}</span>}
+                                </p>
+                                <p className="text-xs text-emerald-800 dark:text-emerald-300">
+                                    Payout terms: ${ref?.walkthroughBonus ?? 100} walkthrough · ${ref?.closeBonus ?? 400} close (60 days active) · ${ref?.recurringBonus ?? 50}/mo recurring
+                                </p>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-emerald-300 text-emerald-800 hover:bg-emerald-100 shrink-0"
+                                onClick={() => router.push('/sales/referrals')}
+                            >
+                                Manage Payouts
+                            </Button>
+                        </CardContent>
+                    </Card>
+                );
+            })()}
 
             {/* Contract Party Details — editable pre-send review */}
             <Card className="border-amber-200 bg-amber-50/30">

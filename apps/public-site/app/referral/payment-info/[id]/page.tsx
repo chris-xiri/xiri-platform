@@ -1,20 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { CheckCircle, Loader2, DollarSign, CreditCard } from 'lucide-react';
 
 type PaymentMethod = 'venmo' | 'paypal' | 'ach';
 
-export default function PaymentInfoPage({ params }: { params: { id: string } }) {
-    const referralId = params.id;
+export default function PaymentInfoPage() {
+    const params = useParams();
+    const referralId = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : '';
 
     const [loading, setLoading] = useState(true);
     const [referralData, setReferralData] = useState<any>(null);
     const [notFound, setNotFound] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState('');
 
     // Form state
     const [method, setMethod] = useState<PaymentMethod>('venmo');
@@ -25,6 +28,11 @@ export default function PaymentInfoPage({ params }: { params: { id: string } }) 
     const [accountName, setAccountName] = useState('');
 
     useEffect(() => {
+        if (!referralId) {
+            setNotFound(true);
+            setLoading(false);
+            return;
+        }
         async function load() {
             try {
                 const docRef = doc(db, 'referral_leads', referralId);
@@ -67,6 +75,7 @@ export default function PaymentInfoPage({ params }: { params: { id: string } }) 
         if (!canSubmit()) return;
 
         setSubmitting(true);
+        setError('');
         try {
             const paymentInfo: Record<string, string> = { method };
             if (method === 'venmo') paymentInfo.venmoHandle = venmoHandle.trim();
@@ -85,7 +94,7 @@ export default function PaymentInfoPage({ params }: { params: { id: string } }) 
             setSubmitted(true);
         } catch (err) {
             console.error('Error saving payment info:', err);
-            alert('Something went wrong. Please try again.');
+            setError('Something went wrong saving your payment info. Please try again or email chris@xiri.ai.');
         } finally {
             setSubmitting(false);
         }
@@ -256,6 +265,12 @@ export default function PaymentInfoPage({ params }: { params: { id: string } }) 
                             </>
                         )}
                     </div>
+
+                    {error && (
+                        <p role="alert" className="text-sm text-red-600 font-medium bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                            {error}
+                        </p>
+                    )}
 
                     <button
                         type="submit"

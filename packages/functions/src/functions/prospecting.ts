@@ -55,7 +55,30 @@ export const addProspectsToCrm = onCall({
     cors: DASHBOARD_CORS,
     timeoutSeconds: 60,
 }, async (request) => {
-    const { prospects, searchQuery: batchSearchQuery } = request.data as { prospects: (EnrichedProspect & { searchQuery?: string; facilityType?: string })[]; searchQuery?: string };
+    const { prospects, searchQuery: batchSearchQuery } = request.data as {
+        prospects: (EnrichedProspect & {
+            searchQuery?: string;
+            facilityType?: string;
+            source?: string;
+            notes?: string;
+            referralLeadId?: string;
+            referralData?: {
+                referralLeadId?: string;
+                referrerName?: string;
+                referrerEmail?: string;
+                referrerPhone?: string;
+                trade?: string;
+                tradeSlug?: string;
+                vendorId?: string | null;
+                sourcePage?: string;
+                notes?: string | null;
+                walkthroughBonus?: number;
+                closeBonus?: number;
+                recurringBonus?: number;
+            };
+        })[];
+        searchQuery?: string;
+    };
 
     if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
         throw new HttpsError("invalid-argument", "No prospects provided.");
@@ -68,6 +91,31 @@ export const addProspectsToCrm = onCall({
         for (const prospect of prospects) {
             // Use explicitly-set facilityType first, then infer from searchQuery
             const facilityType = prospect.facilityType || inferFacilityType(prospect.searchQuery || batchSearchQuery) || null;
+            const isReferral = prospect.source === 'referral' || Boolean(prospect.referralLeadId || prospect.referralData);
+            const referralLeadId = prospect.referralLeadId || prospect.referralData?.referralLeadId || null;
+            const referralData = prospect.referralData || null;
+
+            const referredBy = isReferral && referralData ? {
+                referralLeadId,
+                name: referralData.referrerName || '',
+                email: referralData.referrerEmail || '',
+                phone: referralData.referrerPhone || '',
+                trade: referralData.trade || 'other',
+                tradeSlug: referralData.tradeSlug || 'other',
+                vendorId: referralData.vendorId || null,
+                walkthroughBonus: referralData.walkthroughBonus ?? 100,
+                closeBonus: referralData.closeBonus ?? 400,
+                recurringBonus: referralData.recurringBonus ?? 50,
+            } : null;
+
+            const referralNotes = isReferral
+                ? [
+                    prospect.notes || referralData?.notes || '',
+                    referredBy?.name
+                        ? `Referred by ${referredBy.name}${referredBy.trade ? ` (${referredBy.trade})` : ''}${referredBy.email ? ` · ${referredBy.email}` : ''}${referredBy.phone ? ` · ${referredBy.phone}` : ''}`
+                        : '',
+                ].filter(Boolean).join('\n\n')
+                : (prospect.notes || null);
 
             // 1. Create Company
             const companyRef = db.collection("companies").doc();
@@ -75,14 +123,29 @@ export const addProspectsToCrm = onCall({
                 businessName: prospect.businessName,
                 address: prospect.address || null,
                 phone: prospect.phone || null,
+                contactPhone: prospect.phone || null,
                 website: prospect.website || null,
                 facebookUrl: prospect.facebookUrl || null,
                 linkedinUrl: prospect.linkedinUrl || null,
                 rating: prospect.rating || null,
                 facilityType,
-                source: 'prospector',
-                emailSource: prospect.emailSource,
-                emailConfidence: prospect.emailConfidence,
+                source: isReferral ? 'referral' : (prospect.source || 'prospector'),
+                ...(isReferral ? {
+                    leadType: 'referral_partnership',
+                    referralLeadId,
+                    referredBy,
+                    tags: ['referral', ...(referredBy?.trade ? [`referrer:${referredBy.trade}`] : [])],
+                    attribution: {
+                        source: 'referral',
+                        medium: 'partner',
+                        campaign: referralData?.tradeSlug || referralData?.trade || 'general',
+                        landingPage: referralData?.sourcePage || '/refer',
+                    },
+                } : {}),
+                ...(referralNotes ? { notes: referralNotes } : {}),
+                emailSource: prospect.emailSource || null,
+                emailConfidence: prospect.emailConfidence || null,
+                status: 'new',
                 createdAt: new Date(),
                 updatedAt: new Date(),
             });
@@ -113,6 +176,14 @@ export const addProspectsToCrm = onCall({
                     isGeneric,
                 });
                 seenEmails.add(primaryEmail.toLowerCase());
+            } else if (isReferral && (prospect.contactName || prospect.phone)) {
+                // Referrals often include manager name/phone without an email — still create the contact
+                contactsToCreate.push({
+                    email: '',
+                    name: prospect.contactName || prospect.businessName,
+                    title: prospect.contactTitle || 'Building Manager',
+                    isGeneric: false,
+                });
             }
 
             // Additional contacts from Hunter enrichment
@@ -164,18 +235,29 @@ export const addProspectsToCrm = onCall({
                     lifecycleStatus,
                     lifecycleReason: lifecycleStatus === 'review' ? 'prospector_additional_contact' : null,
                     reviewReasons: lifecycleStatus === 'review' ? ['prospector_additional_contact'] : [],
-                    emailStatus: 'unknown',
+                    emailStatus: contact.email ? 'unknown' : 'invalid',
                     suppressionReason: null,
-                    validationSource: 'import',
+                    validationSource: isReferral ? 'referral_form' : 'import',
                     lastValidatedAt: new Date(),
                     duplicateOfContactId: null,
                     unsubscribed: false,
-                    source: 'prospector',
+                    source: isReferral ? 'referral' : (prospect.source || 'prospector'),
+                    ...(referralLeadId ? { referralLeadId } : {}),
+                    ...(referredBy ? { referredBy } : {}),
                     status: 'new',
                     stage: 'lead',
                     createdAt: new Date(),
                     updatedAt: new Date(),
                 });
+            }
+
+            // Link back to referral_leads so payout tracking & future Mercury automation can follow the deal
+            if (referralLeadId) {
+                batch.set(db.collection("referral_leads").doc(referralLeadId), {
+                    companyId: companyRef.id,
+                    ...(contactIds[0] ? { contactId: contactIds[0] } : {}),
+                    importedToCrmAt: new Date(),
+                }, { merge: true });
             }
 
             results.push({

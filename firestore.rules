@@ -197,5 +197,15 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow update, delete: if isAuthenticated();
     }
+
+    // ── Waitlist (public create, admin read/manage) ──
+    match /waitlist/{entryId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
+    match /waitlist_visits/{visitId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
   }
 }

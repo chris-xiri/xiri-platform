@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileText, Calendar, DollarSign, Search, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { FileText, Calendar, DollarSign, Search, ChevronDown, ChevronRight, X, Handshake } from 'lucide-react';
 
 const STATUS_BADGE: Record<string, { variant: any; label: string }> = {
     draft: { variant: 'secondary', label: 'Draft' },
@@ -236,7 +236,13 @@ export default function ContractsPage() {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-3 flex-wrap justify-end">
+                                            {(group.latest as any).referredBy?.name && (
+                                                <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-800 border-emerald-200 gap-1">
+                                                    <Handshake className="w-3 h-3" />
+                                                    Ref: {(group.latest as any).referredBy.name} · ${(group.latest as any).referredBy.recurringBonus ?? 50}/mo
+                                                </Badge>
+                                            )}
                                             {group.latest.lastRenewalReminderPeriod && (
                                                 <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
                                                     Reminded ({group.latest.lastRenewalReminderPeriod})

@@ -1,6 +1,7 @@
 import { onCall } from "firebase-functions/v2/https";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { DASHBOARD_CORS } from "../utils/cors";
+import { sendLeadChatNotification } from "../utils/leadChatWebhook";
 import { db } from "../utils/firebase";
 import { resolveGeminiModel } from "../utils/gemini";
 import {
@@ -233,6 +234,22 @@ export const submitRfpLead = onCall({
         picEmail: payload.picEmail,
         scopeBrief: payload.scopeBrief || null,
         createdAt: new Date().toISOString(),
+    });
+
+    await sendLeadChatNotification({
+        cardId: `rfp-lead-${leadRef.id}`,
+        title: payload.requestedXiri ? "🔥 RFP Lead Requested XIRI Quote" : "📄 New RFP Tool Lead",
+        subtitle: `${payload.facilityName || payload.picName} • ${payload.location || payload.zipCode}`,
+        fallbackText: `📄 New RFP Lead: ${payload.picName} (${payload.picEmail}) — ${payload.facilityName || payload.facilityType} (${payload.zipCode})`,
+        businessName: payload.facilityName || undefined,
+        contactName: payload.picName,
+        email: payload.picEmail,
+        location: [payload.location, payload.zipCode].filter(Boolean).join(" · "),
+        facilityType: payload.facilityType || undefined,
+        squareFootage: payload.estimatedSqft || null,
+        source: payload.source || "rfp_tool",
+        notes: payload.scopeBrief ? payload.scopeBrief.slice(0, 300) : undefined,
+        crmUrl: "https://app.xiri.ai/sales/crm",
     });
 
     return { success: true, deduped: false, leadId: leadRef.id };

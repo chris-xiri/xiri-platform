@@ -25,6 +25,8 @@ import {
     FileText,
     Wrench,
     Plus,
+    Handshake,
+    DollarSign,
 } from 'lucide-react';
 import {
     VENDOR_CAPABILITIES,
@@ -573,6 +575,12 @@ export default function LeadDetailPage() {
                                 <Badge variant="outline" className={`text-xs ${typeConfig.color}`}>
                                     {typeConfig.label}
                                 </Badge>
+                                {(lead as any).referredBy?.name && (
+                                    <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-800 border-emerald-200 gap-1">
+                                        <Handshake className="w-3 h-3" />
+                                        Referred by {(lead as any).referredBy.name}
+                                    </Badge>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -664,6 +672,66 @@ export default function LeadDetailPage() {
                             />
                         )}
 
+
+                        {/* Referral Partner Tag */}
+                        {((lead as any).referredBy || (lead as any).referralLeadId) && (
+                            <Card className="border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/20">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="flex items-center gap-2 text-base text-emerald-800 dark:text-emerald-300">
+                                        <Handshake className="w-4 h-4" /> Referral Partner
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2.5 text-sm">
+                                    {(lead as any).referredBy?.name && (
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground">Referrer</label>
+                                            <p className="font-semibold">
+                                                {(lead as any).referredBy.name}
+                                                {(lead as any).referredBy.trade && (lead as any).referredBy.trade !== 'other' && (
+                                                    <span className="ml-1.5 text-xs font-normal text-muted-foreground capitalize">
+                                                        ({(lead as any).referredBy.trade})
+                                                    </span>
+                                                )}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {(lead as any).referredBy?.email && (
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground">Email</label>
+                                            <p>
+                                                <a href={`mailto:${(lead as any).referredBy.email}`} className="text-emerald-700 hover:underline">
+                                                    {(lead as any).referredBy.email}
+                                                </a>
+                                            </p>
+                                        </div>
+                                    )}
+                                    {(lead as any).referredBy?.phone && (
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground">Phone</label>
+                                            <p>
+                                                <a href={`tel:${(lead as any).referredBy.phone}`} className="text-emerald-700 hover:underline">
+                                                    {(lead as any).referredBy.phone}
+                                                </a>
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div className="pt-2 border-t border-emerald-200/70 flex items-center gap-1.5 text-xs text-emerald-800 dark:text-emerald-300">
+                                        <DollarSign className="w-3.5 h-3.5 shrink-0" />
+                                        <span>
+                                            ${(lead as any).referredBy?.walkthroughBonus ?? 100} walkthrough · ${(lead as any).referredBy?.closeBonus ?? 400} close · ${(lead as any).referredBy?.recurringBonus ?? 50}/mo
+                                        </span>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full text-xs border-emerald-300 text-emerald-800 hover:bg-emerald-100"
+                                        onClick={() => router.push('/sales/referrals')}
+                                    >
+                                        Manage Referral Payouts
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Attribution */}
                         <Card>

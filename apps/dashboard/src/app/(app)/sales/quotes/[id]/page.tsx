@@ -520,6 +520,28 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 return;
             }
 
+            // Look up referral attribution from the company/lead so it carries through to contracts & operations
+            let referralAttribution: { referralLeadId: string | null; referredBy: any } = {
+                referralLeadId: null,
+                referredBy: null,
+            };
+            if (quote.leadId) {
+                try {
+                    const companySnap = await getDoc(doc(db, 'companies', quote.leadId));
+                    const sourceDoc = companySnap.exists()
+                        ? companySnap.data()
+                        : (await getDoc(doc(db, 'leads', quote.leadId))).data();
+                    if (sourceDoc?.referralLeadId || sourceDoc?.referredBy) {
+                        referralAttribution = {
+                            referralLeadId: sourceDoc.referralLeadId || sourceDoc.referredBy?.referralLeadId || null,
+                            referredBy: sourceDoc.referredBy || null,
+                        };
+                    }
+                } catch (err) {
+                    console.warn('Could not read referral attribution for contract:', err);
+                }
+            }
+
             // Check for existing contract for this lead
             const contractQuery = await getDocs(query(
                 collection(db, 'contracts'),
@@ -608,7 +630,11 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     quoteIds: existingQuoteIds.includes(quote.id) ? existingQuoteIds : [...existingQuoteIds, quote.id],
                     status: 'amended',
                     // Ensure FSM assignment carries through from quote
+                    // Ensure FSM assignment carries through from quote
                     ...(quote.assignedFsmId ? { assignedFsmId: quote.assignedFsmId, assignedFsmName: quote.assignedFsmName || '' } : {}),
+                    // Carry referral attribution if not already stamped on the contract
+                    ...(!existingData.referralLeadId && referralAttribution.referralLeadId ? { referralLeadId: referralAttribution.referralLeadId } : {}),
+                    ...(!existingData.referredBy && referralAttribution.referredBy ? { referredBy: referralAttribution.referredBy } : {}),
                     updatedAt: serverTimestamp(),
                 });
 
@@ -661,11 +687,26 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     signedSowUrl: (quote as any).signedSowUrl || null,
                     signedSowName: (quote as any).signedSowName || null,
                     signedSowUploadedAt: (quote as any).signedSowUploadedAt || null,
+                    ...(referralAttribution.referralLeadId ? { referralLeadId: referralAttribution.referralLeadId } : {}),
+                    ...(referralAttribution.referredBy ? { referredBy: referralAttribution.referredBy } : {}),
                     createdBy: userId,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
                 });
                 contractId = contractRef.id;
+            }
+
+            // Link contract back onto referral_leads for payout tracking & future Mercury automation
+            if (referralAttribution.referralLeadId) {
+                try {
+                    await updateDoc(doc(db, 'referral_leads', referralAttribution.referralLeadId), {
+                        contractId,
+                        contractMonthlyRate: quote.totalMonthlyRate || 0,
+                        contractLinkedAt: serverTimestamp(),
+                    });
+                } catch (err) {
+                    console.warn('Could not link contractId back to referral_leads:', err);
+                }
             }
 
             // 2. Create Work Orders ONLY for newly accepted (pending) items

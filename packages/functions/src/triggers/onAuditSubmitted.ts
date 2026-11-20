@@ -1,6 +1,7 @@
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import { sendLeadChatNotification } from "../utils/leadChatWebhook";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -74,7 +75,27 @@ export const onAuditSubmitted = onDocumentCreated({
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  logger.info(`[AuditSubmitted] Confirmation + internal alert sent for lead ${leadId} (${businessName})`);
+  // 4. Send Google Chat notification to Leads/Customers space
+  const locationText = [address, data.zipCode].filter(Boolean).join(' · ') || 'Not specified';
+  const sourceText = data.attribution?.formSource || data.attribution?.source || data.source || 'audit_wizard';
+  await sendLeadChatNotification({
+    cardId: `audit-lead-${leadId}`,
+    title: '🏢 New Inbound Audit Lead',
+    subtitle: `${businessName !== 'Your Facility' ? businessName : contactEmail} • ${locationText}`,
+    fallbackText: `🏢 New Audit Lead: ${contactEmail} (${locationText})`,
+    businessName: businessName !== 'Your Facility' ? businessName : undefined,
+    contactName: contactName || undefined,
+    email: contactEmail,
+    phone: data.phone || data.contactPhone || undefined,
+    location: locationText,
+    facilityType: data.facilityType || data.propertyType || undefined,
+    squareFootage: data.squareFootage || data.sqft || null,
+    services: Array.isArray(data.services) ? data.services.join(', ') : (data.serviceInterest || undefined),
+    source: `${sourceText}${data.attribution?.conversionPage ? ` (${data.attribution.conversionPage})` : ''}`,
+    crmUrl: `https://app.xiri.ai/sales/crm/${leadId}`,
+  });
+
+  logger.info(`[AuditSubmitted] Confirmation + internal alert + chat sent for lead ${leadId} (${businessName})`);
 });
 
 

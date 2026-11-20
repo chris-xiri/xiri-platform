@@ -204,7 +204,7 @@ export default async function ReferralPartnerPage({ params }: Props) {
                     </div>
 
                     {/* Sticky form */}
-                    <div className="lg:col-span-2">
+                    <div id="refer-form" className="lg:col-span-2 scroll-mt-24">
                         <div className="lg:sticky lg:top-24">
                             <ReferralForm tradeSlug={partnerSlug} source={slug} />
                         </div>

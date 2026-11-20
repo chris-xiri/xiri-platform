@@ -25,7 +25,7 @@ import {
     Settings, Play, SkipForward, ExternalLink, X,
     Calendar, TrendingUp, Zap, Filter, RefreshCw,
     Tag, Users, AlertTriangle, Sparkles, Pencil, Check,
-    Briefcase,
+    Briefcase, Handshake,
 } from 'lucide-react';
 import type { ProspectingConfig, QueuedProspect, ClientTriggerConfig } from './components/types';
 import { ConfigPanel } from './components/ConfigPanel';
@@ -76,7 +76,7 @@ export default function ProspectsPage() {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('pending_review');
     const [facilityTypeFilter, setFacilityTypeFilter] = useState<string>('all');
-    const [sourceFilter, setSourceFilter] = useState<'all' | 'prospector' | 'job_board_trigger'>('all');
+    const [sourceFilter, setSourceFilter] = useState<'all' | 'referral' | 'prospector' | 'job_board_trigger'>('all');
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [acting, setActing] = useState(false);
     const [triggering, setTriggering] = useState(false);
@@ -501,7 +501,10 @@ export default function ProspectsPage() {
                 p.address?.toLowerCase().includes(q) ||
                 p.contactEmail?.toLowerCase().includes(q) ||
                 p.contactName?.toLowerCase().includes(q) ||
-                p.searchLocation?.toLowerCase().includes(q)
+                p.searchLocation?.toLowerCase().includes(q) ||
+                p.referralData?.referrerName?.toLowerCase().includes(q) ||
+                p.referralData?.referrerEmail?.toLowerCase().includes(q) ||
+                p.referralData?.trade?.toLowerCase().includes(q)
             );
         }
 
@@ -592,6 +595,10 @@ export default function ProspectsPage() {
                     searchQuery: p.searchQuery,
                     facilityType: p.facilityType,
                     allContacts: p.allContacts || [],
+                    source: p.source,
+                    notes: p.notes,
+                    referralLeadId: p.referralLeadId,
+                    referralData: p.referralData,
                 })),
             });
 
@@ -636,6 +643,10 @@ export default function ProspectsPage() {
                     linkedinUrl: p.linkedinUrl, searchQuery: p.searchQuery,
                     facilityType: p.facilityType,
                     allContacts: p.allContacts || [],
+                    source: p.source,
+                    notes: p.notes,
+                    referralLeadId: p.referralLeadId,
+                    referralData: p.referralData,
                 })),
             });
 
@@ -692,6 +703,10 @@ export default function ProspectsPage() {
                     linkedinUrl: p.linkedinUrl, searchQuery: p.searchQuery,
                     facilityType: p.facilityType,
                     allContacts: p.allContacts || [],
+                    source: p.source,
+                    notes: p.notes,
+                    referralLeadId: p.referralLeadId,
+                    referralData: p.referralData,
                 })),
             });
 
@@ -1163,9 +1178,10 @@ export default function ProspectsPage() {
 
             {/* Source channel filter */}
             {(() => {
+                const referralCount = prospects.filter(p => p.source === 'referral').length;
                 const prospectorCount = prospects.filter(p => (p.source || 'prospector') === 'prospector').length;
                 const triggerCount = prospects.filter(p => p.source === 'job_board_trigger').length;
-                return triggerCount > 0 ? (
+                return (
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                             <Filter className="w-3 h-3" /> Source:
@@ -1176,6 +1192,16 @@ export default function ProspectsPage() {
                             onClick={() => setSourceFilter('all')}
                         >
                             All ({prospects.length})
+                        </Badge>
+                        <Badge
+                            variant={sourceFilter === 'referral' ? 'default' : 'outline'}
+                            className={`cursor-pointer text-xs transition-colors ${sourceFilter === 'referral'
+                                ? 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600'
+                                : 'border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100'
+                                }`}
+                            onClick={() => setSourceFilter(sourceFilter === 'referral' ? 'all' : 'referral')}
+                        >
+                            <Handshake className="w-3 h-3 mr-1" /> Referrals ({referralCount})
                         </Badge>
                         <Badge
                             variant={sourceFilter === 'prospector' ? 'default' : 'outline'}
@@ -1192,7 +1218,7 @@ export default function ProspectsPage() {
                             <Briefcase className="w-3 h-3 mr-1" /> Job Board ({triggerCount})
                         </Badge>
                     </div>
-                ) : null;
+                );
             })()}
 
             {/* Facility type filter badges */}
@@ -1451,6 +1477,7 @@ export default function ProspectsPage() {
                         const isUnknown = effectiveFt === 'unknown';
                         const isInferred = !prospect.facilityType && !isUnknown;
                         const borderColor =
+                            prospect.source === 'referral' ? 'border-l-emerald-500' :
                             prospect.emailConfidence === 'high' ? 'border-l-green-400' :
                             prospect.emailConfidence === 'medium' ? 'border-l-amber-400' :
                             prospect.contactEmail ? 'border-l-slate-300 dark:border-l-slate-600' :
@@ -1471,6 +1498,13 @@ export default function ProspectsPage() {
                                                 <a href={prospect.website.startsWith('http') ? prospect.website : `https://${prospect.website}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary shrink-0" onClick={e => e.stopPropagation()}>
                                                     <ExternalLink className="w-3 h-3" />
                                                 </a>
+                                            )}
+                                            {prospect.source === 'referral' && (
+                                                <Badge className="border border-emerald-300 bg-emerald-100 text-emerald-900 text-[10px] px-1.5 py-0 h-4 font-semibold shrink-0">
+                                                    <Handshake className="w-2.5 h-2.5 mr-0.5" />
+                                                    Referred by {prospect.referralData?.referrerName || 'Partner'}
+                                                    {prospect.referralData?.trade && prospect.referralData.trade !== 'other' ? ` (${prospect.referralData.trade})` : ''}
+                                                </Badge>
                                             )}
                                             {prospect.source === 'job_board_trigger' && (
                                                 <Badge className="border border-indigo-300 bg-indigo-100 text-indigo-900 text-[9px] px-1.5 py-0 h-4 font-semibold shrink-0">
@@ -1503,6 +1537,25 @@ export default function ProspectsPage() {
                                                 </span>
                                             )}
                                         </div>
+                                        {prospect.source === 'referral' && prospect.referralData && (
+                                            <div className="rounded-md bg-emerald-50/80 border border-emerald-200 px-2.5 py-1.5 text-[11px] text-emerald-950 space-y-0.5">
+                                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                                    <span className="font-semibold text-emerald-800">Referrer:</span>
+                                                    <span>{prospect.referralData.referrerName}</span>
+                                                    {prospect.referralData.referrerEmail && (
+                                                        <span className="text-emerald-700">· {prospect.referralData.referrerEmail}</span>
+                                                    )}
+                                                    {prospect.referralData.referrerPhone && (
+                                                        <span className="text-emerald-700">· {prospect.referralData.referrerPhone}</span>
+                                                    )}
+                                                </div>
+                                                {(prospect.notes || prospect.referralData.notes) && (
+                                                    <div className="text-emerald-900/90 italic truncate">
+                                                        &ldquo;{prospect.notes || prospect.referralData.notes}&rdquo;
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                         {prospect.triggerData && (
                                             <div className="text-[10px] text-indigo-800 truncate font-medium">Hiring: {prospect.triggerData.jobTitle}</div>
                                         )}

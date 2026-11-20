@@ -42,8 +42,27 @@ export interface QueuedProspect {
     actionedAt?: any;
     createdAt?: any;
 
-    /** Source channel: 'prospector' (default Serper Places) or 'job_board_trigger' */
-    source?: 'prospector' | 'job_board_trigger';
+    /** Source channel: 'prospector' (default Serper Places), 'job_board_trigger', or 'referral' */
+    source?: 'prospector' | 'job_board_trigger' | 'referral';
+    /** Referral lead doc ID — only present for source='referral' */
+    referralLeadId?: string;
+    /** Free-form notes submitted with the prospect/referral */
+    notes?: string;
+    /** Referrer metadata — only present for source='referral' */
+    referralData?: {
+        referralLeadId?: string;
+        referrerName: string;
+        referrerEmail: string;
+        referrerPhone?: string;
+        trade?: string;
+        tradeSlug?: string;
+        vendorId?: string | null;
+        sourcePage?: string;
+        notes?: string | null;
+        walkthroughBonus?: number;
+        closeBonus?: number;
+        recurringBonus?: number;
+    };
     /** Job posting metadata — only present for source='job_board_trigger' */
     triggerData?: {
         jobTitle: string;

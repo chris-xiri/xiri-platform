@@ -37,6 +37,7 @@ export function LeadMagnet({
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [error, setError] = useState('');
     const tracked = useRef(false);
 
     useEffect(() => {
@@ -51,25 +52,15 @@ export function LeadMagnet({
         if (!email) return;
 
         setLoading(true);
+        setError('');
 
         try {
+            // Write only to `lead_magnet_downloads` (public create allowed in firestore.rules)
             await addDoc(collection(db, 'lead_magnet_downloads'), {
-                email,
+                email: email.trim().toLowerCase(),
                 magnetName,
                 downloadUrl: downloadUrl || null,
                 createdAt: serverTimestamp(),
-            });
-
-            // Also add to leads collection for CRM visibility
-            await addDoc(collection(db, 'leads'), {
-                email,
-                source: `lead_magnet_${magnetName}`,
-                status: 'new',
-                name: '',
-                facilityType: '',
-                sqft: '',
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
             });
 
             trackEvent('lead_submission_success', { source: `lead_magnet_${magnetName}` });
@@ -89,6 +80,7 @@ export function LeadMagnet({
             setSuccess(true);
         } catch (err) {
             console.error('Failed to save lead magnet download:', err);
+            setError('Something went wrong. Please try again.');
         }
 
         setLoading(false);
@@ -178,6 +170,11 @@ export function LeadMagnet({
                                 </>
                             )}
                         </button>
+                        {error && (
+                            <p role="alert" className="text-xs text-red-600 font-medium text-center">
+                                {error}
+                            </p>
+                        )}
                         <p className={`text-xs text-center ${variant === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
                             No spam. Unsubscribe anytime.
                         </p>

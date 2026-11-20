@@ -29,11 +29,19 @@ interface ReferralLead {
     buildingName: string;
     buildingAddress?: string;
     managerName?: string;
+    managerEmail?: string;
+    managerPhone?: string;
     managerContact?: string;
     notes?: string;
     source: string;
     status: string;
     payoutStatus?: PayoutStatus;
+    paymentInfo?: {
+        method?: string;
+        venmoHandle?: string;
+        paypalEmail?: string;
+        accountName?: string;
+    };
     walkthroughPaidAt?: Timestamp;
     closePaidAt?: Timestamp;
     totalPaid?: number;
@@ -81,6 +89,7 @@ export default function ReferralPartnersPage() {
         setUpdating(referral.id);
         try {
             const updates: any = {
+                status: action.next,
                 payoutStatus: action.next,
                 updatedAt: serverTimestamp(),
             };
@@ -246,8 +255,17 @@ export default function ReferralPartnersPage() {
                                             <Badge variant="outline" className="text-xs">{referral.trade?.replace(/-referral-partner$/, '').replace(/-/g, ' ')}</Badge>
                                             <span>Referred {createdDate}</span>
                                             {referral.managerName && <span>Manager: {referral.managerName}</span>}
-                                            {referral.managerContact && <span>Contact: {referral.managerContact}</span>}
-                                            {referral.notes && <span className="italic">"{referral.notes}"</span>}
+                                            {referral.managerEmail && <span>Manager Email: {referral.managerEmail}</span>}
+                                            {referral.managerPhone && <span>Manager Phone: {referral.managerPhone}</span>}
+                                            {!referral.managerEmail && !referral.managerPhone && referral.managerContact && (
+                                                <span>Contact: {referral.managerContact}</span>
+                                            )}
+                                            {referral.paymentInfo?.method && (
+                                                <Badge variant="secondary" className="text-xs">
+                                                    Payout: {referral.paymentInfo.method.toUpperCase()}
+                                                </Badge>
+                                            )}
+                                            {referral.notes && <span className="italic">&ldquo;{referral.notes}&rdquo;</span>}
                                         </div>
                                     </div>
 
