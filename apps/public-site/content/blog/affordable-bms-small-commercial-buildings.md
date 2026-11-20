@@ -22,10 +22,10 @@ Here's every option available to small building owners, ranked from lowest to hi
 |----------|:----------:|:----------:|:----------:|---------|
 | **Preventive maintenance program** | $0 | $800–$3,000 | Low (fully managed) | Any building 5K–50K sq ft |
 | **Smart thermostats** | $200–$400/zone | $0 | Low | HVAC scheduling + remote access |
-| **IoT sensor kit** | $500–$2,000 | $10–$50 | Medium | Leak detection, humidity monitoring |
-| **Open-source BMS (OpenBMS, VOLTTRON)** | $2,000–$10,000 (hardware + setup) | $0–$500 | High (needs technician) | Tech-savvy building owners with IT staff |
+| **IoT sensor kit + LoRaWAN Hub (Milesight, Dragino, RAK)** | $1,500–$4,500 | $10–$50 (LTE SIM) | Low-Medium (Zero conduit; 915 MHz wireless) | Water leak detection, HVAC ΔT duct probes, humidity/IAQ, restroom counters |
+| **Open-source BMS (VOLTTRON, OpenBMS, Home Assistant + LoRaWAN)** | $2,500–$12,000 (hardware + setup) | $0–$500 | High (needs Linux/BACnet tech) | Tech-savvy building owners avoiding JCI/Honeywell lock-in |
 | **Cloud-based BMS (75F, Pelican, Brainbox)** | $5,000–$25,000 | $200–$800 | Medium | Buildings 20K–75K sq ft with modern HVAC |
-| **Enterprise BMS (Honeywell, JCI, Siemens)** | $50,000–$500,000 | $1,000–$4,000 | High (needs operator) | Buildings 50K+ sq ft with engineering staff |
+| **Enterprise BMS (Johnson Controls Metasys, Honeywell Niagara, Siemens Desigo, Schneider)** | $50,000–$500,000 | $1,000–$4,000 | High (proprietary dealer lock-in) | Buildings 50K+ sq ft with engineering staff |
 
 For buildings under 50,000 sq ft, the top three options deliver **80–90% of the outcomes** of an enterprise BMS at a fraction of the cost.
 
@@ -69,20 +69,19 @@ For buildings under 50,000 sq ft, the top three options deliver **80–90% of th
 
 **Best for:** Buildings 20,000–75,000 sq ft with modern HVAC equipment and a separate plan for non-HVAC maintenance.
 
-## Option 3: DIY Smart Device Stack ($1,000–$3,000)
+## Option 3: Commercial LoRaWAN Hub + Wireless Sensor Stack ($1,500–$4,500)
 
-**What it is:** Assemble your own basic monitoring using consumer-grade smart devices:
+**What it is:** Instead of paying $40,000+ in low-voltage electrician labor to pull RS-485 BACnet wire for a Johnson Controls or Siemens BMS, deploy a single **915 MHz LoRaWAN Gateway Hub** (such as a **Milesight UG65**, **RAKwireless WisGate**, or **MultiTech Conduit** — $300–$600) that penetrates concrete floors and steel mechanical room doors to connect 10-year battery wireless sensors across your entire building:
 
-- **Smart thermostats** (Ecobee, Nest) — $200–$400/zone for scheduling + remote monitoring
-- **Water leak sensors** (Moen Flo, Honeywell Lyric) — $30–$80 each for early leak detection
-- **Smart plugs with energy monitoring** (TP-Link Kasa, Emporia) — $15–$30 each for equipment energy tracking
-- **Humidity/temperature sensors** (Govee, SensorPush) — $30–$80 each for environmental monitoring
+- **LoRaWAN BACnet Smart Thermostats** (Milesight WT201 / Pelican) — $190–$300/zone for 7-day HVAC setback scheduling + keypad lockout
+- **LoRaWAN Spot & Rope Water Leak Sensors** (Milesight EM300-SLD / Dragino LWL02) — $65–$120 each under HVAC condensate pans, hot water heaters, and dental vacuum/compressor closets
+- **LoRaWAN HVAC Supply/Return Duct $\Delta T$ Probes & Filter $\Delta P$ Sensors** — $60–$220 each to detect failing rooftop unit (RTU) compressor stages or loaded MERV-13 filters before breakdowns happen
+- **LoRaWAN Temperature, Humidity & $CO_2$/IAQ Sensors** (Milesight AM103 / EM300-TH) — $65–$180 each for clinical operatories, sterilization rooms, labs, and server closets
+- **Smart Restroom Dispensers & People Counters** (Georgia-Pacific GP PRO IoT / Milesight VS330) — tracks exact restroom traffic and soap/towel refill needs
 
-**Total for a 10,000 sq ft building:** $600–$1,500 in devices.
+**Total for a 10,000–20,000 sq ft building:** $1,500–$4,500 installed (with zero conduit and 100% air-gapped from your internal corporate/HIPAA Wi-Fi via an LTE SIM in the LoRaWAN hub).
 
-**The catch:** No centralized dashboard, no automated vendor coordination, no maintenance scheduling. This monitors — it doesn't manage.
-
-**Best for:** Building owners who want basic visibility into building conditions as a supplement to a preventive maintenance program.
+**The catch:** Sensors detect leaks, dirty filters, and high traffic — they don't physically change the HVAC filters, mop the floors, or restock the restrooms. That's why pairing a **LoRaWAN sensor stack with XIRI's managed preventive maintenance and nightly verified cleaning program** is the highest-ROI combination for buildings under 50,000 sq ft.
 
 ## How to Choose: The Decision Framework
 
