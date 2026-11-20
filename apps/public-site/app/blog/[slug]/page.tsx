@@ -5,6 +5,9 @@ import { JsonLd } from '@/components/JsonLd';
 import { getPost, getAllSlugs } from '@/data/blog-posts';
 import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
 import { LeadMagnet } from '@/components/LeadMagnet';
+import { ClientLeadForm } from '@/components/ClientLeadForm';
+import { CaseStudySpotlight } from '@/components/CaseStudySpotlight';
+import { AskAnyAI } from '@/components/AskAnyAI';
 import { SITE } from '@/lib/constants';
 
 type Props = {
@@ -261,7 +264,7 @@ export default async function BlogPost({ params }: Props) {
                             <span className="text-slate-300">|</span>
                             <span>Published {new Date(post.publishDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                             <span className="text-slate-300">|</span>
-                            <span className="text-green-600 font-medium">✓ Last updated March 2026</span>
+                            <span className="text-green-600 font-medium">✓ Updated November 2026</span>
                         </div>
                     </div>
 
@@ -280,6 +283,30 @@ export default async function BlogPost({ params }: Props) {
                             downloadUrl={post.leadMagnet.downloadUrl}
                         />
                     )}
+
+                    {/* Ask Any AI */}
+                    <div className="my-10">
+                        <AskAnyAI variant="card" heading="Ask AI to Summarize This Guide & Compare Options" />
+                    </div>
+
+                    {/* Inline Conversion Box + 1-Tap SMS Walkthrough */}
+                    <div className="my-12 bg-slate-900 text-white rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl">
+                        <div className="mb-6">
+                            <span className="inline-block px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 text-xs font-bold uppercase tracking-wider mb-3">
+                                Skip the $100K+ Enterprise Lock-In
+                            </span>
+                            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-white mb-2">
+                                Want a Simpler Way to Run Your Building or Practice?
+                            </h2>
+                            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                                From quarterly HVAC preventive maintenance and smart Georgia-Pacific IoT dispenser rollouts (proven at UBS Arena) to nightly NFC-verified janitorial and dental/medical terminal cleaning — XIRI handles your entire facility under one monthly invoice in Nassau, Suffolk, and Queens.
+                            </p>
+                        </div>
+                        <ClientLeadForm
+                            industryName={`Blog - ${post.category || 'Facility Operations'}`}
+                            className="text-slate-900"
+                        />
+                    </div>
 
                     <div className="mt-12 pt-8 border-t border-slate-200">
                         <Link href="/blog" className="text-sm text-sky-600 font-medium hover:underline">
