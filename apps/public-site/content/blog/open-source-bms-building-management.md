@@ -36,13 +36,22 @@ If you ask Johnson Controls, Honeywell, or Siemens to add 25 temperature, humidi
 
 With a **LoRaWAN Building Sensor Network**, the architecture is radically simpler and 100% open:
 
-### 1. The LoRaWAN Gateway / Hub (1 Hub Covers an Entire Building)
+### 1. The LoRaWAN Gateway / Hub + The Things Network (TTN)
 Unlike Wi-Fi or Zigbee/Bluetooth (which struggle through concrete walls and require your client's corporate IT department to open firewall ports), **LoRaWAN operates on sub-gigahertz 915 MHz (US915) radio frequencies**.
-- **Single-Hub Coverage:** One commercial indoor LoRaWAN gateway — such as a **Milesight UG65 / UG67**, **RAKwireless WisGate Edge**, **Dragino LPS8v2**, or **MultiTech Conduit** ($250–$650) — covers up to **50,000–100,000+ sq ft across multiple concrete floors** and supports up to **2,000 wireless sensors**.
-- **Built-In Network Server & BACnet IP Bridge:** Modern LoRaWAN hubs run an embedded network server (ChirpStack) and natively translate sensor payloads directly into **MQTT, BACnet/IP, or Modbus TCP** — feeding right into **VOLTTRON, Home Assistant, Grafana, or even an existing Niagara N4 JACE** without cloud subscription fees.
+- **Single-Hub Coverage:** One commercial indoor LoRaWAN gateway — such as a **Milesight UG65 / UG67**, **RAKwireless WisGate Edge**, **Dragino LPS8v2**, **The Things Indoor Gateway (TTIG)**, or **MultiTech Conduit** ($100–$650) — covers up to **50,000–100,000+ sq ft across multiple concrete floors** and supports up to **2,000 wireless sensors**.
+- **The Things Network (TTN), The Things Stack (TTS) & ChirpStack:** Your LoRaWAN gateway connects directly to **The Things Network (TTN)** — the global open-source LoRaWAN network infrastructure — or runs a self-hosted **The Things Stack / ChirpStack** LNS (LoRaWAN Network Server). Using TTN's open payload formatters and webhooks, sensor alerts route straight to **SMS text, Slack, email, MQTT, BACnet/IP, VOLTTRON, or Home Assistant** with **$0 proprietary BMS licensing**.
 - **LTE Cellular Backhaul:** By putting a $10/month cellular SIM inside the LoRaWAN hub, the entire building sensor network stays **100% air-gapped from the tenant's HIPAA/PCI corporate Wi-Fi network**.
 
-### 2. The 10 Commercial LoRaWAN Sensors Every Building & Clinical Suite Should Deploy
+### 2. Why Commercial Water Leak Detection Is the #1 ROI Use Case for LoRaWAN (Especially in Dental, Medical & Multi-Tenant Buildings)
+If you only deploy one type of LoRaWAN sensor in a commercial building, medical clinic, or dental practice, make it **LoRaWAN Water Leak Sensors (Spot Probes, Conductive Rope Cables & Automatic Shutoff Valves)**.
+
+Why? Because in commercial real estate and clinical practices, **water damage is the #1 property insurance claim — and 80% of catastrophic floods happen after 7:00 PM or over a weekend**:
+1. **Dental Office Solenoid, Amalgam & Ultrasonic Floods:** A pin-hole burst in a braided water supply line behind a **12-o'clock operatory cabinet**, a stuck float switch in a **dental vacuum/compressor closet**, a leaking **Midmark autoclave reservoir**, or a backed-up **sterilization room / plaster trap sink** on a Saturday night will flood $150,000+ of medical LVT flooring, drywall, and downstairs tenant ceilings by Monday at 7:00 AM.
+2. **Ceiling HVAC Condensate Pan Overflows:** Blocked condensate drains on ceiling air handlers or rooftop units overflow silently above acoustic ceiling tiles until the wet tile collapses onto a waiting room or server rack.
+3. **Automatic LoRaWAN Ball-Valve Water Shutoff (Class A/C Actuation):** When a $65 **Dragino LWL02** or **Milesight EM300-SLD / EM300-ZLD** leak sensor placed under an operatory sink or water heater detects moisture, **The Things Network / local gateway** not only texts the building owner and XIRI's 24/7 dispatch desk in 3 seconds — it can automatically trigger a **LoRaWAN motorized brass ball valve (Milesight UC100/valve controller or Dragino/Strerega motorized shutoff valve)** on the suite's main domestic water line, stopping the flood before a single gallon escapes.
+4. **Commercial Insurance Premium Discounts:** Many commercial property and dental malpractice/business-owner policy (BOP) carriers offer **5–15% premium credits or lower water-damage deductibles** when a documented 24/7 commercial leak-detection and auto-shutoff system is installed.
+
+### 3. The 10 Commercial LoRaWAN Sensors Every Building & Clinical Suite Should Deploy
 
 Because LoRaWAN sensors transmit tiny encrypted data packets every 5–15 minutes, they run for **5 to 10 years on a single lithium-thionyl chloride ($Li-SOCl_2$) AA or coin battery**. Our field teams mount and commission these in minutes:
 
@@ -105,9 +114,9 @@ A **LoRaWAN building sensor network** uses a single 915 MHz wireless hub ($350�
 
 No. Unlike Wi-Fi (2.4 GHz / 5 GHz) or Bluetooth/Zigbee, **LoRaWAN operates in the unlicensed 915 MHz sub-gigahertz band** in North America and transmits micro-burst packets less than 1% of the time. It penetrates concrete walls and steel mechanical room doors effortlessly, causes zero interference with medical/dental imaging or Wi-Fi networks, and — when paired with an LTE cellular LoRaWAN gateway — stays 100% isolated from your internal HIPAA or corporate LAN.
 
-### What is VOLTTRON and can it work with LoRaWAN hubs?
+### What is The Things Network (TTN) / ChirpStack and how does it work with VOLTTRON & LoRaWAN water leak sensors?
 
-Yes. **VOLTTRON** (developed by the U.S. Department of Energy's Pacific Northwest National Laboratory) is the most mature open-source BMS platform. Because modern LoRaWAN gateways (such as Milesight UG65/UG67, RAK WisGate, and MultiTech Conduit) run embedded ChirpStack network servers that publish decoded JSON over **MQTT** and expose points as **BACnet/IP objects**, VOLTTRON or Home Assistant can ingest 100+ wireless LoRaWAN sensors and control LoRaWAN BACnet thermostats without pulling a single foot of RS-485 communications cable.
+**The Things Network (TTN)** (and **The Things Stack / ChirpStack**) is the open-source LoRaWAN Network Server (LNS) layer that sits between your 915 MHz wireless building sensors and your alerts or BMS dashboard. When a **LoRaWAN water leak sensor** (under a dental vacuum closet, sterilization sink, or HVAC condensate pan) detects moisture, it transmits an encrypted 915 MHz packet to your indoor LoRaWAN hub. The Things Network / ChirpStack decodes the payload in milliseconds, fires an instant SMS/email webhook to the building owner and XIRI's dispatch team, and can even send a downlink command to a **LoRaWAN motorized water shutoff valve** to close the main water supply before a flood occurs. Because TTN and ChirpStack publish standard **MQTT and BACnet/IP**, they also integrate natively with **DOE VOLTTRON** and **Home Assistant**.
 
 ### Can XIRI install LoRaWAN sensors, smart dispensers, and manage our facility maintenance?
 
