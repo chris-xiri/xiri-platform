@@ -361,11 +361,25 @@ async function loadSeenSet(): Promise<Set<string>> {
 // ── Core pipeline ───────────────────────────────────────────────────
 
 async function runDailyPipeline() {
-    // Load config
+    // Load config (auto-heal if queries or locations were accidentally saved empty)
     const configDoc = await db.collection("prospecting_config").doc("default").get();
-    const config: ProspectingConfig = configDoc.exists
-        ? { ...DEFAULT_CONFIG, ...(configDoc.data() as Partial<ProspectingConfig>) }
-        : DEFAULT_CONFIG;
+    const rawData = configDoc.exists ? (configDoc.data() as Partial<ProspectingConfig>) : {};
+    const config: ProspectingConfig = {
+        ...DEFAULT_CONFIG,
+        ...rawData,
+        queries: Array.isArray(rawData.queries) && rawData.queries.length > 0 ? rawData.queries : DEFAULT_CONFIG.queries,
+        locations: Array.isArray(rawData.locations) && rawData.locations.length > 0 ? rawData.locations : DEFAULT_CONFIG.locations,
+        excludePatterns: Array.isArray(rawData.excludePatterns) && rawData.excludePatterns.length > 0 ? rawData.excludePatterns : DEFAULT_CONFIG.excludePatterns,
+    };
+
+    if (!rawData.queries?.length || !rawData.locations?.length) {
+        logger.warn(`[DailyProspector] Auto-healed empty queries/locations in prospecting_config/default (${config.queries.length} queries x ${config.locations.length} locations).`);
+        await db.collection("prospecting_config").doc("default").set({
+            queries: config.queries,
+            locations: config.locations,
+            excludePatterns: config.excludePatterns,
+        }, { merge: true });
+    }
 
     if (!config.enabled) {
         logger.info("[DailyProspector] Disabled via config. Skipping.");

@@ -1,35 +1,26 @@
 import * as logger from 'firebase-functions/logger';
 
-// Mapping from older/discontinued/invalid models to modern active replacements.
+// Mapping from older/discontinued/invalid models to current active Gemini models.
 const MODEL_MAPPING: Record<string, string> = {
-    // Flash models map to gemini-3.5-flash (most cost-effective model)
-    'gemini-1.0-flash': 'gemini-3.5-flash',
-    'gemini-1.5-flash': 'gemini-3.5-flash',
-    'gemini-2.0-flash': 'gemini-3.5-flash',
-    'gemini-2.5-flash': 'gemini-3.5-flash',
-    'gemini-3.0-flash': 'gemini-3.5-flash',
-    'gemini-3.5-flash': 'gemini-3.5-flash',
-    'gemini-3.6-flash': 'gemini-3.5-flash',
+    // Flash models → gemini-2.5-flash
+    'gemini-1.0-flash': 'gemini-2.5-flash',
+    'gemini-1.5-flash': 'gemini-2.5-flash',
+    'gemini-2.0-flash': 'gemini-2.5-flash',
+    'gemini-2.5-flash': 'gemini-2.5-flash',
 
-    // Pro/Ultra/Preview models map to gemini-2.5-pro
+    // Pro models → gemini-2.5-pro
     'gemini-1.0-pro': 'gemini-2.5-pro',
     'gemini-1.5-pro': 'gemini-2.5-pro',
     'gemini-2.0-pro': 'gemini-2.5-pro',
     'gemini-2.5-pro': 'gemini-2.5-pro',
-    'gemini-3.0-pro': 'gemini-2.5-pro',
-    'gemini-3.5-pro': 'gemini-2.5-pro',
-    'gemini-3.1-pro-preview': 'gemini-2.5-pro',
     'gemini-pro': 'gemini-2.5-pro',
 };
 
 /**
- * Dynamically maps older or discontinued Gemini models to their most similar active counterparts,
- * prioritizing gemini-3.5-flash (least expensive) and gemini-2.5-pro.
- * 
+ * Resolves a requested Gemini model name to an active Gemini API model.
  * Can be overridden by the `GEMINI_MODEL` environment variable.
  */
 export function resolveGeminiModel(requestedModel: string): string {
-    // If an environment override is explicitly set, prioritize that
     if (process.env.GEMINI_MODEL) {
         return process.env.GEMINI_MODEL;
     }
@@ -38,18 +29,18 @@ export function resolveGeminiModel(requestedModel: string): string {
 
     if (MODEL_MAPPING[cleanedName]) {
         const targetModel = MODEL_MAPPING[cleanedName];
-        logger.debug(`[resolveGeminiModel] Dynamic upgrade: "${requestedModel}" mapped to "${targetModel}"`);
+        if (targetModel !== cleanedName) {
+            logger.debug(`[resolveGeminiModel] Mapped "${requestedModel}" -> "${targetModel}"`);
+        }
         return targetModel;
     }
 
-    // Fallbacks based on pattern if not explicitly matched
     if (cleanedName.includes('flash')) {
-        return 'gemini-3.5-flash';
+        return 'gemini-2.5-flash';
     }
-    if (cleanedName.includes('pro') || cleanedName.includes('ultra') || cleanedName.includes('preview')) {
+    if (cleanedName.includes('pro') || cleanedName.includes('ultra')) {
         return 'gemini-2.5-pro';
     }
 
-    // Default fallback if we can't determine the type
-    return 'gemini-3.5-flash';
+    return 'gemini-2.5-flash';
 }

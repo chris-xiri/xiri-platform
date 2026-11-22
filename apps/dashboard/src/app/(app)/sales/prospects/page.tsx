@@ -877,9 +877,21 @@ export default function ProspectsPage() {
                 return Array.from(map.values());
             };
 
+            const cleanQueries = dedup(editQueries);
+            const cleanLocations = dedup(editLocations);
+            if (cleanQueries.length === 0 || cleanLocations.length === 0) {
+                toast({
+                    title: 'Cannot save empty targets',
+                    description: 'Add at least 1 search query and 1 location (or click Seed from ICP Engine).',
+                    variant: 'destructive',
+                });
+                setConfigSaving(false);
+                return;
+            }
+
             const newConfig = {
-                queries: dedup(editQueries),
-                locations: dedup(editLocations),
+                queries: cleanQueries,
+                locations: cleanLocations,
                 dailyTarget: editTarget,
                 maxDailyOutreach: editMaxDailyOutreach,
                 autoEnrollEnabled: editAutoEnrollEnabled,
