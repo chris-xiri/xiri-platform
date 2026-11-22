@@ -180,12 +180,7 @@ export default function ProspectsPage() {
     useEffect(() => {
         const loadConfig = async () => {
             try {
-                const [snap, profilerSnap, copywriterSnap, triageSnap] = await Promise.all([
-                    getDoc(doc(db, 'prospecting_config', 'default')),
-                    getDoc(doc(db, 'prompts', 'sdr_profiler')),
-                    getDoc(doc(db, 'prompts', 'sdr_copywriter')),
-                    getDoc(doc(db, 'prompts', 'sdr_intent_triage')),
-                ]);
+                const snap = await getDoc(doc(db, 'prospecting_config', 'default'));
                 if (snap.exists()) {
                     const data = snap.data() as ProspectingConfig;
                     setConfig(data);
@@ -198,17 +193,27 @@ export default function ProspectsPage() {
                     setEditEnabled(data.enabled !== false);
                     setEditExclude(data.excludePatterns || []);
                 }
-                if (profilerSnap.exists() && profilerSnap.data()?.content) {
-                    setEditSdrProfiler(profilerSnap.data()!.content);
-                }
-                if (copywriterSnap.exists() && copywriterSnap.data()?.content) {
-                    setEditSdrCopywriter(copywriterSnap.data()!.content);
-                }
-                if (triageSnap.exists() && triageSnap.data()?.content) {
-                    setEditSdrIntentTriage(triageSnap.data()!.content);
-                }
             } catch (err) {
                 console.error('Failed to load prospecting config:', err);
+            }
+
+            try {
+                const [profilerRes, copywriterRes, triageRes] = await Promise.allSettled([
+                    getDoc(doc(db, 'prompts', 'sdr_profiler')),
+                    getDoc(doc(db, 'prompts', 'sdr_copywriter')),
+                    getDoc(doc(db, 'prompts', 'sdr_intent_triage')),
+                ]);
+                if (profilerRes.status === 'fulfilled' && profilerRes.value.exists() && profilerRes.value.data()?.content) {
+                    setEditSdrProfiler(profilerRes.value.data()!.content);
+                }
+                if (copywriterRes.status === 'fulfilled' && copywriterRes.value.exists() && copywriterRes.value.data()?.content) {
+                    setEditSdrCopywriter(copywriterRes.value.data()!.content);
+                }
+                if (triageRes.status === 'fulfilled' && triageRes.value.exists() && triageRes.value.data()?.content) {
+                    setEditSdrIntentTriage(triageRes.value.data()!.content);
+                }
+            } catch (err) {
+                console.warn('Could not load SDR Studio prompts (using defaults):', err);
             }
         };
         loadConfig();

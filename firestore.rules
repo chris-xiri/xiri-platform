@@ -85,7 +85,7 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
-    // ── Outreach / Sequences / Templates ──
+    // ── Outreach / Sequences / Templates / Prompts / Settings ──
     match /outreach_queue/{outreachId} {
       allow read, write: if isAuthenticated();
     }
@@ -93,6 +93,18 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
     match /templates/{templateId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /prompts/{promptId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /email_senders/{senderId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /settings/{settingId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /config/{configId} {
       allow read, write: if isAuthenticated();
     }
 
