@@ -431,8 +431,31 @@ async function runDailyPipeline() {
         }, { merge: true });
     };
 
-    // Mark as running
-    await updateProgress("Initializing...");
+    // Mark as running and clear any stale stopRequested flag
+    await statusRef.set({
+        running: true,
+        stopRequested: false,
+        stoppedByUser: false,
+        startedAt,
+        discovered: 0,
+        qualified: 0,
+        duplicatesSkipped: 0,
+        target: config.dailyTarget,
+        currentQuery: "Initializing...",
+        error: null,
+        updatedAt: new Date(),
+    }, { merge: true });
+
+    const isStopRequested = async (): Promise<boolean> => {
+        try {
+            const snap = await statusRef.get();
+            return snap.exists && snap.data()?.stopRequested === true;
+        } catch {
+            return false;
+        }
+    };
+
+    let stoppedByUser = false;
 
     try {
         // Build all combos and shuffle — ensures each run processes different
@@ -446,11 +469,16 @@ async function runDailyPipeline() {
         const shuffled = shuffle(combos);
         logger.info(`[DailyProspector] ${shuffled.length} combos shuffled. Target: ${config.dailyTarget}`);
 
-        // Iterate shuffled combos until we hit dailyTarget
+        // Iterate shuffled combos until we hit dailyTarget or user clicks Stop
         let consecutiveErrors = 0;
         let lastErrorMessage = '';
         for (const { query: queryTerm, location } of shuffled) {
             if (newProspects.length >= config.dailyTarget) break;
+            if (await isStopRequested()) {
+                logger.info(`[DailyProspector] 🛑 Stop requested by user — halting cleanly after ${newProspects.length} prospects.`);
+                stoppedByUser = true;
+                break;
+            }
 
                 const remaining = config.dailyTarget - newProspects.length;
                 const batchSize = Math.min(remaining + 10, 20); // request a few extra to account for dedup
@@ -744,6 +772,8 @@ async function runDailyPipeline() {
         // Mark run as complete for UI
         await statusRef.set({
             running: false,
+            stopRequested: false,
+            stoppedByUser,
             discovered: totalDiscovered,
             qualified: newProspects.length,
             duplicatesSkipped,
@@ -753,7 +783,7 @@ async function runDailyPipeline() {
             updatedAt: new Date(),
         });
 
-        logger.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
+        logger.info(`[DailyProspector] ${stoppedByUser ? 'Stopped by user' : 'Done'}. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
     } catch (err: any) {
         // Pipeline crashed — log the error and mark as failed
         logger.error(`[DailyProspector] Pipeline crashed:`, err.message || err);
@@ -798,6 +828,30 @@ export const triggerDailyProspector = onCall({
     logger.info("[DailyProspector] Manual trigger invoked.");
     await runDailyPipeline();
     return { message: "Daily prospector pipeline completed." };
+});
+
+// ── Stop running prospector (onCall) ────────────────────────────────
+
+export const stopDailyProspector = onCall({
+    cors: DASHBOARD_CORS,
+}, async () => {
+    const statusRef = db.collection("prospecting_config").doc("run_status");
+    const snap = await statusRef.get();
+    const isRunning = snap.exists && snap.data()?.running === true;
+
+    await statusRef.set({
+        stopRequested: true,
+        updatedAt: new Date(),
+        ...(!isRunning ? { running: false, currentQuery: null } : {}),
+    }, { merge: true });
+
+    logger.info(`[DailyProspector] Stop requested via dashboard (wasRunning=${isRunning}).`);
+    return {
+        message: isRunning
+            ? "Stop signal sent — pipeline will finish its current town batch and halt cleanly."
+            : "Pipeline is not currently running.",
+        wasRunning: isRunning,
+    };
 });
 
 // ── Update prospecting config (onCall) ──────────────────────────────

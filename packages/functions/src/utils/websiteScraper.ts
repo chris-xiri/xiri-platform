@@ -820,7 +820,7 @@ export async function deepMailtoScan(baseUrl: string): Promise<{ email?: string;
             if (!href || href.startsWith('#') || href.startsWith('tel:') || href.startsWith('mailto:')) return;
             try {
                 const fullUrl = new URL(href, baseUrl).href;
-                if (new URL(fullUrl).hostname === new URL(baseUrl).hostname) {
+                if (normalizeHost(new URL(fullUrl).hostname) === normalizeHost(new URL(baseUrl).hostname)) {
                     internalLinks.add(fullUrl);
                 }
             } catch {

@@ -93,7 +93,7 @@ export {
 
 // ── Lead Prospecting & Enrichment (onCall + scheduled) ──
 export { runProspector, addProspectsToCrm, expandLocation, autoCategorizeProspects } from "./functions/prospecting";
-export { dailyProspector, triggerDailyProspector, updateProspectingConfig, getProspectingConfig, regenerateProspectingConfig } from "./triggers/dailyProspector";
+export { dailyProspector, triggerDailyProspector, stopDailyProspector, updateProspectingConfig, getProspectingConfig, regenerateProspectingConfig } from "./triggers/dailyProspector";
 
 // ── In-House Conversion Trigger (job board scanning — scheduled + onCall) ──
 export { dailyClientTrigger, triggerDailyClientTrigger } from "./triggers/dailyClientTrigger";

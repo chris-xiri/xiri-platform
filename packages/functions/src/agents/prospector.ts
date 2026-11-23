@@ -12,8 +12,32 @@
  */
 
 import { searchVendors, RawVendor } from './sourcer';
-import { scrapeWebsite, searchWebForEmail } from '../utils/websiteScraper';
-import { runEnrichmentWaterfall } from '../utils/enrichmentProviders';
+import { scrapeWebsite, deepMailtoScan, searchWebForEmail } from '../utils/websiteScraper';
+import * as dns from 'dns';
+
+const mxCache = new Map<string, boolean>();
+
+/**
+ * Validate that a scraped email's domain has live MX records (can actually receive mail).
+ * Cached in-memory per domain; uses 0 external API credits.
+ */
+async function verifyEmailMx(email: string): Promise<boolean> {
+    const domain = email.split('@')[1]?.toLowerCase().trim();
+    if (!domain || !domain.includes('.')) return false;
+    if (mxCache.has(domain)) return mxCache.get(domain)!;
+    try {
+        const records = await Promise.race([
+            dns.promises.resolveMx(domain),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('MX timeout')), 3000)),
+        ]);
+        const valid = Array.isArray(records) && records.length > 0;
+        mxCache.set(domain, valid);
+        return valid;
+    } catch {
+        mxCache.set(domain, false);
+        return false;
+    }
+}
 import { classifyFacilityType, isKnownDsoChain } from '../utils/facilityClassifier';
 import { generateOutreachDraft } from '../utils/promptUtils';
 import type { EnrichedProspect, EmailSource, ProspectContact } from '@xiri/shared';
@@ -434,20 +458,8 @@ async function enrichSingleBusiness(
     }
 
     if (!vendor.website) {
-        log.push('No website available — skipping to Layer 2 (web search)');
-
-        // Still try web search even without a website
-        await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log, false, targetTitles, secrets.geminiApiKey);
-        if (!prospect.contactEmail) {
-            await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log, true, targetTitles, secrets.geminiApiKey);
-        }
-
-        // Try paid APIs only if we have a domain from somewhere
-        if (!prospect.contactEmail && !input.skipPaidApis) {
-            log.push('Skipping Layer 3 — no domain available for enrichment APIs');
-        }
-
-        return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
+        log.push('Skipped: No website listed on Google Places — website-only mode uses 0 extra Serper credits and never guesses emails');
+        return prospect;
     }
 
     // ═══════════════════════════════════════════════════════
@@ -594,138 +606,63 @@ async function enrichSingleBusiness(
     }
 
     // ═══════════════════════════════════════════════════════
-    // LAYER 2: Serper Web Search (Facebook + directories)
+    // LAYER 1b: Deep Website Mailto Scan (0 Serper credits, zero guessing)
+    // Crawl up to 5 additional internal pages on the practice's own website.
     // ═══════════════════════════════════════════════════════
-    await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log, false, targetTitles, secrets.geminiApiKey);
-    if (prospect.contactEmail) return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
-    await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log, true, targetTitles, secrets.geminiApiKey);
-    if (prospect.contactEmail) return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
-
-    // ═══════════════════════════════════════════════════════
-    // LAYER 2.5: LinkedIn Decision-Maker Discovery
-    // If we don't have a contact name, search LinkedIn to find one.
-    // This name feeds the pattern guesser in Layer 3.
-    // ═══════════════════════════════════════════════════════
-    if (!prospect.contactName && secrets.serperApiKey) {
+    if (!prospect.contactEmail && !prospect.genericEmail && vendor.website) {
         try {
-            const linkedinName = await searchLinkedInForDecisionMaker(
-                vendor.name,
-                input.location,
-                secrets.serperApiKey,
-                log,
-                targetTitles,
-                avoidTitles
-            );
-            if (linkedinName) {
-                prospect.contactName = linkedinName.name;
-                prospect.contactTitle = prospect.contactTitle || linkedinName.title;
-                log.push(`LinkedIn discovery: Found ${linkedinName.name} (${linkedinName.title})`);
-            }
-        } catch (error: any) {
-            log.push(`LinkedIn discovery error: ${error.message}`);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // LAYER 3: Enrichment Waterfall (Pattern Guesser + optional APIs)
-    // ═══════════════════════════════════════════════════════
-    if (!input.skipPaidApis) {
-        const domain = extractDomain(vendor.website);
-        if (domain) {
-            log.push(`Layer 3: Running enrichment waterfall for ${domain}...`);
-
-            const waterfallResult = await runEnrichmentWaterfall(
-                domain,
-                { hunterApiKey: secrets.hunterApiKey },
-                {
-                    contactName: prospect.contactName,
-                    knownGenericEmail: prospect.genericEmail,
-                    preferredTitles: targetTitles,
-                    avoidTitles,
-                },
-            );
-
-            log.push(...waterfallResult.log);
-
-            // Persist ALL discovered contacts
-            if (waterfallResult.allEmails.length > 0) {
-                const apiContacts: ProspectContact[] = waterfallResult.allEmails
-                    .filter(e => validateEmailForBusiness(e.email, vendor.website) === 'domain_match')
-                    .map(e => ({
-                        email: e.email,
-                        firstName: e.firstName,
-                        lastName: e.lastName,
-                        position: e.position,
-                        confidence: e.confidence,
-                        type: e.type,
-                        provider: e.provider,
-                    }));
-                // Merge with any contacts already found from scraping
-                prospect.allContacts = [...(prospect.allContacts || []), ...apiContacts];
-                log.push(`Stored ${apiContacts.length} total contacts from enrichment waterfall`);
-            }
-
-            if (waterfallResult.email) {
-                const waterfallEmailValid = validateEmailForBusiness(waterfallResult.email, vendor.website);
-                if (waterfallEmailValid !== 'domain_match') {
-                    log.push(`Skipping non-company email from waterfall: ${waterfallResult.email} (validation: ${waterfallEmailValid})`);
-                } else if (waterfallResult.type === 'personal') {
-                    prospect.contactEmail = waterfallResult.email;
-                    prospect.contactName = prospect.contactName ||
-                        (waterfallResult.firstName && waterfallResult.lastName
-                            ? `${waterfallResult.firstName} ${waterfallResult.lastName}`
-                            : undefined);
-                    prospect.contactTitle = prospect.contactTitle || waterfallResult.position;
-                    prospect.emailSource = waterfallResult.provider as EmailSource;
-                    prospect.emailConfidence = 'medium';
-                    return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
+            const deepScan = await deepMailtoScan(vendor.website);
+            if (deepScan.email) {
+                const v = validateEmailForBusiness(deepScan.email, vendor.website);
+                if (v === 'domain_match') {
+                    if (GENERIC_PREFIXES.test(deepScan.email)) {
+                        prospect.genericEmail = deepScan.email;
+                    } else {
+                        prospect.contactEmail = deepScan.email;
+                        prospect.emailSource = 'mailto';
+                        prospect.emailConfidence = 'high';
+                    }
+                    log.push(`Deep mailto scan (${deepScan.pagesScanned} pages): Found ${deepScan.email}`);
+                } else if (v === 'free_provider') {
+                    fallbackPersonalEmail = fallbackPersonalEmail || {
+                        email: deepScan.email,
+                        source: 'mailto',
+                        reason: 'deep_mailto_free_provider',
+                    };
+                    log.push(`Deep mailto scan: Holding website-published email ${deepScan.email}`);
                 } else {
-                    // Generic from waterfall (pattern guess or API)
-                    prospect.genericEmail = prospect.genericEmail || waterfallResult.email;
+                    log.push(`Deep mailto scan: Rejected ${deepScan.email} (${v})`);
                 }
             }
+            if (!prospect.phone && deepScan.phone) {
+                prospect.phone = deepScan.phone;
+            }
+        } catch (deepErr: any) {
+            log.push(`Deep mailto scan error: ${deepErr?.message || deepErr}`);
         }
     }
 
     // ═══════════════════════════════════════════════════════
-    // FINAL: Use best available email
+    // FINAL: Website-Scraped Email Selection (ZERO Guessing, 0 Extra Serper Credits)
     // ═══════════════════════════════════════════════════════
     if (!prospect.contactEmail) {
-        // Strategy: prefer pattern-guessed personal email over generic
-        // If we have a contact name AND a proven domain (generic email found),
-        // a pattern guess like firstname@domain.com is far more actionable
-        // than info@domain.com for cold outreach.
-        const bestPatternGuess = prospect.allContacts?.find(
-            c => c.type === 'personal' &&
-                c.provider === 'pattern_guess' &&
-                (c.confidence || 0) >= 60 &&
-                validateEmailForBusiness(c.email, vendor.website) === 'domain_match'
-        );
-
-        if (bestPatternGuess && prospect.contactName && prospect.genericEmail) {
-            // Domain is proven (generic exists), contact name is known → trust the guess
-            prospect.contactEmail = bestPatternGuess.email;
-            prospect.emailSource = 'pattern_guess';
-            prospect.emailConfidence = 'medium';
-            // Keep generic as fallback for the outreach system
-            log.push(`Using pattern-guessed personal email: ${bestPatternGuess.email} (confidence: ${bestPatternGuess.confidence}, fallback: ${prospect.genericEmail})`);
-        } else if (fallbackPersonalEmail) {
-            prospect.contactEmail = fallbackPersonalEmail.email;
-            prospect.emailSource = fallbackPersonalEmail.source;
-            prospect.emailConfidence = 'low';
-            log.push(`No validated company-domain personal email found — using website-linked fallback: ${fallbackPersonalEmail.email} (${fallbackPersonalEmail.reason})`);
-        } else if (prospect.genericEmail) {
+        if (prospect.genericEmail) {
             const genericValidation = validateEmailForBusiness(prospect.genericEmail, vendor.website);
-            if (genericValidation === 'domain_match' || (!vendor.website && genericValidation !== 'junk')) {
+            if (genericValidation === 'domain_match') {
                 prospect.contactEmail = prospect.genericEmail;
-                prospect.emailSource = 'none'; // It's generic
-                prospect.emailConfidence = 'low';
-                log.push(`No personal email found — using generic: ${prospect.genericEmail}`);
+                prospect.emailSource = 'mailto';
+                prospect.emailConfidence = 'high';
+                log.push(`Using validated practice-domain email scraped from website: ${prospect.genericEmail}`);
             } else {
                 log.push(`Generic email rejected (validation: ${genericValidation}): ${prospect.genericEmail}`);
             }
+        } else if (fallbackPersonalEmail) {
+            prospect.contactEmail = fallbackPersonalEmail.email;
+            prospect.emailSource = fallbackPersonalEmail.source;
+            prospect.emailConfidence = 'medium';
+            log.push(`Using website-published email fallback: ${fallbackPersonalEmail.email} (${fallbackPersonalEmail.reason})`);
         } else {
-            log.push('No email found across all layers.');
+            log.push('No email published on practice website (zero guessing / zero extra Serper credits).');
         }
     }
 
@@ -742,6 +679,21 @@ async function finalizeProspect(
     location: string,
     log: string[]
 ): Promise<EnrichedProspect> {
+    // ── Mandatory DNS MX validation on every scraped email before accepting ──
+    const primaryCandidate = prospect.contactEmail || prospect.genericEmail;
+    if (primaryCandidate) {
+        const mxValid = await verifyEmailMx(primaryCandidate);
+        if (!mxValid) {
+            log.push(`❌ DNS MX validation failed for ${primaryCandidate} — rejecting undeliverable email`);
+            if (prospect.contactEmail === primaryCandidate) prospect.contactEmail = undefined;
+            if (prospect.genericEmail === primaryCandidate) prospect.genericEmail = undefined;
+            prospect.emailSource = 'none';
+            prospect.emailConfidence = 'low';
+            return prospect;
+        }
+        log.push(`✅ DNS MX verified for website-scraped email: ${primaryCandidate}`);
+    }
+
     if ((prospect.contactEmail || prospect.genericEmail) && !(prospect as any).outreachDraft) {
         try {
             const draft = await generateOutreachDraft({

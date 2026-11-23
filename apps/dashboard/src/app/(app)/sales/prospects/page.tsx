@@ -22,7 +22,7 @@ import {
     Search, Loader2, Building2, Mail, Phone, Globe, User,
     MapPin, Star, CheckCircle2, AlertCircle, XCircle,
     ChevronDown, ChevronRight, Target, SendHorizonal, ListPlus, Plus,
-    Settings, Play, SkipForward, ExternalLink, X,
+    Settings, Play, Square, SkipForward, ExternalLink, X,
     Calendar, TrendingUp, Zap, Filter, RefreshCw,
     Tag, Users, AlertTriangle, Sparkles, Pencil, Check,
     Briefcase, Handshake,
@@ -80,6 +80,7 @@ export default function ProspectsPage() {
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [acting, setActing] = useState(false);
     const [triggering, setTriggering] = useState(false);
+    const [stopping, setStopping] = useState(false);
 
     // ── Inline contact editing ──────────────────────────────────────
     const [editingContact, setEditingContact] = useState<string | null>(null); // prospect id being edited
@@ -90,6 +91,8 @@ export default function ProspectsPage() {
     // Progress polling state
     interface RunStatus {
         running: boolean;
+        stopRequested?: boolean;
+        stoppedByUser?: boolean;
         discovered: number;
         qualified: number;
         duplicatesSkipped: number;
@@ -804,6 +807,27 @@ export default function ProspectsPage() {
         setTriggering(false);
     };
 
+    const handleStopRun = async () => {
+        setStopping(true);
+        try {
+            // Write stopRequested immediately so server sees it on next iteration
+            await setDoc(doc(db, 'prospecting_config', 'run_status'), {
+                stopRequested: true,
+                updatedAt: new Date(),
+            }, { merge: true });
+            const fn = httpsCallable(functions, 'stopDailyProspector');
+            await fn().catch(() => { /* Firestore write above already set stopRequested */ });
+            setRunStatus(prev => prev ? { ...prev, stopRequested: true } : prev);
+            toast({
+                title: 'Stopping prospector...',
+                description: 'Finishing the current town batch and halting cleanly.',
+            });
+        } catch (err) {
+            toast({ title: 'Stop failed', description: String(err), variant: 'destructive' });
+        }
+        setStopping(false);
+    };
+
     // ── Poll run_status doc while pipeline is running ────────────────
 
     useEffect(() => {
@@ -1129,18 +1153,33 @@ export default function ProspectsPage() {
                         {configOpen ? 'Close SDR Studio' : '🤖 SDR Studio & Config'}
                     </Button>
 
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleTriggerRun}
-                        disabled={triggering}
-                    >
-                        {triggering
-                            ? <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                            : <Play className="w-4 h-4 mr-1" />
-                        }
-                        Run Now
-                    </Button>
+                    {(polling || runStatus?.running) ? (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleStopRun}
+                            disabled={stopping || runStatus?.stopRequested}
+                        >
+                            {stopping || runStatus?.stopRequested
+                                ? <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                                : <Square className="w-3.5 h-3.5 mr-1 fill-current" />
+                            }
+                            {runStatus?.stopRequested ? 'Stopping...' : 'Stop'}
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleTriggerRun}
+                            disabled={triggering}
+                        >
+                            {triggering
+                                ? <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                                : <Play className="w-4 h-4 mr-1" />
+                            }
+                            Run Now
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -1196,11 +1235,25 @@ export default function ProspectsPage() {
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                            <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Pipeline Running...</span>
+                            <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                                {runStatus.stopRequested ? 'Stopping after current town batch...' : 'Pipeline Running...'}
+                            </span>
                         </div>
-                        <span className="text-xs text-blue-600 dark:text-blue-400">
-                            {runStatus.qualified} / {runStatus.target} qualified
-                        </span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-blue-600 dark:text-blue-400">
+                                {runStatus.qualified} / {runStatus.target} qualified
+                            </span>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                className="h-7 px-2.5 text-xs"
+                                onClick={handleStopRun}
+                                disabled={stopping || runStatus.stopRequested}
+                            >
+                                <Square className="w-3 h-3 mr-1 fill-current" />
+                                {runStatus.stopRequested ? 'Stopping...' : 'Stop'}
+                            </Button>
+                        </div>
                     </div>
                     <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2 mb-2">
                         <div
