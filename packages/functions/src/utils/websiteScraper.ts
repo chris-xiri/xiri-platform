@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getPrompt, DEFAULT_SDR_PROFILER_PROMPT } from './promptUtils';
+import { getPrompt, DEFAULT_SDR_PROFILER_PROMPT, DEFAULT_SDR_COPYWRITER_PROMPT } from './promptUtils';
 import { resolveGeminiModel } from './gemini';
 import type { ClinicDossier } from '@xiri/shared';
 
@@ -71,22 +71,28 @@ export async function scrapeWebsite(
         const patternData = extractFromPatterns(homepage.$, homepage.html);
         const linkData = extractMailtoAndTel(homepage.$);
 
-        // ─── Step 2: Find and scrape additional pages (contact, about, team) ───
+        // ─── Step 2: Find and scrape prioritized pages (team/staff FIRST, then contact, about, locations) ───
         const additionalPages = findAdditionalPages(homepage.$, url);
         const contactPageResults: Partial<ScrapedData>[] = [];
         let allAdditionalHtml = '';
-        const additionalPageCache: { url: string; $: cheerio.CheerioAPI }[] = []; // Cache for reuse in Step 3b
+        const additionalPageCache: { url: string; $: cheerio.CheerioAPI; html: string }[] = [];
 
-        for (const pageUrl of additionalPages.slice(0, 3)) { // max 3 extra pages
-            const page = await fetchPage(pageUrl);
-            if (!page) continue;
+        const fetchedPages = await Promise.allSettled(
+            additionalPages.slice(0, 4).map(async (pageUrl) => ({
+                pageUrl,
+                page: await fetchPage(pageUrl),
+            }))
+        );
 
-            additionalPageCache.push({ url: pageUrl, $: page.$ }); // Cache the result
+        for (const res of fetchedPages) {
+            if (res.status !== 'fulfilled' || !res.value.page) continue;
+            const { pageUrl, page } = res.value;
+
+            additionalPageCache.push({ url: pageUrl, $: page.$, html: page.html });
 
             const pagePatterns = extractFromPatterns(page.$, page.html);
             const pageLinks = extractMailtoAndTel(page.$);
 
-            // Detect contact form
             const hasForm = page.$('form').length > 0;
             if (hasForm) pagePatterns.contactFormUrl = pageUrl;
 
@@ -96,8 +102,16 @@ export async function scrapeWebsite(
                 phone: pageLinks.phone || pagePatterns.phone,
             });
 
-            allAdditionalHtml += page.html + '\n';
+            allAdditionalHtml += `\n<!-- PAGE: ${pageUrl} -->\n` + page.html + '\n';
         }
+
+        // ─── Step 2b: Deterministic Office Manager / Practice Manager DOM extraction ───
+        // Runs on team/staff pages first, then homepage, so we reliably capture the
+        // Office Manager (e.g. "Mary Ann — Office Manager" on /meet-the-team/) even if AI fails.
+        const domDecisionMaker = extractDecisionMakerFromPages([
+            ...additionalPageCache.map(p => ({ url: p.url, $: p.$ })),
+            { url, $: homepage.$ },
+        ]);
 
         // ─── Step 3: Merge all data (priority: structured > mailto/tel > contact pages > homepage patterns) ───
         const mergedContact = mergeContactPages(contactPageResults);
@@ -137,16 +151,24 @@ export async function scrapeWebsite(
             }
         }
 
-        // ─── Step 5: AI extraction on the best available HTML (owner detection & SDR dossier) ───
-        // Always run AI to try to find owner/decision-maker and clinic profile
-        const aiHtml = allAdditionalHtml.length > 500 ? allAdditionalHtml : homepage.html;
+        // ─── Step 5: AI extraction on clean team/staff + homepage HTML ───
+        const aiHtml = allAdditionalHtml.length > 500
+            ? allAdditionalHtml + '\n' + homepage.html
+            : homepage.html;
         const aiData = await extractWithAI(aiHtml, geminiApiKey, metadata);
         combinedData.email = combinedData.email || aiData.email;
         combinedData.phone = combinedData.phone || aiData.phone;
         combinedData.address = combinedData.address || aiData.address;
         combinedData.businessName = combinedData.businessName || aiData.businessName;
-        combinedData.ownerName = aiData.ownerName;
-        combinedData.ownerTitle = aiData.ownerTitle;
+        // Prefer Office/Practice Manager over generic doctor/owner when both exist
+        const aiIsManager = !!aiData.ownerTitle && /office manager|practice manager|administrator|director|operations/i.test(aiData.ownerTitle);
+        if (domDecisionMaker && (!aiData.ownerName || (!aiIsManager && domDecisionMaker.priority >= 90))) {
+            combinedData.ownerName = domDecisionMaker.name;
+            combinedData.ownerTitle = domDecisionMaker.title;
+        } else {
+            combinedData.ownerName = aiData.ownerName || domDecisionMaker?.name;
+            combinedData.ownerTitle = aiData.ownerTitle || domDecisionMaker?.title;
+        }
         combinedData.ownerEmail = aiData.ownerEmail;
         combinedData.organizationScope = aiData.organizationScope;
         combinedData.dossier = aiData.dossier;
@@ -349,42 +371,183 @@ function extractFromPatterns($: cheerio.CheerioAPI, html: string): Partial<Scrap
     return data;
 }
 
+function normalizeHost(hostname: string): string {
+    return hostname.toLowerCase().replace(/^www\./, '');
+}
+
 /**
- * Find all relevant pages to scrape (contact, about, team, locations)
+ * Find and prioritize relevant pages to scrape:
+ *   Priority 1 (100): Team / Staff / Meet the Team / Leadership (where Office Managers live!)
+ *   Priority 2 (80):  Contact / Reach Us (where direct emails live)
+ *   Priority 3 (60):  About / Practice Overview (where operatory/specialty context lives)
+ *   Priority 4 (30):  Locations / Office pages
  */
 function findAdditionalPages($: cheerio.CheerioAPI, baseUrl: string): string[] {
-    const keywords = [
-        'contact', 'about', 'about-us', 'our-team', 'team',
-        'location', 'locations', 'reach-us', 'get-in-touch',
-        'connect', 'find-us', 'staff', 'leadership'
-    ];
+    const scored = new Map<string, number>();
+    let baseHost = '';
+    try {
+        baseHost = normalizeHost(new URL(baseUrl).hostname);
+    } catch {
+        return [];
+    }
 
-    const found = new Set<string>();
+    const scoreCandidate = (hrefLower: string, textLower: string): number => {
+        const combined = `${hrefLower} ${textLower}`;
+        if (/\b(meet[- ]the[- ]team|meet[- ]our[- ]team|our[- ]team|staff|leadership|management|team)\b/.test(combined)) {
+            return 100;
+        }
+        if (/\b(contact|contact-us|reach-us|get-in-touch|find-us)\b/.test(combined)) {
+            return 80;
+        }
+        if (/\b(about|about-us|our-practice|our-office)\b/.test(combined)) {
+            return 60;
+        }
+        if (/\b(location|locations)\b/.test(combined)) {
+            return 30;
+        }
+        return 0;
+    };
 
-    $('a').each((_, elem) => {
+    $('a[href]').each((_, elem) => {
         const href = $(elem).attr('href');
         const text = $(elem).text().toLowerCase().trim();
         if (!href) return;
 
-        // Skip external, anchor, tel, mailto links
-        if (href.startsWith('#') || href.startsWith('tel:') || href.startsWith('mailto:')) return;
+        if (href.startsWith('#') || href.startsWith('tel:') || href.startsWith('mailto:') || href.startsWith('javascript:')) return;
 
         const lowerHref = href.toLowerCase();
-        const isMatch = keywords.some(kw => lowerHref.includes(kw) || text.includes(kw));
-        if (!isMatch) return;
+        const score = scoreCandidate(lowerHref, text);
+        if (score === 0) return;
 
         try {
-            const fullUrl = new URL(href, baseUrl).href;
-            // Only same-domain pages
-            if (new URL(fullUrl).hostname === new URL(baseUrl).hostname) {
-                found.add(fullUrl);
-            }
+            const parsed = new URL(href, baseUrl);
+            if (normalizeHost(parsed.hostname) !== baseHost) return;
+            // Skip image/pdf/binary links
+            if (/\.(jpg|jpeg|png|gif|svg|webp|pdf|zip)$/i.test(parsed.pathname)) return;
+            // Canonicalize without hash
+            parsed.hash = '';
+            const canonical = parsed.href;
+            const prev = scored.get(canonical) || 0;
+            if (score > prev) scored.set(canonical, score);
         } catch {
             // Invalid URL
         }
     });
 
-    return Array.from(found);
+    return Array.from(scored.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([u]) => u);
+}
+
+const MANAGER_TITLE_PATTERNS: Array<{ regex: RegExp; label: string; priority: number }> = [
+    { regex: /\boffice\s+manager\b/i, label: 'Office Manager', priority: 100 },
+    { regex: /\bpractice\s+manager\b/i, label: 'Practice Manager', priority: 100 },
+    { regex: /\bpractice\s+administrator\b/i, label: 'Practice Administrator', priority: 98 },
+    { regex: /\bpractice\s+director\b/i, label: 'Practice Director', priority: 95 },
+    { regex: /\boperations\s+manager\b/i, label: 'Operations Manager', priority: 95 },
+    { regex: /\bclinic\s+manager\b/i, label: 'Clinic Manager', priority: 92 },
+    { regex: /\bbusiness\s+manager\b/i, label: 'Business Manager', priority: 90 },
+    { regex: /\bclinical\s+coordinator\b/i, label: 'Clinical Coordinator', priority: 75 },
+    { regex: /\btreatment\s+coordinator\b/i, label: 'Treatment Coordinator', priority: 70 },
+];
+
+function looksLikePersonName(raw: string): string | null {
+    const cleaned = raw.replace(/\s+/g, ' ').replace(/^[\-–—:|•,.\s]+|[\-–—:|•,.\s]+$/g, '').trim();
+    if (!cleaned || cleaned.length < 2 || cleaned.length > 42) return null;
+    if (/\d|@|http|www\.|office|manager|coordinator|assistant|hygienist|doctor|team|staff|location|dental|ortho|clinic|practice|meet\s+our|about/i.test(cleaned)) {
+        return null;
+    }
+    const words = cleaned.split(/\s+/);
+    if (words.length < 1 || words.length > 4) return null;
+    // Must start with a capital letter and contain mostly letters
+    if (!/^[A-Z][a-zA-Z'.-]+(\s+[A-Z][a-zA-Z'.-]+){0,3}$/.test(cleaned)) return null;
+    return cleaned;
+}
+
+/**
+ * Deterministically extract Office Manager / Practice Manager name + title from
+ * scraped team/staff DOM cards (e.g. <h3>Mary Ann</h3><p>Office Manager</p>).
+ */
+function extractDecisionMakerFromPages(
+    pages: Array<{ url: string; $: cheerio.CheerioAPI }>
+): { name: string; title: string; priority: number } | null {
+    let best: { name: string; title: string; priority: number } | null = null;
+
+    for (const { $ } of pages) {
+        $('p, span, div, h1, h2, h3, h4, h5, h6, strong, b, em, small, li').each((_, el) => {
+            const $el = $(el);
+            // Only inspect leaf-ish text nodes (avoid huge wrapper containers)
+            if ($el.children('div, section, article, ul').length > 0) return;
+            const text = $el.text().replace(/\s+/g, ' ').trim();
+            if (!text || text.length > 80) return;
+
+            for (const pat of MANAGER_TITLE_PATTERNS) {
+                if (!pat.regex.test(text)) continue;
+                if (best && best.priority >= pat.priority) continue;
+
+                // Case 1: Inline "Mary Ann - Office Manager" or "Mary Ann, Office Manager"
+                const beforeTitle = text.split(pat.regex)[0];
+                const inlineName = looksLikePersonName(beforeTitle);
+                if (inlineName) {
+                    best = { name: inlineName, title: pat.label, priority: pat.priority };
+                    return;
+                }
+
+                // Case 2: Previous sibling heading or element (e.g. <h3>Mary Ann</h3><p>Office Manager</p>)
+                const prevText = $el.prev('h1, h2, h3, h4, h5, h6, strong, b, p, span, div').text();
+                const prevName = looksLikePersonName(prevText);
+                if (prevName) {
+                    best = { name: prevName, title: pat.label, priority: pat.priority };
+                    return;
+                }
+
+                // Case 3: Parent's heading (e.g. <div class="card"><h3>Mary Ann</h3><div><span>Office Manager</span></div></div>)
+                const parentHeading = $el.parent().prev('h1, h2, h3, h4, h5, h6, strong, p').text()
+                    || $el.closest('div, li, article, figure').find('h1, h2, h3, h4, h5, h6, strong').first().text();
+                const parentName = looksLikePersonName(parentHeading);
+                if (parentName) {
+                    best = { name: parentName, title: pat.label, priority: pat.priority };
+                    return;
+                }
+            }
+        });
+    }
+
+    return best;
+}
+
+/**
+ * Extract all unique visible/mailto emails from combined HTML pages, classified
+ * as 'personal' vs 'generic'. Filters out framework/asset/junk addresses.
+ */
+function extractAllEmails(html: string): { email: string; type: 'personal' | 'generic' }[] {
+    const visible = stripNonVisibleContent(html);
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const rawMatches = visible.match(emailRegex) || [];
+    const seen = new Set<string>();
+    const results: { email: string; type: 'personal' | 'generic' }[] = [];
+
+    for (const raw of rawMatches) {
+        const cleaned = raw.trim().toLowerCase();
+        if (seen.has(cleaned)) continue;
+        if (
+            /^(noreply|no-reply|donotreply|bounce|mailer-daemon|postmaster|webmaster|support)@/i.test(cleaned) ||
+            cleaned.includes('example.com') ||
+            cleaned.includes('domain.com') ||
+            cleaned.includes('sentry.io') ||
+            cleaned.includes('wixpress.com') ||
+            cleaned.includes('wordpress.') ||
+            cleaned.includes('@e.') ||
+            /\.(png|jpg|jpeg|gif|svg|webp|css|js)$/i.test(cleaned)
+        ) {
+            continue;
+        }
+        seen.add(cleaned);
+        const isGeneric = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|frontdesk|appointments|scheduling|reception)@/i.test(cleaned);
+        results.push({ email: cleaned, type: isGeneric ? 'generic' : 'personal' });
+    }
+
+    return results;
 }
 
 /**
@@ -442,8 +605,10 @@ async function extractWithAI(
         const genAI = new GoogleGenerativeAI(geminiApiKey);
         const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.5-flash') });
 
-        // Strip HTML to plain text and limit size
-        const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').substring(0, 15000);
+        // Strip scripts/styles/svgs BEFORE converting HTML to plain text so WordPress CSS/JS
+        // never crowds out /meet-the-team/ staff bios and Office Manager names.
+        const visibleHtml = stripNonVisibleContent(html).replace(/<svg[\s\S]*?<\/svg>/gi, ' ');
+        const text = visibleHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 18000);
 
         const prompt = await getPrompt('sdr_profiler', DEFAULT_SDR_PROFILER_PROMPT, {
             businessName: metadata?.businessName || '',
@@ -513,6 +678,50 @@ async function extractWithAI(
     } catch (error) {
         console.error('AI extraction error:', error);
         return {};
+    }
+}
+
+/**
+ * Agent 2: Response-Optimized Copywriter Draft Generator
+ */
+export async function generateOutreachDraft(params: {
+    cleanBizName: string;
+    contactName?: string;
+    contactTitle?: string;
+    city?: string;
+    clinicType?: string;
+    keyObservation?: string;
+    geminiApiKey: string;
+}): Promise<{ subject: string; body: string } | undefined> {
+    try {
+        const genAI = new GoogleGenerativeAI(params.geminiApiKey);
+        const model = genAI.getGenerativeModel({
+            model: resolveGeminiModel('gemini-2.5-flash'),
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.3 },
+        });
+
+        const prompt = await getPrompt('sdr_copywriter', DEFAULT_SDR_COPYWRITER_PROMPT, {
+            cleanBizName: params.cleanBizName,
+            contactName: params.contactName || 'there',
+            contactTitle: params.contactTitle || 'Office Manager',
+            city: params.city || 'your area',
+            clinicType: params.clinicType || 'dental practice',
+            keyObservation: params.keyObservation || 'private practice focused on patient care and clinical hygiene',
+        });
+
+        const result = await model.generateContent(prompt);
+        const rawText = result.response.text();
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.subject && parsed.body) {
+                return { subject: parsed.subject, body: parsed.body };
+            }
+        }
+        return undefined;
+    } catch (err) {
+        console.error('[generateOutreachDraft] Error:', err);
+        return undefined;
     }
 }
 
