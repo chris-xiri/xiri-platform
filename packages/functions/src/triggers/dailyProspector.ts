@@ -447,6 +447,8 @@ async function runDailyPipeline() {
         logger.info(`[DailyProspector] ${shuffled.length} combos shuffled. Target: ${config.dailyTarget}`);
 
         // Iterate shuffled combos until we hit dailyTarget
+        let consecutiveErrors = 0;
+        let lastErrorMessage = '';
         for (const { query: queryTerm, location } of shuffled) {
             if (newProspects.length >= config.dailyTarget) break;
 
@@ -463,6 +465,7 @@ async function runDailyPipeline() {
                     );
 
                     totalDiscovered += result.prospects.length;
+                    consecutiveErrors = 0;
 
                     queryYield[queryTerm] = queryYield[queryTerm] || { discovered: 0, qualified: 0 };
                     queryYield[queryTerm].discovered += result.prospects.length;
@@ -708,7 +711,12 @@ async function runDailyPipeline() {
                         break; 
                     }
                 } catch (err: any) {
-                    logger.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err.message);
+                    consecutiveErrors++;
+                    lastErrorMessage = err.message || String(err);
+                    logger.error(`[DailyProspector] Error for "${queryTerm}" in "${location}" (${consecutiveErrors} consecutive):`, lastErrorMessage);
+                    if (consecutiveErrors >= 3) {
+                        throw new Error(`Aborted after ${consecutiveErrors} consecutive sourcing failures — last error: ${lastErrorMessage}`);
+                    }
                     // Continue with next query
                 }
         }

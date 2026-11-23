@@ -324,9 +324,11 @@ export const searchVendors = async (
         await setCachedPlaces(query, location, googleResults);
 
     } catch (error: any) {
-        console.error("Error searching vendors via Google:", error.message);
+        const serperMsg = error?.response?.data?.message || error?.response?.data?.error || error.message;
+        const status = error?.response?.status;
+        console.error(`Error searching vendors via Google (HTTP ${status || 'unknown'}):`, serperMsg);
         if (provider !== 'all') {
-            throw new Error(`Failed to source vendors: ${error.message}`);
+            throw new Error(`Serper API error${status ? ` (HTTP ${status})` : ''}: ${serperMsg}`);
         }
     }
 
