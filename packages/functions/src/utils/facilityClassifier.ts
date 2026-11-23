@@ -37,6 +37,10 @@ const KNOWN_DSO_PATTERNS = [
     'orthodontic partners', 'smile doctors', 'specialized dental partners',
     'nyu college of dentistry', 'columbia dental', 'stony brook dental',
     'dental lab', 'dental laboratory', 'dental supply', 'henry schein', 'patterson dental',
+    // Hospital & institutional health-system clinics (not private practices)
+    'tbh.org', 'brooklyn hospital', 'northwell', 'nyu langone', 'mount sinai',
+    'montefiore', 'maimonides', 'nychealthandhospitals', 'health + hospitals',
+    'college of dentistry', 'school of dental', 'va medical',
 ];
 
 /**

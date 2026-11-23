@@ -601,6 +601,7 @@ async function extractWithAI(
     geminiApiKey: string,
     metadata?: { businessName?: string; address?: string; website?: string }
 ): Promise<Partial<ScrapedData>> {
+    if (!geminiApiKey?.trim()) return {};
     try {
         const genAI = new GoogleGenerativeAI(geminiApiKey);
         const model = genAI.getGenerativeModel({ model: resolveGeminiModel('gemini-2.5-flash') });
