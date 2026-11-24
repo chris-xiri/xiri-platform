@@ -38,8 +38,13 @@ function splitPersonName(fullName?: string | null): { firstName?: string; lastNa
 function isSharedOrLocationInbox(email: string, website?: string): boolean {
     const local = email.split('@')[0].toLowerCase().trim();
     if (GENERIC_PREFIXES.test(email)) return true;
-    // Shared clinical/location/office inbox keywords (safe to address to the Office/Practice Manager or Owner)
-    if (/(?:office|clinic|dental|dentist|ortho|smile|smiles|tooth|teeth|kids|pediatric|endo|perio|implant|care|patient|frontdesk|reception|appt|appointment|schedule|booking|desk|nyc|ny|li|nj|bk|queens|bronx|brooklyn|manhattan|westchester|staten|deerpark|roslyn|huntington|williamsburg|dumbo|astoria|flushing|scarsdale|mineola|massapequa|smithtown|melville|syosset|greatneck|manhasset|whiteplains|yonkers|nofo|soho|tribeca|chelsea|midtown|uptown|downtown|east|west|north|south)/i.test(local)) {
+    // Explicit personal doctor emails like "drdelia@", "dr.mao@", "drmark@" are NOT shared inboxes
+    if (extractDoctorNameFromEmail(email)) return false;
+    // Shared clinical/location/office inbox keywords (safe to default to Practice Manager)
+    if (/(?:office|clinic|dental|dentist|ortho|smile|smiles|tooth|teeth|kids|pediatric|endo|perio|implant|care|patient|frontdesk|reception|appt|appointment|schedule|booking|desk|queens|bronx|brooklyn|manhattan|westchester|staten|deerpark|roslyn|huntington|williamsburg|dumbo|astoria|flushing|scarsdale|mineola|massapequa|smithtown|melville|syosset|greatneck|manhasset|whiteplains|yonkers|nofo|soho|tribeca|chelsea|midtown|uptown|downtown)/i.test(local)) {
+        return true;
+    }
+    if (/^(?:ny|nj|li|bk|nyc|east|west|north|south|pia|staff)[._-]?(?:office|desk|team|admin|info)?$/i.test(local)) {
         return true;
     }
     // Matches website domain root (e.g. hiddensmilesortho@gmail.com for hiddensmiles.com)
@@ -141,29 +146,26 @@ function buildTopWebsiteContacts(
     paired.sort((a, b) => b.totalScore - a.totalScore);
     const top = paired.slice(0, MAX_CONTACTS_PER_COMPANY);
 
-    // Assign unpaired decision-makers safely:
-    // - If email is "dr<surname>@" (like drdelia@ or dr.mao@) and no scraped person matched,
-    //   derive "Dr. Delia" / "Dr. Mao" — NEVER slap a different doctor's name onto it!
-    // - ONLY shared/generic/location inboxes (info@, office@, deerpark@, queens@) inherit
-    //   the top unpaired Office Manager / Practice Manager / Owner.
+    // STRICT CONFIDENCE RULE:
+    // - ONLY attach a person's name when we are CONFIDENT the email belongs to them
+    //   (exact DOM-card email match, first/last name token match in the email local-part,
+    //   or an explicit "dr<surname>@" mailbox like drdelia@ / dr.mao@).
+    // - For ALL general/shared/location/clinic inboxes (info@, hello@, receptionist@,
+    //   officename@gmail.com, queens@, etc.) OR any email where we aren't confident,
+    //   default cleanly to "Practice Manager" (no person name attached -> "Hi there,").
     for (const entry of top) {
+        // Never attach a person's name to a general/shared/location inbox even if a token accidentally overlapped
+        if (entry.isShared || entry.isGeneric) {
+            entry.dm = undefined;
+            continue;
+        }
         if (entry.dm) continue;
 
         const drFromEmail = extractDoctorNameFromEmail(entry.email);
         if (drFromEmail) {
             entry.dm = { name: drFromEmail, title: 'Practice Owner / Doctor', priority: 82 };
-            continue;
         }
-
-        if (entry.isShared) {
-            for (let i = 0; i < decisionMakers.length; i++) {
-                if (!usedDmIdx.has(i)) {
-                    entry.dm = decisionMakers[i];
-                    usedDmIdx.add(i);
-                    break;
-                }
-            }
-        }
+        // Otherwise leave entry.dm = undefined -> defaults to "Practice Manager"
     }
 
     return top.map(entry => {
@@ -172,8 +174,8 @@ function buildTopWebsiteContacts(
             email: entry.email,
             firstName,
             lastName,
-            position: entry.dm?.title || undefined,
-            type: entry.isGeneric ? 'generic' : 'personal',
+            position: entry.dm?.title || 'Practice Manager',
+            type: (entry.isGeneric || entry.isShared || !entry.dm) ? 'generic' : 'personal',
             confidence: entry.validation === 'domain_match' ? 95 : 80,
             provider: 'website_scrape',
         };
@@ -210,7 +212,7 @@ import { inferFacilityType, type FacilityType } from '@xiri/shared';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { resolveGeminiModel } from '../utils/gemini';
 
-const GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|manager)@/i;
+const GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|frontdesk|reception|receptionist|appointments|appt|scheduling|manager|staff|patients?|care|smiles?|dental|ortho)@/i;
 
 // Domains that are never a valid business email — library credits, tracking, platform junk
 const JUNK_EMAIL_DOMAINS = new Set([
@@ -740,11 +742,13 @@ async function enrichSingleBusiness(
         prospect.emailSource = 'mailto';
         prospect.emailConfidence = (primary.confidence || 0) >= 90 ? 'high' : 'medium';
         const fullPrimaryName = [primary.firstName, primary.lastName].filter(Boolean).join(' ').trim();
-        if (fullPrimaryName) prospect.contactName = fullPrimaryName;
-        if (primary.position) prospect.contactTitle = primary.position;
+        // Only keep a named contact if the primary email confidently matched that person;
+        // otherwise clear contactName so general/unconfident inboxes default to "Practice Manager".
+        prospect.contactName = fullPrimaryName || undefined;
+        prospect.contactTitle = primary.position || 'Practice Manager';
         const genericMatch = topContacts.find(c => c.type === 'generic');
         if (genericMatch) prospect.genericEmail = genericMatch.email;
-        log.push(`Selected top ${topContacts.length} website-scraped contact(s): ${topContacts.map(c => `${[c.firstName, c.lastName].filter(Boolean).join(' ') || 'Office/Practice Manager'} <${c.email}>`).join(', ')}`);
+        log.push(`Selected top ${topContacts.length} website-scraped contact(s): ${topContacts.map(c => `${[c.firstName, c.lastName].filter(Boolean).join(' ') || 'Practice Manager'} <${c.email}>`).join(', ')}`);
     } else {
         log.push('No email published on practice website (zero guessing / zero extra Serper credits).');
     }
@@ -780,8 +784,8 @@ async function finalizeProspect(
             prospect.contactEmail = top.email;
             prospect.emailConfidence = (top.confidence || 0) >= 90 ? 'high' : 'medium';
             const topName = [top.firstName, top.lastName].filter(Boolean).join(' ').trim();
-            if (topName) prospect.contactName = topName;
-            if (top.position) prospect.contactTitle = top.position;
+            prospect.contactName = topName || undefined;
+            prospect.contactTitle = top.position || 'Practice Manager';
             const gen = prospect.allContacts.find(c => c.type === 'generic');
             prospect.genericEmail = gen?.email;
         } else {

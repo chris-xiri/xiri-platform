@@ -656,7 +656,7 @@ function extractAllEmails(html: string): { email: string; type: 'personal' | 'ge
             continue;
         }
         seen.add(cleaned);
-        const isGeneric = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|frontdesk|appointments|scheduling|reception)@/i.test(cleaned);
+        const isGeneric = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|frontdesk|appointments|scheduling|reception|receptionist|staff|patients?|care)@/i.test(cleaned);
         results.push({ email: cleaned, type: isGeneric ? 'generic' : 'personal' });
     }
 
