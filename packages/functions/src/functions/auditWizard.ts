@@ -5,6 +5,7 @@ import { DASHBOARD_CORS } from "../utils/cors";
 import { cancelLeadTasks } from "../utils/queueUtils";
 import { sendLeadChatNotification } from "../utils/leadChatWebhook";
 import { normalizeAttribution, formatAttributionSummary } from "../utils/attribution";
+import { buildAuditConfirmationEmail, buildInternalNotificationEmail } from "../triggers/onAuditSubmitted";
 
 function cleanString(value: unknown, maxLen = 500): string {
     if (typeof value !== "string") return "";
@@ -353,27 +354,67 @@ export const updateAuditLead = onCall({
 
     await batch.commit();
 
-    // When the visitor completes their contact details step (step 3 -> 4), post enriched summary to Leads Google Chat
+    // When the visitor completes their contact details step (step 3 -> 4), send the full internal &
+    // confirmation emails (deferred from Step 0) + post enriched summary to Leads Google Chat.
     if (contactName || contactPhone) {
-        const mergedBiz = sanitized.businessName || existingData.businessName || "Audit Prospect";
-        const mergedAddress = sanitized.address || existingData.address || existingData.zipCode || "Not specified";
-        const mergedServices = Array.isArray(sanitized.services)
-            ? sanitized.services.join(", ")
-            : Array.isArray(existingData.services)
-                ? existingData.services.join(", ")
-                : (existingData.serviceInterest || undefined);
+        const mergedData = { ...existingData, ...sanitized };
+        const mergedBiz = (sanitized.businessName || existingData.businessName || "").replace(/^Audit Prospect$/i, "") || "Your Facility";
+        const mergedContactName = contactName || existingData.contactName || existingData.name || "";
+        const mergedEmail = existingData.email || existingData.contactEmail || "";
+        const mergedAddress = sanitized.address || existingData.address || "";
+        const mergedLocation = mergedAddress || existingData.zipCode || "Not specified";
+        const mergedServices = Array.isArray(mergedData.services)
+            ? mergedData.services.join(", ")
+            : (mergedData.serviceInterest || undefined);
+
+        if (!existingData.auditNotificationSentAt && mergedEmail) {
+            const sentTs = admin.firestore.FieldValue.serverTimestamp();
+            await Promise.all([
+                db.collection("mail_queue").add({
+                    to: mergedEmail,
+                    subject: `We received your audit request — ${mergedBiz}`,
+                    templateType: "audit_confirmation",
+                    templateData: {
+                        html: buildAuditConfirmationEmail(mergedContactName, mergedBiz),
+                    },
+                    status: "pending",
+                    createdAt: sentTs,
+                }),
+                db.collection("mail_queue").add({
+                    to: "chris@xiri.ai",
+                    subject: `🔔 New Audit Lead: ${mergedBiz}`,
+                    templateType: "internal_notification",
+                    templateData: {
+                        html: buildInternalNotificationEmail(leadId, mergedContactName, mergedEmail, mergedBiz, mergedAddress, mergedData),
+                    },
+                    status: "pending",
+                    createdAt: sentTs,
+                }),
+                db.collection("activity_logs").add({
+                    type: "AUDIT_SUBMITTED",
+                    leadId,
+                    email: mergedEmail,
+                    businessName: mergedBiz,
+                    description: `Completed audit lead from ${mergedBiz} (${mergedContactName || mergedEmail})`,
+                    createdAt: sentTs,
+                }),
+                companySnap.exists ? companyRef.set({ auditNotificationSentAt: sentTs }, { merge: true }) : Promise.resolve(),
+                leadSnap.exists ? leadRef.set({ auditNotificationSentAt: sentTs }, { merge: true }) : Promise.resolve(),
+            ]);
+            logger.info(`[AuditWizard] Sent complete confirmation + internal alert email for ${leadId} (${mergedBiz})`);
+        }
 
         await sendLeadChatNotification({
             cardId: `audit-completed-${leadId}`,
             title: "✅ Audit Wizard Details Completed",
-            subtitle: `${mergedBiz} • ${contactName || existingData.email || "Lead"}`,
-            fallbackText: `✅ Audit Details Completed: ${mergedBiz} — ${contactName || "Contact"} (${contactPhone || existingData.email || ""})`,
+            subtitle: `${mergedBiz} • ${mergedContactName || mergedEmail || "Lead"}`,
+            fallbackText: `✅ Audit Details Completed: ${mergedBiz} — ${mergedContactName || "Contact"} (${contactPhone || mergedEmail || ""})`,
             businessName: mergedBiz,
-            contactName: contactName || existingData.contactName || undefined,
+            contactName: mergedContactName || undefined,
             contactRole: contactRole || existingData.contactRole || undefined,
-            email: existingData.email || undefined,
+            email: mergedEmail || undefined,
             phone: contactPhone || existingData.contactPhone || undefined,
-            location: mergedAddress,
+            location: mergedLocation,
             facilityType: sanitized.facilityType || existingData.facilityType || undefined,
             squareFootage: sanitized.squareFootage ?? existingData.squareFootage ?? null,
             services: mergedServices,

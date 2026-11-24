@@ -32,7 +32,7 @@ export const onAuditSubmitted = onDocumentCreated({
   // Only fire for audit wizard leads
   if (data.source !== 'audit_wizard') return;
 
-  const businessName = data.businessName || data.companyName || 'Your Facility';
+  const businessName = data.businessName || data.companyName || '';
   const contactName = data.contactName || data.name || '';
   const contactEmail = data.email || data.contactEmail;
   const address = data.address || data.location || '';
@@ -42,13 +42,36 @@ export const onAuditSubmitted = onDocumentCreated({
     return;
   }
 
+  // Step 0 of the multi-step wizard only collects ZIP + email. Wait until the visitor
+  // completes their facility & contact details in `updateAuditLead` before emailing so
+  // we don't send blank "Your Facility / N/A" alerts or premature confirmations.
+  const isPartialStepZero = (data.wizardStep === 1 || data.wizardStep === undefined)
+    && !businessName
+    && !contactName
+    && !address;
+
+  if (isPartialStepZero) {
+    await db.collection('activity_logs').add({
+      type: 'AUDIT_STARTED',
+      leadId,
+      email: contactEmail,
+      businessName: 'Audit Prospect',
+      description: `Audit wizard started by ${contactEmail} (ZIP ${data.zipCode || 'n/a'}) — awaiting facility & contact details.`,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    logger.info(`[AuditSubmitted] Lead ${leadId} is at Step 0 (email+ZIP only) — deferring emails until details are submitted.`);
+    return;
+  }
+
+  const displayBusiness = businessName || 'Your Facility';
+
   // 1. Send confirmation email to the lead
   await db.collection('mail_queue').add({
     to: contactEmail,
-    subject: `We received your audit request — ${businessName}`,
+    subject: `We received your audit request — ${displayBusiness}`,
     templateType: 'audit_confirmation',
     templateData: {
-      html: buildAuditConfirmationEmail(contactName, businessName),
+      html: buildAuditConfirmationEmail(contactName, displayBusiness),
     },
     status: 'pending',
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -57,22 +80,28 @@ export const onAuditSubmitted = onDocumentCreated({
   // 2. Send internal notification
   await db.collection('mail_queue').add({
     to: INTERNAL_NOTIFY_EMAIL,
-    subject: `🔔 New Audit Lead: ${businessName}`,
+    subject: `🔔 New Audit Lead: ${displayBusiness}`,
     templateType: 'internal_notification',
     templateData: {
-      html: buildInternalNotificationEmail(leadId, contactName, contactEmail, businessName, address, data),
+      html: buildInternalNotificationEmail(leadId, contactName, contactEmail, displayBusiness, address, data),
     },
     status: 'pending',
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
+
+  // Mark notification sent so updateAuditLead won't double-send
+  await Promise.all([
+    db.collection('leads').doc(leadId).set({ auditNotificationSentAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }),
+    db.collection('companies').doc(leadId).set({ auditNotificationSentAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }),
+  ]);
 
   // 3. Log activity
   await db.collection('activity_logs').add({
     type: 'AUDIT_SUBMITTED',
     leadId,
     email: contactEmail,
-    businessName,
-    description: `New audit lead from ${businessName} (${contactEmail})`,
+    businessName: displayBusiness,
+    description: `New audit lead from ${displayBusiness} (${contactEmail})`,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
@@ -82,9 +111,9 @@ export const onAuditSubmitted = onDocumentCreated({
   await sendLeadChatNotification({
     cardId: `audit-lead-${leadId}`,
     title: '🏢 New Inbound Audit Lead',
-    subtitle: `${businessName !== 'Your Facility' ? businessName : contactEmail} • ${locationText}`,
+    subtitle: `${displayBusiness !== 'Your Facility' ? displayBusiness : contactEmail} • ${locationText}`,
     fallbackText: `🏢 New Audit Lead: ${contactEmail} (${locationText})`,
-    businessName: businessName !== 'Your Facility' ? businessName : undefined,
+    businessName: displayBusiness !== 'Your Facility' ? displayBusiness : undefined,
     contactName: contactName || undefined,
     email: contactEmail,
     phone: data.phone || data.contactPhone || undefined,
@@ -96,13 +125,32 @@ export const onAuditSubmitted = onDocumentCreated({
     crmUrl: `https://app.xiri.ai/sales/crm/${leadId}`,
   });
 
-  logger.info(`[AuditSubmitted] Confirmation + internal alert + chat sent for lead ${leadId} (${businessName})`);
+  logger.info(`[AuditSubmitted] Confirmation + internal alert + chat sent for lead ${leadId} (${displayBusiness})`);
 });
 
 
 // ─── Email Builders ───────────────────────────────────────────────────
 
-function buildAuditConfirmationEmail(contactName: string, businessName: string): string {
+const SERVICE_LABELS: Record<string, string> = {
+  janitorial: 'Janitorial Cleaning',
+  consumables: 'Supplies & Consumables',
+  disinfecting: 'Disinfection Services',
+  floor_care: 'Floor Care & Refinishing',
+  landscaping: 'Landscaping & Grounds',
+  snow_removal: 'Snow & Ice Management',
+};
+
+function formatServicesList(data: any): string {
+  const raw = Array.isArray(data.services) && data.services.length > 0
+    ? data.services
+    : Array.isArray(data.selectedServices) && data.selectedServices.length > 0
+      ? data.selectedServices
+      : (data.serviceInterest && data.serviceInterest !== 'general' ? [data.serviceInterest] : []);
+  if (raw.length === 0) return 'Not specified';
+  return raw.map((s: string) => SERVICE_LABELS[s] || s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())).join(', ');
+}
+
+export function buildAuditConfirmationEmail(contactName: string, businessName: string): string {
   const greeting = contactName ? `Hi ${contactName}` : 'Hello';
 
   return `
@@ -134,8 +182,8 @@ function buildAuditConfirmationEmail(contactName: string, businessName: string):
         <p style="color: #0369a1; font-size: 14px; font-weight: 600; margin: 0 0 12px;">What happens next?</p>
         <ol style="color: #374151; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 18px;">
           <li>A Facility Solutions Manager will contact you</li>
-          <li>We'll schedule a walkthrough of your facility</li>
-          <li>You'll receive a custom maintenance plan & quote</li>
+          <li>We'll do a quick 15-minute virtual or on-site walkthrough of your facility</li>
+          <li>You'll receive a custom maintenance plan &amp; flat-rate quote</li>
         </ol>
       </div>
 
@@ -156,7 +204,7 @@ function buildAuditConfirmationEmail(contactName: string, businessName: string):
 }
 
 
-function buildInternalNotificationEmail(
+export function buildInternalNotificationEmail(
   leadId: string,
   contactName: string,
   contactEmail: string,
@@ -165,8 +213,17 @@ function buildInternalNotificationEmail(
   data: any,
 ): string {
   const facilityType = data.facilityType || data.propertyType || 'Not specified';
-  const sqft = data.squareFootage || data.sqft || 'Not specified';
-  const services = data.services?.join(', ') || data.selectedServices?.join(', ') || 'Not specified';
+  const rawSqft = data.squareFootage || data.sqft;
+  const sqft = typeof rawSqft === 'number' && rawSqft > 0 ? `${rawSqft.toLocaleString('en-US')} sq ft` : (rawSqft || 'Not specified');
+  const services = formatServicesList(data);
+  const phone = data.contactPhone || data.phone || '';
+  const role = data.contactRole || data.role || '';
+  const locationLine = address || (data.zipCode ? `ZIP ${data.zipCode}` : 'N/A');
+  const contactSummary = [
+    contactName ? (role ? `${contactName} (${role})` : contactName) : 'N/A',
+    contactEmail,
+    phone,
+  ].filter(Boolean).join(' — ');
 
   return `
 <!DOCTYPE html>
@@ -176,9 +233,9 @@ function buildInternalNotificationEmail(
     <h2 style="margin: 0 0 16px; color: #111827;">🔔 New Audit Lead</h2>
     
     <table style="width: 100%; font-size: 14px; color: #374151;">
-      <tr><td style="padding: 6px 0; color: #6b7280;">Business:</td><td style="padding: 6px 0; font-weight: 600;">${businessName}</td></tr>
-      <tr><td style="padding: 6px 0; color: #6b7280;">Contact:</td><td style="padding: 6px 0;">${contactName || 'N/A'} — ${contactEmail}</td></tr>
-      <tr><td style="padding: 6px 0; color: #6b7280;">Address:</td><td style="padding: 6px 0;">${address || 'N/A'}</td></tr>
+      <tr><td style="padding: 6px 0; color: #6b7280; width: 120px;">Business:</td><td style="padding: 6px 0; font-weight: 600;">${businessName}</td></tr>
+      <tr><td style="padding: 6px 0; color: #6b7280;">Contact:</td><td style="padding: 6px 0;">${contactSummary}</td></tr>
+      <tr><td style="padding: 6px 0; color: #6b7280;">Address:</td><td style="padding: 6px 0;">${locationLine}</td></tr>
       <tr><td style="padding: 6px 0; color: #6b7280;">Facility Type:</td><td style="padding: 6px 0;">${facilityType}</td></tr>
       <tr><td style="padding: 6px 0; color: #6b7280;">Sq Ft:</td><td style="padding: 6px 0;">${sqft}</td></tr>
       <tr><td style="padding: 6px 0; color: #6b7280;">Services:</td><td style="padding: 6px 0;">${services}</td></tr>

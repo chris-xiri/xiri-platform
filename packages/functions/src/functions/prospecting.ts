@@ -222,7 +222,8 @@ export const addProspectsToCrm = onCall({
                 const parsedName = contact.name ? contact.name.trim().split(/\s+/) : [];
                 const firstName = parsedName[0] || '';
                 const lastName = parsedName.length > 1 ? parsedName.slice(1).join(' ') : '';
-                const shouldActivate = index === 0 || (!!contact.confidence && contact.confidence >= 85 && !contact.isGeneric);
+                // Activate top 3 verified website contacts (Office/Practice Manager + Owner/Operator + 3rd site contact)
+                const shouldActivate = index < 3 && (index === 0 || !contact.confidence || contact.confidence >= 80);
                 const lifecycleStatus = shouldActivate ? 'active' : 'review';
 
                 batch.set(contactRef, {
@@ -323,7 +324,7 @@ export const expandLocation = onCall({
 
         const resData = await response.json();
         let textResponse = resData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "[]";
-        
+
         // Strip markdown backticks if any
         textResponse = textResponse.replace(/^```json/g, '').replace(/^```/g, '').replace(/```$/g, '').trim();
 

@@ -35,6 +35,7 @@ const KNOWN_DSO_PATTERNS = [
     'gentle dental', 'bright now dental', 'monarch dental', 'castle dental',
     'comfort dental', 'coast dental', 'kool smiles', 'benevis', 'smiledirect',
     'orthodontic partners', 'smile doctors', 'specialized dental partners',
+    'diamond braces', 'diamondbraces', 'tend.com',
     'nyu college of dentistry', 'columbia dental', 'stony brook dental',
     'dental lab', 'dental laboratory', 'dental supply', 'henry schein', 'patterson dental',
     // Hospital & institutional health-system clinics (not private practices)

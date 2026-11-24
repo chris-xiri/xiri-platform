@@ -12,8 +12,131 @@
  */
 
 import { searchVendors, RawVendor } from './sourcer';
-import { scrapeWebsite, deepMailtoScan, searchWebForEmail } from '../utils/websiteScraper';
+import { scrapeWebsite, deepMailtoScan, searchWebForEmail, type DecisionMakerCandidate } from '../utils/websiteScraper';
 import * as dns from 'dns';
+
+const MAX_CONTACTS_PER_COMPANY = 3;
+
+function splitPersonName(fullName?: string | null): { firstName?: string; lastName?: string } {
+    if (!fullName) return {};
+    const parts = fullName.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return {};
+    if (parts.length === 1) return { firstName: parts[0] };
+    // Preserve "Dr." with first name if present
+    if (/^dr\.?$/i.test(parts[0]) && parts.length >= 2) {
+        return {
+            firstName: `${parts[0]} ${parts[1]}`,
+            lastName: parts.slice(2).join(' ') || undefined,
+        };
+    }
+    return {
+        firstName: parts[0],
+        lastName: parts.slice(1).join(' '),
+    };
+}
+
+/**
+ * Pair up to MAX_CONTACTS_PER_COMPANY (3) distinct website-scraped emails
+ * with the top-ranked cleaning decision-makers (Office Manager, Practice Manager,
+ * Operations/Facilities Manager, Owner/Operator, Principal Doctor).
+ * STRICT RULE: Only accepts emails actually scraped from the practice website (zero guessing).
+ */
+function buildTopWebsiteContacts(
+    rawEmails: Array<{ email: string; source: EmailSource }>,
+    decisionMakers: DecisionMakerCandidate[],
+    website: string | undefined
+): ProspectContact[] {
+    const seenEmails = new Set<string>();
+    const rankedEmails: Array<{
+        email: string;
+        validation: 'domain_match' | 'free_provider';
+        isGeneric: boolean;
+        score: number;
+        source: EmailSource;
+    }> = [];
+
+    for (const item of rawEmails) {
+        const cleaned = item.email?.trim().toLowerCase();
+        if (!cleaned || !cleaned.includes('@') || seenEmails.has(cleaned)) continue;
+        const validation = validateEmailForBusiness(cleaned, website);
+        if (validation !== 'domain_match' && validation !== 'free_provider') continue;
+        seenEmails.add(cleaned);
+
+        const isGeneric = GENERIC_PREFIXES.test(cleaned);
+        let score = validation === 'domain_match' ? 100 : 60;
+        if (!isGeneric) score += 20;
+        // Boost manager/office prefixes over generic info@
+        if (/^(manager|officemanager|practicemanager|admin|office)@/i.test(cleaned)) score += 10;
+        rankedEmails.push({ email: cleaned, validation, isGeneric, score, source: item.source });
+    }
+
+    // Track which decision-makers have been paired with an email
+    const usedDmIdx = new Set<number>();
+    const matchDmForEmail = (email: string): { dm?: DecisionMakerCandidate; bonus: number } => {
+        const local = email.split('@')[0].toLowerCase().replace(/[^a-z]/g, '');
+
+        // 1. Exact card-scraped email match
+        for (let i = 0; i < decisionMakers.length; i++) {
+            if (usedDmIdx.has(i)) continue;
+            if (decisionMakers[i].email?.toLowerCase() === email) {
+                usedDmIdx.add(i);
+                return { dm: decisionMakers[i], bonus: 40 };
+            }
+        }
+
+        // 2. First/last name token match in the email local-part (e.g. "maryann@" or "drsmith@")
+        for (let i = 0; i < decisionMakers.length; i++) {
+            if (usedDmIdx.has(i)) continue;
+            const tokens = decisionMakers[i].name
+                .toLowerCase()
+                .replace(/^dr\.?\s+/, '')
+                .split(/\s+/)
+                .map(t => t.replace(/[^a-z]/g, ''))
+                .filter(t => t.length >= 3);
+            if (tokens.some(t => local.includes(t))) {
+                usedDmIdx.add(i);
+                return { dm: decisionMakers[i], bonus: 30 };
+            }
+        }
+        return { bonus: 0 };
+    };
+
+    const paired = rankedEmails.map(entry => {
+        const match = matchDmForEmail(entry.email);
+        return { ...entry, dm: match.dm, totalScore: entry.score + match.bonus };
+    });
+
+    // Sort highest-confidence / best-matched decision-maker emails first, cap at top 3
+    paired.sort((a, b) => b.totalScore - a.totalScore);
+    const top = paired.slice(0, MAX_CONTACTS_PER_COMPANY);
+
+    // For unpaired top emails (e.g. deerpark@islandortho.com when Mary Ann is Office Manager),
+    // assign the highest-priority remaining decision-maker so outreach addresses the right person.
+    for (const entry of top) {
+        if (!entry.dm) {
+            for (let i = 0; i < decisionMakers.length; i++) {
+                if (!usedDmIdx.has(i)) {
+                    entry.dm = decisionMakers[i];
+                    usedDmIdx.add(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    return top.map(entry => {
+        const { firstName, lastName } = splitPersonName(entry.dm?.name);
+        return {
+            email: entry.email,
+            firstName,
+            lastName,
+            position: entry.dm?.title || undefined,
+            type: entry.isGeneric ? 'generic' : 'personal',
+            confidence: entry.validation === 'domain_match' ? 95 : 80,
+            provider: 'website_scrape',
+        };
+    });
+}
 
 const mxCache = new Map<string, boolean>();
 
@@ -467,6 +590,9 @@ async function enrichSingleBusiness(
     // ═══════════════════════════════════════════════════════
     log.push(`Layer 1: Scraping ${vendor.website}...`);
 
+    const rawWebsiteEmails: Array<{ email: string; source: EmailSource }> = [];
+    let scrapedDecisionMakers: DecisionMakerCandidate[] = [];
+
     try {
         prospect.facilityType = await classifyFacilityType(vendor.website, vendor.name, input.query, secrets.geminiApiKey, log);
         targetTitles = getDecisionMakerTitles(prospect.facilityType, input.query);
@@ -494,14 +620,23 @@ async function enrichSingleBusiness(
                 log.push('Detected multi-location/branch business — prioritizing local branch operators over founders/corporate leadership');
             }
 
-            // Capture owner info from AI extraction
+            // Capture ranked top 2-3 decision-makers (Office Manager -> Practice Manager -> Owner/Operator)
+            if (data.decisionMakers && data.decisionMakers.length > 0) {
+                scrapedDecisionMakers = data.decisionMakers.filter(dm => !(multiLocation && hasCorporateOnlyTitle(dm.title)));
+                log.push(`Website decision-makers found (${scrapedDecisionMakers.length}): ${scrapedDecisionMakers.map(d => `${d.name} (${d.title})`).join(', ')}`);
+                for (const dm of scrapedDecisionMakers) {
+                    if (dm.email) rawWebsiteEmails.push({ email: dm.email, source: 'mailto' });
+                }
+            }
+
+            // Capture primary owner/manager info
             if (data.ownerName) {
                 if (multiLocation && hasCorporateOnlyTitle(data.ownerTitle)) {
                     log.push(`AI found corporate contact ${data.ownerName} (${data.ownerTitle || 'unknown title'}) — continuing search for local branch lead`);
                 } else {
                     prospect.contactName = data.ownerName;
                     prospect.contactTitle = data.ownerTitle;
-                    log.push(`AI found decision-maker: ${data.ownerName} (${data.ownerTitle || 'unknown title'})`);
+                    log.push(`Primary decision-maker: ${data.ownerName} (${data.ownerTitle || 'unknown title'})`);
                 }
             }
 
@@ -513,85 +648,12 @@ async function enrichSingleBusiness(
                 prospect.linkedinUrl = data.socialMedia.linkedin;
             }
 
-            // Check if we got a personal email (owner-specific or from mailto)
-            const bestEmail = data.ownerEmail || data.email;
-            if (bestEmail && !GENERIC_PREFIXES.test(bestEmail)) {
-                // ── EMAIL-DOMAIN VALIDATION ──
-                const emailValid = validateEmailForBusiness(bestEmail, vendor.website);
-                if (emailValid === 'junk') {
-                    log.push(`⚠️ Rejected junk email: ${bestEmail} (domain is blocklisted)`);
-                } else if (emailValid === 'free_provider') {
-                    fallbackPersonalEmail = fallbackPersonalEmail || {
-                        email: bestEmail,
-                        source: data.ownerEmail ? 'ai_extraction' : 'mailto',
-                        reason: 'website_free_provider',
-                    };
-                    log.push(`Holding free-provider personal email as fallback: ${bestEmail} (source: ${fallbackPersonalEmail.source})`);
-                } else if (emailValid === 'mismatch') {
-                    log.push(`⚠️ Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} — skipping`);
-                    log.push(`Skipping off-domain email from website scrape: ${bestEmail}`);
-                } else if (multiLocation && hasCorporateOnlyTitle(data.ownerTitle)) {
-                    log.push(`Skipping corporate-level direct email for branch business: ${bestEmail} (${data.ownerTitle || 'unknown title'})`);
-                } else {
-                    prospect.contactEmail = bestEmail;
-                    prospect.emailSource = data.ownerEmail ? 'ai_extraction' : 'mailto';
-                    prospect.emailConfidence = emailValid === 'domain_match' ? 'high' : 'medium';
-                    log.push(`Found personal email: ${bestEmail} (source: ${prospect.emailSource}, validation: ${emailValid})`);
-
-                    // Also store generic if we have one separately
-                    if (data.allEmails) {
-                        const generic = data.allEmails.find(e => e.type === 'generic');
-                        if (generic) prospect.genericEmail = generic.email;
-                    }
-
-                    return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log); // Done — personal email found and validated
-                }
-            }
-
-            // Only generic email found
-            if (bestEmail && GENERIC_PREFIXES.test(bestEmail)) {
-                prospect.genericEmail = bestEmail;
-                log.push(`Found generic email: ${bestEmail} — continuing search for personal...`);
-            }
-
-            // Check classified allEmails for personal ones we might have missed
+            // Collect ALL real website-scraped emails so we can build up to top 3 verified contacts
+            if (data.ownerEmail) rawWebsiteEmails.push({ email: data.ownerEmail, source: 'ai_extraction' });
+            if (data.email) rawWebsiteEmails.push({ email: data.email, source: data.source === 'structured_data' ? 'structured_data' : 'mailto' });
             if (data.allEmails) {
-                // Filter out junk/mismatch emails before considering them
-                const validPersonals = data.allEmails.filter(e => {
-                    if (e.type !== 'personal') return false;
-                    const v = validateEmailForBusiness(e.email, vendor.website);
-                    if (v === 'junk') {
-                        log.push(`⚠️ Filtered junk mailto: ${e.email}`);
-                        return false;
-                    }
-                    if (v === 'mismatch' || v === 'free_provider') {
-                        log.push(`⚠️ Filtered non-company mailto: ${e.email} (${v})`);
-                        return false;
-                    }
-                    return true;
-                });
-                const personalFromMailto = validPersonals[0];
-                if (personalFromMailto) {
-                    prospect.contactEmail = personalFromMailto.email;
-                    prospect.emailSource = 'mailto';
-                    prospect.emailConfidence = 'high';
-                    log.push(`Found personal email from mailto scan: ${personalFromMailto.email}`);
-                    return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
-                }
-
-                const freeProviderMailto = data.allEmails.find(e => e.type === 'personal' && validateEmailForBusiness(e.email, vendor.website) === 'free_provider');
-                if (freeProviderMailto) {
-                    fallbackPersonalEmail = fallbackPersonalEmail || {
-                        email: freeProviderMailto.email,
-                        source: 'mailto',
-                        reason: 'mailto_free_provider',
-                    };
-                    log.push(`Holding free-provider mailto as fallback: ${freeProviderMailto.email}`);
-                }
-
-                const genericFromMailto = data.allEmails.find(e => e.type === 'generic');
-                if (genericFromMailto && !prospect.genericEmail) {
-                    prospect.genericEmail = genericFromMailto.email;
+                for (const e of data.allEmails) {
+                    if (e.email) rawWebsiteEmails.push({ email: e.email, source: 'mailto' });
                 }
             }
 
@@ -607,32 +669,16 @@ async function enrichSingleBusiness(
 
     // ═══════════════════════════════════════════════════════
     // LAYER 1b: Deep Website Mailto Scan (0 Serper credits, zero guessing)
-    // Crawl up to 5 additional internal pages on the practice's own website.
+    // Crawl up to 5 additional internal pages if Layer 1 found no valid email yet.
     // ═══════════════════════════════════════════════════════
-    if (!prospect.contactEmail && !prospect.genericEmail && vendor.website) {
+    let topContacts = buildTopWebsiteContacts(rawWebsiteEmails, scrapedDecisionMakers, vendor.website);
+    if (topContacts.length === 0 && vendor.website) {
         try {
             const deepScan = await deepMailtoScan(vendor.website);
             if (deepScan.email) {
-                const v = validateEmailForBusiness(deepScan.email, vendor.website);
-                if (v === 'domain_match') {
-                    if (GENERIC_PREFIXES.test(deepScan.email)) {
-                        prospect.genericEmail = deepScan.email;
-                    } else {
-                        prospect.contactEmail = deepScan.email;
-                        prospect.emailSource = 'mailto';
-                        prospect.emailConfidence = 'high';
-                    }
-                    log.push(`Deep mailto scan (${deepScan.pagesScanned} pages): Found ${deepScan.email}`);
-                } else if (v === 'free_provider') {
-                    fallbackPersonalEmail = fallbackPersonalEmail || {
-                        email: deepScan.email,
-                        source: 'mailto',
-                        reason: 'deep_mailto_free_provider',
-                    };
-                    log.push(`Deep mailto scan: Holding website-published email ${deepScan.email}`);
-                } else {
-                    log.push(`Deep mailto scan: Rejected ${deepScan.email} (${v})`);
-                }
+                rawWebsiteEmails.push({ email: deepScan.email, source: 'mailto' });
+                topContacts = buildTopWebsiteContacts(rawWebsiteEmails, scrapedDecisionMakers, vendor.website);
+                log.push(`Deep mailto scan (${deepScan.pagesScanned} pages): Found ${deepScan.email}`);
             }
             if (!prospect.phone && deepScan.phone) {
                 prospect.phone = deepScan.phone;
@@ -643,27 +689,22 @@ async function enrichSingleBusiness(
     }
 
     // ═══════════════════════════════════════════════════════
-    // FINAL: Website-Scraped Email Selection (ZERO Guessing, 0 Extra Serper Credits)
+    // FINAL: Populate Top 1–3 Website-Scraped Contacts (ZERO Guessing)
     // ═══════════════════════════════════════════════════════
-    if (!prospect.contactEmail) {
-        if (prospect.genericEmail) {
-            const genericValidation = validateEmailForBusiness(prospect.genericEmail, vendor.website);
-            if (genericValidation === 'domain_match') {
-                prospect.contactEmail = prospect.genericEmail;
-                prospect.emailSource = 'mailto';
-                prospect.emailConfidence = 'high';
-                log.push(`Using validated practice-domain email scraped from website: ${prospect.genericEmail}`);
-            } else {
-                log.push(`Generic email rejected (validation: ${genericValidation}): ${prospect.genericEmail}`);
-            }
-        } else if (fallbackPersonalEmail) {
-            prospect.contactEmail = fallbackPersonalEmail.email;
-            prospect.emailSource = fallbackPersonalEmail.source;
-            prospect.emailConfidence = 'medium';
-            log.push(`Using website-published email fallback: ${fallbackPersonalEmail.email} (${fallbackPersonalEmail.reason})`);
-        } else {
-            log.push('No email published on practice website (zero guessing / zero extra Serper credits).');
-        }
+    if (topContacts.length > 0) {
+        prospect.allContacts = topContacts;
+        const primary = topContacts[0];
+        prospect.contactEmail = primary.email;
+        prospect.emailSource = 'mailto';
+        prospect.emailConfidence = (primary.confidence || 0) >= 90 ? 'high' : 'medium';
+        const fullPrimaryName = [primary.firstName, primary.lastName].filter(Boolean).join(' ').trim();
+        if (fullPrimaryName) prospect.contactName = fullPrimaryName;
+        if (primary.position) prospect.contactTitle = primary.position;
+        const genericMatch = topContacts.find(c => c.type === 'generic');
+        if (genericMatch) prospect.genericEmail = genericMatch.email;
+        log.push(`Selected top ${topContacts.length} website-scraped contact(s): ${topContacts.map(c => `${[c.firstName, c.lastName].filter(Boolean).join(' ') || 'Office/Practice Manager'} <${c.email}>`).join(', ')}`);
+    } else {
+        log.push('No email published on practice website (zero guessing / zero extra Serper credits).');
     }
 
     return await finalizeProspect(prospect, secrets.geminiApiKey, input.location, log);
@@ -679,19 +720,49 @@ async function finalizeProspect(
     location: string,
     log: string[]
 ): Promise<EnrichedProspect> {
-    // ── Mandatory DNS MX validation on every scraped email before accepting ──
-    const primaryCandidate = prospect.contactEmail || prospect.genericEmail;
-    if (primaryCandidate) {
-        const mxValid = await verifyEmailMx(primaryCandidate);
-        if (!mxValid) {
-            log.push(`❌ DNS MX validation failed for ${primaryCandidate} — rejecting undeliverable email`);
-            if (prospect.contactEmail === primaryCandidate) prospect.contactEmail = undefined;
-            if (prospect.genericEmail === primaryCandidate) prospect.genericEmail = undefined;
+    // ── Mandatory DNS MX validation on EVERY website-scraped email (top 1–3 contacts) ──
+    if (prospect.allContacts && prospect.allContacts.length > 0) {
+        const verifiedContacts: ProspectContact[] = [];
+        for (const c of prospect.allContacts) {
+            const mxValid = await verifyEmailMx(c.email);
+            if (mxValid) {
+                verifiedContacts.push(c);
+                log.push(`✅ DNS MX verified: ${c.email}`);
+            } else {
+                log.push(`❌ DNS MX validation failed for ${c.email} — rejecting undeliverable email`);
+            }
+        }
+        prospect.allContacts = verifiedContacts.slice(0, MAX_CONTACTS_PER_COMPANY);
+        if (prospect.allContacts.length > 0) {
+            const top = prospect.allContacts[0];
+            prospect.contactEmail = top.email;
+            prospect.emailConfidence = (top.confidence || 0) >= 90 ? 'high' : 'medium';
+            const topName = [top.firstName, top.lastName].filter(Boolean).join(' ').trim();
+            if (topName) prospect.contactName = topName;
+            if (top.position) prospect.contactTitle = top.position;
+            const gen = prospect.allContacts.find(c => c.type === 'generic');
+            prospect.genericEmail = gen?.email;
+        } else {
+            prospect.contactEmail = undefined;
+            prospect.genericEmail = undefined;
             prospect.emailSource = 'none';
             prospect.emailConfidence = 'low';
             return prospect;
         }
-        log.push(`✅ DNS MX verified for website-scraped email: ${primaryCandidate}`);
+    } else {
+        const primaryCandidate = prospect.contactEmail || prospect.genericEmail;
+        if (primaryCandidate) {
+            const mxValid = await verifyEmailMx(primaryCandidate);
+            if (!mxValid) {
+                log.push(`❌ DNS MX validation failed for ${primaryCandidate} — rejecting undeliverable email`);
+                if (prospect.contactEmail === primaryCandidate) prospect.contactEmail = undefined;
+                if (prospect.genericEmail === primaryCandidate) prospect.genericEmail = undefined;
+                prospect.emailSource = 'none';
+                prospect.emailConfidence = 'low';
+                return prospect;
+            }
+            log.push(`✅ DNS MX verified for website-scraped email: ${primaryCandidate}`);
+        }
     }
 
     if ((prospect.contactEmail || prospect.genericEmail) && !(prospect as any).outreachDraft) {

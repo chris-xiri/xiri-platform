@@ -145,7 +145,7 @@ const DEFAULT_CONFIG: ClientTriggerConfig = {
         'Hackensack, NJ', 'Paramus, NJ', 'Fort Lee, NJ', 'Morristown, NJ', 'Parsippany, NJ',
     ],
     dailyTarget: 30,
-    enabled: true,
+    enabled: false, // Disabled: SDR is focused exclusively on private Metro NY dental & orthodontic practices via dailyProspector
     excludePatterns: DEFAULT_EXCLUDED_EMPLOYERS,
 };
 

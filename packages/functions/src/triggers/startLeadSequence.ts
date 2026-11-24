@@ -23,7 +23,7 @@ export const startLeadSequence = onCall(
         secrets: ["RESEND_API_KEY"],
     },
     async (request) => {
-        const { leadId, contactId, sequenceId, enrolledBy } = request.data || {};
+        const { leadId, contactId, sequenceId, enrolledBy, initialDelayDays, initialDelayMinutes, isSecondaryContact } = request.data || {};
 
         if (!leadId) {
             throw new HttpsError("invalid-argument", "leadId is required");
@@ -34,6 +34,9 @@ export const startLeadSequence = onCall(
             leadId,
             contactId: contactId || null,
             sequenceId: sequenceId || null,
+            initialDelayDays: typeof initialDelayDays === "number" ? initialDelayDays : 0,
+            initialDelayMinutes: typeof initialDelayMinutes === "number" ? initialDelayMinutes : 0,
+            isSecondaryContact: Boolean(isSecondaryContact),
             throwOnGuard: true,
             enrolledBy: enrolledBy === "bulk" ? "bulk" : "manual",
         });

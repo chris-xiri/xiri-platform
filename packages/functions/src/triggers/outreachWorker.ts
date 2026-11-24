@@ -741,8 +741,8 @@ async function handleLeadSend(task: QueueItem): Promise<boolean> {
     const engagement = contactData?.emailEngagement || {};
     const isWarm = Boolean(
         engagement.highIntentClicked ||
-        (engagement.clickedCount || 0) > 0 ||
-        (engagement.openedCount || 0) > 0 ||
+        (engagement.clickCount || engagement.clickedCount || 0) > 0 ||
+        (engagement.openCount || engagement.openedCount || 0) > 0 ||
         engagement.lastEvent === 'opened' ||
         engagement.lastEvent === 'clicked'
     );
@@ -820,8 +820,9 @@ async function handleLeadSend(task: QueueItem): Promise<boolean> {
         if (!mergeVars[key]) mergeVars[key] = value;
     }
 
-    // ── Step 0 AI Personalized Draft blending (when enabled on template) ──
-    const draft = leadData.outreachDraft || task.metadata?.outreachDraft;
+    // ── Step 0 AI Personalized Draft blending (only for primary contact so secondary contacts get their own name) ──
+    const allowCompanyDraft = task.metadata?.useCompanyDraft !== false && contactData?.isPrimary !== false;
+    const draft = allowCompanyDraft ? (task.metadata?.outreachDraft || leadData.outreachDraft) : null;
     let subject = '';
     let body = '';
 

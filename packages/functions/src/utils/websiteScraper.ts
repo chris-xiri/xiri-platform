@@ -4,6 +4,13 @@ import { getPrompt, DEFAULT_SDR_PROFILER_PROMPT, DEFAULT_SDR_COPYWRITER_PROMPT }
 import { resolveGeminiModel } from './gemini';
 import type { ClinicDossier } from '@xiri/shared';
 
+export interface DecisionMakerCandidate {
+    name: string;
+    title: string;
+    email?: string;
+    priority: number;
+}
+
 interface ScrapedData {
     email?: string;
     phone?: string;
@@ -17,10 +24,11 @@ interface ScrapedData {
     };
     confidence: 'high' | 'medium' | 'low';
     source: string;
-    // Owner/decision-maker info — extracted by AI
+    // Owner/decision-maker info — extracted from team pages + AI (top 1 primary + top 2-3 ranked)
     ownerName?: string;
     ownerTitle?: string;
     ownerEmail?: string;
+    decisionMakers?: DecisionMakerCandidate[];
     allEmails?: { email: string; type: 'personal' | 'generic' }[];
     organizationScope?: 'single_location' | 'multi_location';
     dossier?: ClinicDossier;
@@ -105,13 +113,14 @@ export async function scrapeWebsite(
             allAdditionalHtml += `\n<!-- PAGE: ${pageUrl} -->\n` + page.html + '\n';
         }
 
-        // ─── Step 2b: Deterministic Office Manager / Practice Manager DOM extraction ───
-        // Runs on team/staff pages first, then homepage, so we reliably capture the
-        // Office Manager (e.g. "Mary Ann — Office Manager" on /meet-the-team/) even if AI fails.
-        const domDecisionMaker = extractDecisionMakerFromPages([
+        // ─── Step 2b: Deterministic Top 2-3 Cleaning Decision-Makers DOM extraction ───
+        // Targets Office Manager, Practice Manager, Practice Administrator, Facilities/Ops Manager,
+        // and Owner / Operator / Principal Doctor directly from team/staff/about pages.
+        const domDecisionMakers = extractDecisionMakersFromPages([
             ...additionalPageCache.map(p => ({ url: p.url, $: p.$ })),
             { url, $: homepage.$ },
         ]);
+        const domDecisionMaker = domDecisionMakers[0] || null;
 
         // ─── Step 3: Merge all data (priority: structured > mailto/tel > contact pages > homepage patterns) ───
         const mergedContact = mergeContactPages(contactPageResults);
@@ -160,16 +169,42 @@ export async function scrapeWebsite(
         combinedData.phone = combinedData.phone || aiData.phone;
         combinedData.address = combinedData.address || aiData.address;
         combinedData.businessName = combinedData.businessName || aiData.businessName;
-        // Prefer Office/Practice Manager over generic doctor/owner when both exist
-        const aiIsManager = !!aiData.ownerTitle && /office manager|practice manager|administrator|director|operations/i.test(aiData.ownerTitle);
-        if (domDecisionMaker && (!aiData.ownerName || (!aiIsManager && domDecisionMaker.priority >= 90))) {
-            combinedData.ownerName = domDecisionMaker.name;
-            combinedData.ownerTitle = domDecisionMaker.title;
+        // Merge DOM + AI decision-makers into a ranked top-3 list (Office/Practice Manager -> Owner/Operator -> Principal Dr)
+        const mergedDecisionMakers: DecisionMakerCandidate[] = [...domDecisionMakers];
+        if (aiData.ownerName) {
+            const aiTitle = aiData.ownerTitle || 'Practice Owner';
+            const aiPriority = /office manager|practice manager|practice administrator|operations manager|facilities manager/i.test(aiTitle)
+                ? 100
+                : /owner|founder|partner|principal|director|operator/i.test(aiTitle)
+                    ? 88
+                    : 78;
+            const normAi = aiData.ownerName.toLowerCase().replace(/[^a-z]/g, '');
+            const existing = mergedDecisionMakers.find(d => d.name.toLowerCase().replace(/[^a-z]/g, '') === normAi);
+            if (existing) {
+                if (!existing.email && aiData.ownerEmail) existing.email = aiData.ownerEmail.toLowerCase();
+            } else {
+                mergedDecisionMakers.push({
+                    name: aiData.ownerName,
+                    title: aiTitle,
+                    email: aiData.ownerEmail?.toLowerCase(),
+                    priority: aiPriority,
+                });
+            }
+        }
+        mergedDecisionMakers.sort((a, b) => b.priority - a.priority);
+        combinedData.decisionMakers = mergedDecisionMakers.slice(0, 3);
+
+        // Prefer Office/Practice Manager over generic doctor/owner as #1 primary contact
+        const topDm = combinedData.decisionMakers[0];
+        if (topDm) {
+            combinedData.ownerName = topDm.name;
+            combinedData.ownerTitle = topDm.title;
+            combinedData.ownerEmail = topDm.email || aiData.ownerEmail;
         } else {
             combinedData.ownerName = aiData.ownerName || domDecisionMaker?.name;
             combinedData.ownerTitle = aiData.ownerTitle || domDecisionMaker?.title;
+            combinedData.ownerEmail = aiData.ownerEmail;
         }
-        combinedData.ownerEmail = aiData.ownerEmail;
         combinedData.organizationScope = aiData.organizationScope;
         combinedData.dossier = aiData.dossier;
 
@@ -440,38 +475,79 @@ function findAdditionalPages($: cheerio.CheerioAPI, baseUrl: string): string[] {
 }
 
 const MANAGER_TITLE_PATTERNS: Array<{ regex: RegExp; label: string; priority: number }> = [
+    // Tier 1: Direct cleaning & facility/vendor managers
     { regex: /\boffice\s+manager\b/i, label: 'Office Manager', priority: 100 },
     { regex: /\bpractice\s+manager\b/i, label: 'Practice Manager', priority: 100 },
     { regex: /\bpractice\s+administrator\b/i, label: 'Practice Administrator', priority: 98 },
+    { regex: /\bfacilit(?:y|ies)\s+manager\b/i, label: 'Facilities Manager', priority: 97 },
+    { regex: /\boperations\s+manager\b/i, label: 'Operations Manager', priority: 96 },
     { regex: /\bpractice\s+director\b/i, label: 'Practice Director', priority: 95 },
-    { regex: /\boperations\s+manager\b/i, label: 'Operations Manager', priority: 95 },
-    { regex: /\bclinic\s+manager\b/i, label: 'Clinic Manager', priority: 92 },
-    { regex: /\bbusiness\s+manager\b/i, label: 'Business Manager', priority: 90 },
+    { regex: /\bclinic\s+manager\b/i, label: 'Clinic Manager', priority: 93 },
+    { regex: /\bbusiness\s+manager\b/i, label: 'Business Manager', priority: 91 },
+    { regex: /\boffice\s+administrator\b/i, label: 'Office Administrator', priority: 90 },
+    // Tier 2: Owner / Operator / Managing Partner / Founder
+    { regex: /\b(?:practice\s+owner|owner[\s/-]+operator|co-?owner|owner)\b/i, label: 'Owner', priority: 88 },
+    { regex: /\bmanaging\s+(?:partner|director|dentist|orthodontist)\b/i, label: 'Managing Partner', priority: 86 },
+    { regex: /\b(?:co-?)?founder\b/i, label: 'Founder', priority: 85 },
+    { regex: /\bprincipal\s+(?:dentist|orthodontist|doctor|owner)?\b/i, label: 'Principal', priority: 83 },
+    // Tier 3: Clinical / Treatment Coordinator (secondary ops contact)
     { regex: /\bclinical\s+coordinator\b/i, label: 'Clinical Coordinator', priority: 75 },
-    { regex: /\btreatment\s+coordinator\b/i, label: 'Treatment Coordinator', priority: 70 },
+    { regex: /\btreatment\s+coordinator\b/i, label: 'Treatment Coordinator', priority: 72 },
 ];
 
 function looksLikePersonName(raw: string): string | null {
     const cleaned = raw.replace(/\s+/g, ' ').replace(/^[\-–—:|•,.\s]+|[\-–—:|•,.\s]+$/g, '').trim();
-    if (!cleaned || cleaned.length < 2 || cleaned.length > 42) return null;
-    if (/\d|@|http|www\.|office|manager|coordinator|assistant|hygienist|doctor|team|staff|location|dental|ortho|clinic|practice|meet\s+our|about/i.test(cleaned)) {
+    if (!cleaned || cleaned.length < 2 || cleaned.length > 48) return null;
+    if (/\d|@|http|www\.|office|manager|coordinator|assistant|hygienist|team|staff|location|dental|ortho|clinic|practice|meet\s+our|about|welcome|contact|hours|reviews|services/i.test(cleaned)) {
         return null;
     }
-    const words = cleaned.split(/\s+/);
+    // Strip trailing clinical credentials like ", DDS" or ", DMD"
+    const withoutCreds = cleaned.replace(/,?\s*(?:D\.?D\.?S\.?|D\.?M\.?D\.?|M\.?S\.?|M\.?D\.?|F\.?A\.?G\.?D\.?)\b\.?/gi, '').trim();
+    if (!withoutCreds || withoutCreds.length < 2) return null;
+    const words = withoutCreds.split(/\s+/);
     if (words.length < 1 || words.length > 4) return null;
-    // Must start with a capital letter and contain mostly letters
-    if (!/^[A-Z][a-zA-Z'.-]+(\s+[A-Z][a-zA-Z'.-]+){0,3}$/.test(cleaned)) return null;
-    return cleaned;
+    // Allow optional "Dr." prefix + capitalized name parts
+    if (!/^(?:Dr\.?\s+)?[A-Z][a-zA-Z'.-]+(\s+[A-Z][a-zA-Z'.-]+){0,3}$/.test(withoutCreds)) return null;
+    return withoutCreds;
+}
+
+function extractCardEmail($: cheerio.CheerioAPI, $el: cheerio.Cheerio<any>): string | undefined {
+    const card = $el.closest('div, li, article, figure, section');
+    const mailtoHref = card.find('a[href^="mailto:"]').first().attr('href');
+    if (mailtoHref) {
+        const cleaned = mailtoHref.replace(/^mailto:/i, '').split('?')[0].trim().toLowerCase();
+        if (cleaned.includes('@') && !cleaned.includes('example.com')) return cleaned;
+    }
+    return undefined;
 }
 
 /**
- * Deterministically extract Office Manager / Practice Manager name + title from
- * scraped team/staff DOM cards (e.g. <h3>Mary Ann</h3><p>Office Manager</p>).
+ * Deterministically extract the top 3 cleaning/operations decision-makers
+ * (Office Manager, Practice Manager, Owner/Operator, Principal Doctor)
+ * from scraped team/staff/about DOM cards.
  */
-function extractDecisionMakerFromPages(
+function extractDecisionMakersFromPages(
     pages: Array<{ url: string; $: cheerio.CheerioAPI }>
-): { name: string; title: string; priority: number } | null {
-    let best: { name: string; title: string; priority: number } | null = null;
+): DecisionMakerCandidate[] {
+    const byName = new Map<string, DecisionMakerCandidate>();
+
+    const upsert = (candidate: DecisionMakerCandidate) => {
+        const key = candidate.name.toLowerCase().replace(/^dr\.?\s+/, '').replace(/[^a-z]/g, '');
+        if (!key || key.length < 2) return;
+        const existing = byName.get(key);
+        if (!existing) {
+            byName.set(key, candidate);
+        } else {
+            if (candidate.priority > existing.priority) {
+                existing.priority = candidate.priority;
+                existing.title = candidate.title;
+                existing.name = candidate.name;
+            }
+            if (!existing.email && candidate.email) {
+                existing.email = candidate.email;
+            }
+        }
+    };
 
     for (const { $ } of pages) {
         $('p, span, div, h1, h2, h3, h4, h5, h6, strong, b, em, small, li').each((_, el) => {
@@ -479,17 +555,18 @@ function extractDecisionMakerFromPages(
             // Only inspect leaf-ish text nodes (avoid huge wrapper containers)
             if ($el.children('div, section, article, ul').length > 0) return;
             const text = $el.text().replace(/\s+/g, ' ').trim();
-            if (!text || text.length > 80) return;
+            if (!text || text.length > 90) return;
 
             for (const pat of MANAGER_TITLE_PATTERNS) {
                 if (!pat.regex.test(text)) continue;
-                if (best && best.priority >= pat.priority) continue;
 
-                // Case 1: Inline "Mary Ann - Office Manager" or "Mary Ann, Office Manager"
+                const cardEmail = extractCardEmail($, $el);
+
+                // Case 1: Inline "Mary Ann - Office Manager" or "Dr. Jane Smith, Owner"
                 const beforeTitle = text.split(pat.regex)[0];
                 const inlineName = looksLikePersonName(beforeTitle);
                 if (inlineName) {
-                    best = { name: inlineName, title: pat.label, priority: pat.priority };
+                    upsert({ name: inlineName, title: pat.label, email: cardEmail, priority: pat.priority });
                     return;
                 }
 
@@ -497,7 +574,7 @@ function extractDecisionMakerFromPages(
                 const prevText = $el.prev('h1, h2, h3, h4, h5, h6, strong, b, p, span, div').text();
                 const prevName = looksLikePersonName(prevText);
                 if (prevName) {
-                    best = { name: prevName, title: pat.label, priority: pat.priority };
+                    upsert({ name: prevName, title: pat.label, email: cardEmail, priority: pat.priority });
                     return;
                 }
 
@@ -506,14 +583,29 @@ function extractDecisionMakerFromPages(
                     || $el.closest('div, li, article, figure').find('h1, h2, h3, h4, h5, h6, strong').first().text();
                 const parentName = looksLikePersonName(parentHeading);
                 if (parentName) {
-                    best = { name: parentName, title: pat.label, priority: pat.priority };
+                    upsert({ name: parentName, title: pat.label, email: cardEmail, priority: pat.priority });
                     return;
+                }
+            }
+
+            // Also detect Owner-Doctor headings like "Dr. Jane Smith, DDS" or "Dr. Brian Lee, DMD"
+            if (/^Dr\.?\s+[A-Z][a-zA-Z'.-]+(?:\s+[A-Z][a-zA-Z'.-]+){1,2}(?:,?\s*(?:D\.?D\.?S\.?|D\.?M\.?D\.?|M\.?S\.?))?/i.test(text) && text.length <= 60) {
+                const drName = looksLikePersonName(text);
+                if (drName && /^Dr\.?\s+/i.test(drName)) {
+                    upsert({
+                        name: drName,
+                        title: 'Practice Owner / Doctor',
+                        email: extractCardEmail($, $el),
+                        priority: 80,
+                    });
                 }
             }
         });
     }
 
-    return best;
+    return Array.from(byName.values())
+        .sort((a, b) => b.priority - a.priority)
+        .slice(0, 3);
 }
 
 /**

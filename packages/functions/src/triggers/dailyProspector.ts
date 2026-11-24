@@ -590,6 +590,7 @@ async function runDailyPipeline() {
                         let queueStatus: "pending_review" | "sequenced" = "pending_review";
                         let enrolledCompanyId: string | null = null;
                         let enrolledContactId: string | null = null;
+                        let enrolledContactIds: string[] = [];
                         let enrolledSequenceId: string | null = null;
 
                         if (qualifiesForAutoEnroll && bestEmail) {
@@ -597,12 +598,49 @@ async function runDailyPipeline() {
                                 const now = new Date();
                                 const parsedAddr = parseAddress(prospect.address);
                                 const companyRef = db.collection("companies").doc();
-                                const contactRef = db.collection("contacts").doc();
                                 const rawContactName = (prospect.contactName || "").trim();
-                                const nameParts = rawContactName ? rawContactName.split(/\s+/) : [];
-                                const firstName = nameParts[0] || "";
-                                const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
                                 const resolvedTitle = prospect.contactTitle || inferredPic?.title || (isOrtho ? "Office Manager" : "Practice Manager");
+
+                                // Build top 1–3 distinct website-scraped, MX-verified contacts for this practice
+                                const MAX_CONTACTS_PER_COMPANY = 3;
+                                const seenEmails = new Set<string>();
+                                const contactPayloads: Array<{
+                                    email: string;
+                                    name: string;
+                                    firstName: string;
+                                    lastName: string;
+                                    title: string;
+                                    confidence: "high" | "medium";
+                                }> = [];
+
+                                const addCandidate = (email?: string | null, fullName?: string | null, title?: string | null, conf?: number) => {
+                                    const em = email?.trim().toLowerCase();
+                                    if (!em || seenEmails.has(em) || contactPayloads.length >= MAX_CONTACTS_PER_COMPANY) return;
+                                    seenEmails.add(em);
+                                    const cleanName = (fullName || "").trim();
+                                    const parts = cleanName ? cleanName.split(/\s+/) : [];
+                                    const fName = parts[0] || "";
+                                    const lName = parts.length > 1 ? parts.slice(1).join(" ") : "";
+                                    const roleTitle = (title || "").trim() || resolvedTitle;
+                                    contactPayloads.push({
+                                        email: em,
+                                        name: cleanName || roleTitle,
+                                        firstName: fName,
+                                        lastName: lName,
+                                        title: roleTitle,
+                                        confidence: (conf ?? (prospect.emailConfidence === "high" ? 95 : 80)) >= 90 ? "high" : "medium",
+                                    });
+                                };
+
+                                // #1 Primary contact (Office Manager / Practice Manager)
+                                addCandidate(bestEmail, rawContactName, resolvedTitle);
+                                // #2–#3 Additional distinct verified website contacts (Owner/Operator, 2nd Office/Manager)
+                                if (Array.isArray(prospect.allContacts)) {
+                                    for (const c of prospect.allContacts) {
+                                        const cName = [c.firstName, c.lastName].filter(Boolean).join(" ").trim();
+                                        addCandidate(c.email, cName, c.position, c.confidence);
+                                    }
+                                }
 
                                 await companyRef.set({
                                     businessName: prospect.businessName,
@@ -615,9 +653,9 @@ async function runDailyPipeline() {
                                     phone: prospect.phone || null,
                                     website: prospect.website || null,
                                     rating: prospect.rating || null,
-                                    email: bestEmail,
-                                    contactName: rawContactName || resolvedTitle,
-                                    contactTitle: resolvedTitle,
+                                    email: contactPayloads[0].email,
+                                    contactName: contactPayloads[0].name,
+                                    contactTitle: contactPayloads[0].title,
                                     dossier: prospect.dossier || null,
                                     outreachDraft: prospect.outreachDraft || null,
                                     status: "new",
@@ -630,44 +668,58 @@ async function runDailyPipeline() {
                                     updatedAt: now,
                                 });
 
-                                await contactRef.set({
-                                    companyId: companyRef.id,
-                                    companyName: prospect.businessName,
-                                    name: rawContactName || resolvedTitle,
-                                    firstName,
-                                    lastName,
-                                    email: bestEmail.toLowerCase(),
-                                    phone: prospect.phone || null,
-                                    title: resolvedTitle,
-                                    role: resolvedTitle,
-                                    isPrimary: true,
-                                    lifecycleStatus: "active",
-                                    emailStatus: "unknown",
-                                    emailSource: prospect.emailSource || "none",
-                                    emailConfidence: prospect.emailConfidence || "medium",
-                                    unsubscribed: false,
-                                    source: "auto_sdr",
-                                    createdAt: now,
-                                    updatedAt: now,
-                                });
+                                let anyEnrolled = false;
+                                for (let cIdx = 0; cIdx < contactPayloads.length; cIdx++) {
+                                    const cp = contactPayloads[cIdx];
+                                    const contactRef = db.collection("contacts").doc();
+                                    await contactRef.set({
+                                        companyId: companyRef.id,
+                                        companyName: prospect.businessName,
+                                        name: cp.name,
+                                        firstName: cp.firstName,
+                                        lastName: cp.lastName,
+                                        email: cp.email,
+                                        phone: prospect.phone || null,
+                                        title: cp.title,
+                                        role: cp.title,
+                                        isPrimary: cIdx === 0,
+                                        lifecycleStatus: "active",
+                                        emailStatus: "unknown",
+                                        emailSource: prospect.emailSource || "mailto",
+                                        emailConfidence: cp.confidence,
+                                        unsubscribed: false,
+                                        source: "auto_sdr",
+                                        createdAt: now,
+                                        updatedAt: now,
+                                    });
+                                    enrolledContactIds.push(contactRef.id);
 
-                                const seqResult = await enqueueLeadSequence({
-                                    db,
-                                    leadId: companyRef.id,
-                                    contactId: contactRef.id,
-                                    initialDelayMinutes: autoEnrolledCount * 3,
-                                    throwOnGuard: false,
-                                    enrolledBy: "auto_sdr",
-                                });
+                                    if (autoEnrolledCount >= maxDailyOutreach) continue;
 
-                                if (seqResult.success) {
+                                    const seqResult = await enqueueLeadSequence({
+                                        db,
+                                        leadId: companyRef.id,
+                                        contactId: contactRef.id,
+                                        initialDelayMinutes: cIdx === 0 ? autoEnrolledCount * 3 : 0,
+                                        initialDelayDays: cIdx, // Contact #1 = Day 0, #2 = +1 business day, #3 = +2 business days
+                                        isSecondaryContact: cIdx > 0,
+                                        throwOnGuard: false,
+                                        enrolledBy: "auto_sdr",
+                                    });
+
+                                    if (seqResult.success) {
+                                        anyEnrolled = true;
+                                        enrolledSequenceId = seqResult.sequenceId || enrolledSequenceId;
+                                        autoEnrolledCount++;
+                                    }
+                                }
+
+                                if (anyEnrolled) {
                                     queueStatus = "sequenced";
                                     enrolledCompanyId = companyRef.id;
-                                    enrolledContactId = contactRef.id;
-                                    enrolledSequenceId = seqResult.sequenceId || null;
-                                    autoEnrolledCount++;
+                                    enrolledContactId = enrolledContactIds[0] || null;
                                     logger.info(
-                                        `[DailyProspector] 🤖 Auto-enrolled "${prospect.businessName}" (ICP=${icpScore}, ${practiceSpecialty}) into ${enrolledSequenceId}`
+                                        `[DailyProspector] 🤖 Auto-enrolled "${prospect.businessName}" (${enrolledContactIds.length} contact(s), ICP=${icpScore}, ${practiceSpecialty}) into ${enrolledSequenceId}`
                                     );
                                 }
                             } catch (autoErr: any) {
@@ -710,6 +762,7 @@ async function runDailyPipeline() {
                             autoEnrolled: queueStatus === "sequenced",
                             companyId: enrolledCompanyId,
                             contactId: enrolledContactId,
+                            contactIds: enrolledContactIds,
                             sequenceId: enrolledSequenceId,
                             batchDate,
                             searchQuery: queryTerm,

@@ -13,7 +13,7 @@ import * as logger from "firebase-functions/logger";
 import { HttpsError } from "firebase-functions/v2/https";
 import { cleanBusinessName, isOrthodonticPractice } from "@xiri/shared";
 import { buildScheduledDate } from "./scheduleUtils";
-import { enqueueTask, cancelLeadTasks, cancelLeadScheduledEmails } from "./queueUtils";
+import { enqueueTask, cancelLeadTasks, cancelContactTasks, cancelLeadScheduledEmails } from "./queueUtils";
 import { parseAddress } from "./emailUtils";
 
 const DEFAULT_SEQUENCE_MAP: Record<string, string> = {
@@ -62,9 +62,9 @@ export function extractContactFirstName(contactName?: string | null): string {
 }
 
 /**
- * Resolve the best default sequenceId for a company/lead based on specialty.
- * Orthodontic practices route to `ortho_funnel_v1`; general/specialty dental
- * practices route to `dental_funnel_v1`.
+ * Resolve the best default sequenceId for a company/lead.
+ * All private dental & orthodontic practices route into the unified
+ * `dental_funnel_v1` sequence (with `{{practiceType}}` personalized per clinic).
  */
 export async function resolveDefaultSequenceId(
     db: admin.firestore.Firestore,
@@ -76,11 +76,6 @@ export async function resolveDefaultSequenceId(
         businessName: lead.businessName || lead.name,
         searchQuery: lead.searchQuery,
     });
-
-    if (isOrtho) {
-        const orthoDoc = await db.collection("sequences").doc("ortho_funnel_v1").get();
-        if (orthoDoc.exists) return "ortho_funnel_v1";
-    }
 
     const isDental =
         lead.facilityType === "medical_dental" ||
@@ -110,6 +105,10 @@ export interface EnqueueLeadSequenceInput {
     sequenceId?: string | null;
     /** Optional initial delay in minutes (used by auto-enroll to jitter sends) */
     initialDelayMinutes?: number;
+    /** Optional business-day stagger for secondary contacts at the same company (e.g. +1 or +2 days) */
+    initialDelayDays?: number;
+    /** Mark secondary contacts (Contact #2/#3 at the same company) so they use contact-scoped Touch 1 copy */
+    isSecondaryContact?: boolean;
     /** Allow silent skip on duplicate/guard instead of throwing HttpsError (for autonomous cron) */
     throwOnGuard?: boolean;
     /** Tag enrollment source for analytics */
@@ -139,6 +138,8 @@ export async function enqueueLeadSequence(
         contactId: requestedContactId,
         sequenceId: requestedSequenceId,
         initialDelayMinutes = 0,
+        initialDelayDays = 0,
+        isSecondaryContact = false,
         throwOnGuard = true,
         enrolledBy = "manual",
     } = input;
@@ -304,22 +305,25 @@ export async function enqueueLeadSequence(
                 const prevDate = prevStart?.toDate ? prevStart.toDate() : prevStart;
                 return fail(
                     "already-exists",
-                    `${contactName || contactEmail} was already enrolled in "${sequence.name}" on ${
-                        prevDate ? new Date(prevDate).toLocaleDateString() : "a previous date"
+                    `${contactName || contactEmail} was already enrolled in "${sequence.name}" on ${prevDate ? new Date(prevDate).toLocaleDateString() : "a previous date"
                     }.`
                 );
             }
         }
     }
 
-    // ── Cancel any existing pending tasks or legacy Resend scheduled emails ──
-    await cancelLeadTasks(db, leadId);
-    await cancelLeadScheduledEmails(db, leadId, leadCollection);
+    // ── Cancel any existing pending tasks for THIS contact (preserving sibling contacts at the same company) ──
+    if (contactId) {
+        await cancelContactTasks(db, leadId, contactId);
+    } else {
+        await cancelLeadTasks(db, leadId);
+        await cancelLeadScheduledEmails(db, leadId, leadCollection);
+    }
 
     // ── Compute first step send time ──
     const now = new Date();
     const firstStep = steps[0];
-    let firstSendAt = buildScheduledDate(now, firstStep.dayOffset || 0);
+    let firstSendAt = buildScheduledDate(now, (firstStep.dayOffset || 0) + (initialDelayDays || 0));
     if (initialDelayMinutes > 0) {
         firstSendAt = new Date(firstSendAt.getTime() + initialDelayMinutes * 60_000);
     }
@@ -365,7 +369,9 @@ export async function enqueueLeadSequence(
             city,
             state: lead.state || parsedAddr.state || "NY",
             squareFootage: lead.squareFootage ? String(lead.squareFootage) : "",
-            outreachDraft: lead.outreachDraft || null,
+            outreachDraft: isSecondaryContact ? null : (lead.outreachDraft || null),
+            useCompanyDraft: !isSecondaryContact,
+            isSecondaryContact,
             senderId: sequence.senderId || "sales",
             enrolledBy,
         },

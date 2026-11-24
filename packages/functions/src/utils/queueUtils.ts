@@ -96,7 +96,7 @@ export async function cancelVendorTasks(db: admin.firestore.Firestore, vendorId:
 }
 
 /**
- * Cancel all pending/retry tasks for a lead (used on lead dismissal/loss).
+ * Cancel all pending/retry tasks for a lead (used on company-wide reply, pipeline advance, or loss).
  */
 export async function cancelLeadTasks(db: admin.firestore.Firestore, leadId: string) {
     const snapshot = await db.collection(COLLECTION)
@@ -110,6 +110,31 @@ export async function cancelLeadTasks(db: admin.firestore.Firestore, leadId: str
     });
     await batch.commit();
     return snapshot.size;
+}
+
+/**
+ * Cancel pending/retry tasks for a SINGLE contact at a company so multi-contact
+ * sequences (top 2-3 decision-makers at the same company) can run in parallel
+ * without cancelling each other's scheduled touches.
+ */
+export async function cancelContactTasks(db: admin.firestore.Firestore, leadId: string, contactId: string) {
+    const snapshot = await db.collection(COLLECTION)
+        .where('leadId', '==', leadId)
+        .where('status', 'in', ['PENDING', 'RETRY'])
+        .get();
+
+    const matching = snapshot.docs.filter(doc => {
+        const d = doc.data();
+        return d.contactId === contactId || d.metadata?.contactId === contactId;
+    });
+    if (matching.length === 0) return 0;
+
+    const batch = db.batch();
+    matching.forEach(doc => {
+        batch.update(doc.ref, { status: 'CANCELLED', cancelledAt: new Date() });
+    });
+    await batch.commit();
+    return matching.length;
 }
 
 /**

@@ -30,15 +30,9 @@ function buildDeterministicDraft(params: {
     const cleanName = cleanBusinessName(params.businessName);
     const firstName = params.contactName?.trim().split(/\s+/)[0] || '';
     const greeting = firstName ? `Hi ${firstName},` : 'Hi there,';
-    const resource = params.isOrtho
-        ? 'orthodontic open-bay & high-touch surface cleaning checklist'
-        : 'CDC/OSHA dental operatory terminal cleaning checklist';
-    const guideUrl = params.isOrtho
-        ? 'https://xiri.ai/guides/orthodontic-office-cleaning-checklist'
-        : 'https://xiri.ai/guides/dental-office-terminal-cleaning-checklist';
-    const subject = params.isOrtho
-        ? `${cleanName} — quick ortho bay cleaning checklist`
-        : `${cleanName} — quick CDC dental operatory checklist`;
+    const resource = 'CDC/OSHA dental & orthodontic terminal cleaning checklist';
+    const guideUrl = 'https://xiri.ai/guides/dental-office-terminal-cleaning-checklist';
+    const subject = `${cleanName} — quick dental & ortho terminal cleaning checklist`;
     const body = `${greeting}\n\nWe put together a 1-page ${resource} built specifically for private Metro NY practices like ${cleanName}${params.location ? ` (${params.location.split(',')[0]})` : ''}.\n\nYou can view or share it with your team here:\n${guideUrl}\n\nIf you ever want a second pair of eyes on your current evening cleaning scope or a no-pressure walkthrough quote, just reply to this email.\n\nBest,\nChris Leung\nXIRI Facility Solutions\nhttps://xiri.ai`;
     return { subject, body };
 }

@@ -293,10 +293,12 @@ export const resendWebhook = onRequest({
         let shouldUpdateLastEvent = true;
 
         let currentEntityStatus: string | undefined;
+        let currentEngData: Record<string, any> = {};
 
         try {
             const entityDoc = await db.collection(entityCollection).doc(entityId).get();
-            const currentEvent = entityDoc.data()?.emailEngagement?.lastEvent;
+            currentEngData = entityDoc.data()?.emailEngagement || {};
+            const currentEvent = currentEngData.lastEvent;
             currentEntityStatus = entityDoc.data()?.status;
             const currentPriority = ENGAGEMENT_PRIORITY[currentEvent] ?? -1;
 
@@ -312,6 +314,26 @@ export const resendWebhook = onRequest({
 
         if (shouldUpdateLastEvent && !isUnsubscribeClick) {
             engagementUpdate['emailEngagement.lastEvent'] = effectiveMapping.deliveryStatus;
+        }
+
+        // Compute hands-off Engagement Score (0–100) & Tier (HOT / WARM / WATCH / COLD)
+        const nextOpenCount = (currentEngData.openCount || 0) + (eventType === 'email.opened' ? 1 : 0);
+        const nextClickCount = (currentEngData.clickCount || 0) + (eventType === 'email.clicked' && !isUnsubscribeClick ? 1 : 0);
+        const nextHighIntent = Boolean(currentEngData.highIntentClicked || isHighIntentContentClick);
+        const computedScore = Math.min(
+            100,
+            (nextOpenCount > 0 ? 10 + Math.min(nextOpenCount - 1, 3) * 8 : 0) +
+            Math.min(nextClickCount, 3) * 20 +
+            (nextHighIntent ? 30 : 0)
+        );
+        const computedTier: 'HOT' | 'WARM' | 'WATCH' | 'COLD' =
+            computedScore >= 70 ? 'HOT' :
+            computedScore >= 40 ? 'WARM' :
+            computedScore >= 15 ? 'WATCH' : 'COLD';
+
+        if (!isUnsubscribeClick && ['email.delivered', 'email.opened', 'email.clicked'].includes(eventType)) {
+            engagementUpdate['emailEngagement.score'] = computedScore;
+            engagementUpdate['emailEngagement.tier'] = computedTier;
         }
 
         if (eventType === 'email.opened') {
@@ -376,8 +398,12 @@ export const resendWebhook = onRequest({
             }
             if (eventType === 'email.opened') {
                 contactEngagement['emailEngagement.openCount'] = admin.firestore.FieldValue.increment(1);
+                contactEngagement['emailEngagement.score'] = computedScore;
+                contactEngagement['emailEngagement.tier'] = computedTier;
             } else if (eventType === 'email.clicked' && !isUnsubscribeClick) {
                 contactEngagement['emailEngagement.clickCount'] = admin.firestore.FieldValue.increment(1);
+                contactEngagement['emailEngagement.score'] = computedScore;
+                contactEngagement['emailEngagement.tier'] = computedTier;
                 if (clickedUrl) contactEngagement['emailEngagement.lastClickedUrl'] = clickedUrl;
                 if (isHighIntentContentClick) contactEngagement['emailEngagement.highIntentClicked'] = true;
             }

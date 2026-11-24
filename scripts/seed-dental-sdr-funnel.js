@@ -10,11 +10,16 @@
  *   node scripts/seed-dental-sdr-funnel.js
  */
 
+const fs = require('fs');
+const path = require('path');
 const admin = require('firebase-admin');
 
+const saPath = path.resolve(__dirname, '../service-account.json');
 if (!admin.apps.length) {
     admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
+        credential: fs.existsSync(saPath)
+            ? admin.credential.cert(require(saPath))
+            : admin.credential.applicationDefault(),
         projectId: 'xiri-facility-solutions',
     });
 }
@@ -22,116 +27,116 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 // ══════════════════════════════════════════════════════════════════════
-// 1. DENTAL PRACTICE 6-TOUCH FUNNEL TEMPLATES (dental_funnel_v1)
+// 1. UNIFIED DENTAL & ORTHODONTIC 6-TOUCH FUNNEL TEMPLATES (dental_funnel_v1)
 // ══════════════════════════════════════════════════════════════════════
 
 const DENTAL_TEMPLATES = [
     // ── Touch 1 (Day 0): Personalized Hook + NFC Proof-of-Work Soft Reply CTA ──
     {
         id: 'dental_funnel_1',
-        name: 'Dental Touch 1 — Pre-Opening Verification Hook',
+        name: 'Dental & Ortho Touch 1 — Pre-Opening Verification Hook',
         category: 'dental_lead',
         sequence: 1,
         useCustomDraft: true,
         subject: 'pre-opening logs — {{cleanBizName}}',
         body: `Hi {{contactFirstName}},
 
-Quick question for {{cleanBizName}} — do you have photo-verified proof your operatories and sterilization area were actually terminal-cleaned before doors open each morning?
+Quick question for {{cleanBizName}} — do you have photo-verified proof your operatories, open bays, and sterilization area were actually terminal-cleaned before doors open each morning?
 
-Most dental office managers we talk to across Long Island, NYC, and Westchester end up doing a 7:45 AM spot check (or having $60/hr hygienists wipe down what the night crew missed).
+Most dental and orthodontic office managers we talk to across Long Island, NYC, and Westchester end up doing a 7:45 AM spot check (or paying clinical staff $55–$68/hr to wipe down what the night crew missed).
 
-We built XIRI specifically for private dental practices: chair-safe EPA List N disinfection (safe on A-dec/Belmont upholstery), neutral floor care that removes CaviWipe haze, and timestamped NFC proof-of-work logs sent to your inbox before your first patient arrives.
+We built XIRI specifically for private dental & orthodontic practices: chair-safe EPA List N disinfection (safe on A-dec/Belmont/Boyd upholstery and around iTero/CBCT suites), neutral floor care that removes CaviWipe haze, and timestamped NFC proof-of-work logs sent to your inbox before your first patient arrives.
 
 Open to seeing a 60-second sample nightly verification log for {{cleanBizName}}?`,
     },
 
-    // ── Touch 2 (Day 3): Value Content — Terminal Cleaning Checklist ──
+    // ── Touch 2 (Day 3): Value Content — Unified Dental & Ortho Terminal Cleaning Checklist ──
     {
         id: 'dental_funnel_2',
-        name: 'Dental Touch 2 — Terminal Cleaning Checklist (Base)',
+        name: 'Dental & Ortho Touch 2 — Terminal Cleaning Checklist (Base)',
         category: 'dental_lead',
         sequence: 2,
-        subject: '2026 dental terminal cleaning checklist for {{cleanBizName}}',
+        subject: '2026 dental & ortho terminal cleaning checklist for {{cleanBizName}}',
         body: `Hi {{contactFirstName}},
 
 Whether you keep your current night crew or look at options down the road, I wanted to share something genuinely useful for {{cleanBizName}}.
 
-We put together a 3-zone [2026 Dental Office Terminal Cleaning Checklist](https://xiri.ai/guides/dental-office-terminal-cleaning-checklist?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t2) aligned with CDC DHCP & OSHA 1910.1030 — covering operatory upholstery protection, clean-to-dirty sterilization lab flow, and EPA 40 CFR Part 441 amalgam trap rules.
+We put together a 3-zone [2026 Dental & Orthodontic Terminal Cleaning Checklist](https://xiri.ai/guides/dental-office-terminal-cleaning-checklist?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t2) aligned with CDC DHCP & OSHA 1910.1030 — covering closed operatories & open bays, chair upholstery protection, clean-to-dirty sterilization labs, iTero/CBCT perimeters, and patient brushing stations.
 
-Most office managers use it to spot-check what their current cleaners are skipping.
+Most office managers use it to spot-check what their current cleaners are skipping after hours.
 
 Worth passing along to your lead assistant or current cleaning crew?`,
     },
     {
         id: 'dental_funnel_2_warm',
-        name: 'Dental Touch 2 (Warm) — Checklist + Scope Benchmark',
+        name: 'Dental & Ortho Touch 2 (Warm) — Checklist + Scope Benchmark',
         category: 'dental_lead',
         sequence: 2,
         subject: 're: pre-opening logs — {{cleanBizName}}',
         body: `Hi {{contactFirstName}},
 
-Following up quickly — I wanted to send over our [2026 Dental Office Terminal Cleaning Checklist](https://xiri.ai/guides/dental-office-terminal-cleaning-checklist?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t2_warm) built for private practices in {{city}}.
+Following up quickly — I wanted to send over our [2026 Dental & Orthodontic Terminal Cleaning Checklist](https://xiri.ai/guides/dental-office-terminal-cleaning-checklist?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t2_warm) built for private practices in {{city}}.
 
-It breaks down the exact clean-to-dirty protocol for operatories, sterilization galleys, and CBCT/imaging rooms (plus why bleach/alcohol sprays quietly crack A-dec & Belmont chair seams).
+It breaks down the exact clean-to-dirty protocol for operatories, open bays, sterilization galleys, iTero/CBCT rooms, and brushing stations (plus why bleach/alcohol sprays quietly crack A-dec, Belmont, and Boyd chair seams).
 
 If it's helpful, I'm happy to spend 10 minutes benchmarking {{cleanBizName}}'s current cleaning scope against it — no pitch, just an honest second opinion. Want me to send two times?`,
     },
     {
         id: 'dental_funnel_2_cold',
-        name: 'Dental Touch 2 (Cold) — Chair Upholstery & CaviWipe Floor Haze',
+        name: 'Dental & Ortho Touch 2 (Cold) — Chair Upholstery, Floor Haze & Brushing Stations',
         category: 'dental_lead',
         sequence: 2,
-        subject: 'protecting dental chair upholstery at {{cleanBizName}}',
+        subject: 'protecting chair upholstery & clinical floors at {{cleanBizName}}',
         body: `Hi {{contactFirstName}},
 
-One expensive mistake we see general office cleaners make in NY dental practices: spraying bleach or harsh alcohol wipes onto medical vinyl/Ultraleather chairs — which voids warranties and cracks seams within 18 months — while leaving sticky CaviWipe buildup on LVT operatory floors.
+Two expensive mistakes we see general office cleaners make in NY dental & orthodontic practices: spraying bleach or harsh alcohol wipes onto medical vinyl/Ultraleather chairs — which voids warranties and cracks seams within 18 months — while leaving sticky CaviWipe haze on operatory/open-bay floors and streaks on reception glass.
 
-We documented our chair-safe [Dental Suite Sanitization Protocol](https://xiri.ai/solutions/dental-suite-sanitization?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t2_cold) specifically for private practices across Long Island, NYC, and Westchester.
+We documented our chair-safe [Dental & Orthodontic Terminal Cleaning Protocol](https://xiri.ai/guides/dental-office-terminal-cleaning-checklist?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t2_cold) specifically for private practices across Long Island, NYC, and Westchester.
 
-Is chair upholstery wear or floor haze something your team has noticed lately at {{cleanBizName}}?`,
+Is chair upholstery wear, floor haze, or spotty detail work something your team has noticed lately at {{cleanBizName}}?`,
     },
 
     // ── Touch 3 (Day 7): Interactive Tool CTA — Compliance Checker / Cost Benchmark ──
     {
         id: 'dental_funnel_3',
-        name: 'Dental Touch 3 — Interactive Compliance & Cost Benchmark',
+        name: 'Dental & Ortho Touch 3 — Interactive Compliance & Cost Benchmark',
         category: 'dental_lead',
         sequence: 3,
         subject: '60-second OSHA/HIPAA cleaning check for {{cleanBizName}}',
         body: `Hi {{contactFirstName}},
 
-Two quick interactive tools our Metro NY dental office managers have been using this quarter:
+Two quick interactive tools our Metro NY dental & orthodontic office managers have been using this quarter:
 
-1. [60-Second Dental Cleaning Compliance Checker](https://xiri.ai/tools/compliance-checker?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t3) — checks HIPAA BAA, OSHA 1910.1030, EPA List N dwell times & color-coded microfiber separation.
-2. [NY Dental Cleaning Cost Calculator](https://xiri.ai/calculator?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t3) — see local Metro NY benchmarks ($650–$1,850/mo) vs. paying RDHs/DAs to clean after hours.
+1. [60-Second Clinical Cleaning Compliance Checker](https://xiri.ai/tools/compliance-checker?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t3) — checks HIPAA BAA, OSHA 1910.1030, EPA List N dwell times & color-coded microfiber separation.
+2. [NY Clinical Cleaning Cost Calculator](https://xiri.ai/calculator?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t3) — see local Metro NY benchmarks ($650–$2,400/mo) vs. paying hygienists or assistants overtime to clean after hours.
 
 Try either one — and if you'd like a flat-rate comparison number for {{cleanBizName}}, just reply with your rough chair count.`,
     },
     {
         id: 'dental_funnel_3_warm',
-        name: 'Dental Touch 3 (Warm) — Dental Compliance Readiness Checker',
+        name: 'Dental & Ortho Touch 3 (Warm) — Clinical Compliance Readiness Checker',
         category: 'dental_lead',
         sequence: 3,
         subject: 'quick compliance score for {{cleanBizName}}',
         body: `Hi {{contactFirstName}},
 
-Since you took a look at our last note, I thought you might like our free [Dental Cleaning Compliance Checker](https://xiri.ai/tools/compliance-checker?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t3_warm).
+Since you took a look at our last note, I thought you might like our free [Clinical Cleaning Compliance Checker](https://xiri.ai/tools/compliance-checker?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t3_warm).
 
-It takes 60 seconds and flags the 4 most common environmental gaps we see in NY dental practices (missing vendor HIPAA BAAs, cross-contaminated restroom/operatory mops, unverified disinfectant dwell times, and paper logs).
+It takes 60 seconds and flags the 4 most common environmental gaps we see in NY dental & orthodontic practices (missing vendor HIPAA BAAs, cross-contaminated restroom/operatory mops, unverified disinfectant dwell times, and paper logs).
 
 If anything comes back yellow or red, reply with your chair count and I'll send over a transparent flat-rate scope for {{cleanBizName}}.`,
     },
     {
         id: 'dental_funnel_3_cold',
-        name: 'Dental Touch 3 (Cold) — RDH Time vs Flat-Rate Cost Calculator',
+        name: 'Dental & Ortho Touch 3 (Cold) — Clinical Staff Overtime vs Flat-Rate Cost Calculator',
         category: 'dental_lead',
         sequence: 3,
-        subject: 'what {{city}} dental offices actually pay for nightly cleaning',
+        subject: 'what {{city}} dental & ortho offices actually pay for nightly cleaning',
         body: `Hi {{contactFirstName}},
 
-A quick stat from practices we audit across Long Island, the 5 boroughs, and Westchester: having $55–$68/hr hygienists or assistants spend even 25 minutes a night mopping floors and scrubbing restrooms costs more than a dedicated clinical night crew — and accelerates staff burnout.
+A quick stat from practices we audit across Long Island, the 5 boroughs, and Westchester: having $55–$68/hr hygienists or clinical assistants spend even 25 minutes a night mopping floors, wiping brushing stations, and scrubbing restrooms costs more than a dedicated clinical night crew — and accelerates staff burnout.
 
-You can plug {{cleanBizName}}'s approximate square footage into our [NY Dental Cleaning Cost Calculator](https://xiri.ai/calculator?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t3_cold) to see instant local market pricing (no login required).
+You can plug {{cleanBizName}}'s approximate square footage into our [NY Clinical Cleaning Cost Calculator](https://xiri.ai/calculator?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t3_cold) to see instant local market pricing (no login required).
 
 Curious how that compares to what you're paying today?`,
     },
@@ -139,216 +144,71 @@ Curious how that compares to what you're paying today?`,
     // ── Touch 4 (Day 11): Local NY Proof & NFC Verification Case Study ──
     {
         id: 'dental_funnel_4',
-        name: 'Dental Touch 4 — Local NY Proof & NFC Verification',
+        name: 'Dental & Ortho Touch 4 — Local NY Proof & NFC Verification',
         category: 'dental_lead',
         sequence: 4,
         subject: 'why local NY verification beats cleaning franchises',
         body: `Hi {{contactFirstName}},
 
-Most dental practices we take over aren't switching because of price — they're switching because a franchise crew started strong for 30 days and then quietly stopped dusting light arms, missed corners, or rotated in untrained subs.
+Most dental and orthodontic practices we take over aren't switching because of price — they're switching because a franchise crew started strong for 30 days and then quietly stopped dusting overhead light arms, missed corners, or rotated in untrained subs.
 
-We run the same [NFC Proof-of-Work Verification](https://xiri.ai/solutions/nfc-proof-of-work?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t4) and smart facility standards we documented in our [NY Facility Verification Case Study](https://xiri.ai/case-studies/ubs-arena-georgia-pacific?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t4) — scaled specifically for private dental offices across Long Island, NYC, and Westchester.
+We run the same [NFC Proof-of-Work Verification](https://xiri.ai/solutions/nfc-proof-of-work?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t4) and smart facility standards we documented in our [NY Facility Verification Case Study](https://xiri.ai/case-studies/ubs-arena-georgia-pacific?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t4) — scaled specifically for private dental & orthodontic offices across Long Island, NYC, and Westchester.
 
-Want me to send a redacted morning verification report from a local NY dental clinic so you can see what lands in the office manager's inbox?`,
+Want me to send a redacted morning verification report from a local NY practice so you can see what lands in the office manager's inbox?`,
     },
 
-    // ── Touch 5 (Day 16): Risk-Reversal Direct Hygiene Audit Offer ──
+    // ── Touch 5 (Day 16): Risk-Reversal Direct Virtual Walkthrough Offer ──
     {
         id: 'dental_funnel_5',
-        name: 'Dental Touch 5 — Free 15-Min Hygiene & Upholstery Audit',
+        name: 'Dental & Ortho Touch 5 — Free 15-Min Virtual Walkthrough & Scope Review',
         category: 'dental_lead',
         sequence: 5,
-        subject: '15-min hygiene & upholstery audit for {{cleanBizName}}?',
+        subject: '15-min virtual walkthrough for {{cleanBizName}}?',
         body: `Hi {{contactFirstName}},
 
-If you're open to a fresh set of eyes on {{cleanBizName}}, I'd love to offer a complimentary 15-minute after-hours Hygiene & Upholstery Audit.
+If you're open to a fresh set of eyes on {{cleanBizName}}, I'd love to offer a quick 15-minute **virtual walkthrough & cleaning scope review** (right from your phone on Zoom/FaceTime — no disruption to patients or after-hours key handoff).
 
 You'll get:
-- A quick zone-by-zone check of operatory floors, sterilization galley, and chair upholstery condition
+- A quick zone-by-zone review of your operatory/open-bay floors, sterilization galley, and chair upholstery needs
 - A transparent flat-rate monthly proposal (zero long-term lock-in, full HIPAA BAA & $2M COI)
-- Zero obligation — keep the checklist even if you stay with your current vendor
+- Zero obligation — keep the CDC/OSHA checklist even if you stay with your current vendor
 
-You can [grab a 15-minute audit slot here](https://xiri.ai/audit/start?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t5&facilityType=medical_dental) or just reply "audit" and I'll send two times this week.`,
+You can [book a 15-minute virtual walkthrough here](https://xiri.ai/audit/start?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t5&facilityType=medical_dental) or just reply "walkthrough" and I'll send two times this week.`,
     },
 
     // ── Touch 6 (Day 21): Respectful Breakup + Free RFP Generator Leave-Behind ──
     {
         id: 'dental_funnel_6',
-        name: 'Dental Touch 6 — Breakup + Free Dental RFP Generator',
+        name: 'Dental & Ortho Touch 6 — Breakup + Free Clinical RFP Generator',
         category: 'dental_lead',
         sequence: 6,
         subject: 'closing the loop — {{cleanBizName}}',
         body: `Hi {{contactFirstName}},
 
-I know running a busy dental practice doesn't leave much spare time for vendor emails, so I'll close your file for now.
+I know running a busy {{practiceType}} doesn't leave much spare time for vendor emails, so I'll close your file for now.
 
-Before I step back, feel free to bookmark our free [Dental Practice Janitorial RFP Generator](https://xiri.ai/tools/janitorial-rfp/dental-offices?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t6) — if your current crew ever misses a night or you re-bid later this year, it generates a clean OSHA/CDC scope you can send to any vendor.
+Before I step back, feel free to bookmark our [Dental & Orthodontic Terminal Cleaning Checklist](https://xiri.ai/guides/dental-office-terminal-cleaning-checklist?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t6) and free [Clinical Janitorial RFP Generator](https://xiri.ai/tools/janitorial-rfp/dental-offices?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_funnel_t6) — if your current crew ever misses a night or you re-bid later this year, it generates a clean OSHA/CDC scope you can send to any vendor.
 
 Should I check back in 6 months, or is cleaning all set for the year at {{cleanBizName}}?`,
     },
 ];
 
-// ══════════════════════════════════════════════════════════════════════
-// 2. ORTHODONTIC PRACTICE 6-TOUCH FUNNEL TEMPLATES (ortho_funnel_v1)
-// ══════════════════════════════════════════════════════════════════════
-
-const ORTHO_TEMPLATES = [
-    // ── Touch 1 (Day 0): Personalized Open-Bay & Parent Reception Hook ──
-    {
-        id: 'ortho_funnel_1',
-        name: 'Ortho Touch 1 — Open-Bay & Pre-Opening Verification Hook',
-        category: 'ortho_lead',
-        sequence: 1,
-        useCustomDraft: true,
-        subject: 'quick question for {{cleanBizName}}',
-        body: `Hi {{contactFirstName}},
-
-In a high-volume orthodontic clinic, parents and teens see everything at once — open-bay chairs, floor scuffs from the after-school rush, brushing-station mirrors, and composite/bonding dust on overhead light arms.
-
-Most ortho office managers we speak with across Long Island, NYC, and Westchester are frustrated by generic cleaners who smear floors, miss glass smudges, or use harsh sprays around Boyd/A-dec chairs and iTero scanners.
-
-We built XIRI's local NY crews specifically for orthodontic & dental clinics — with chair-safe EPA List N disinfection and timestamped NFC photo-verified logs delivered before doors open.
-
-Open to seeing a 60-second sample nightly verification log for {{cleanBizName}}?`,
-    },
-
-    // ── Touch 2 (Day 3): Value Content — Dedicated Orthodontic Cleaning Checklist ──
-    {
-        id: 'ortho_funnel_2',
-        name: 'Ortho Touch 2 — Orthodontic Practice Cleaning Checklist (Base)',
-        category: 'ortho_lead',
-        sequence: 2,
-        subject: '2026 orthodontic office cleaning checklist for {{cleanBizName}}',
-        body: `Hi {{contactFirstName}},
-
-Orthodontic practices have very different cleaning realities than closed-door dental offices — open-bay floor traffic, debonding resin dust, iTero/3D printer labs, and patient brushing stations.
-
-We published a zone-by-zone [2026 Orthodontic Practice Nightly Cleaning Checklist](https://xiri.ai/guides/orthodontic-office-cleaning-checklist?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t2) tailored specifically for private ortho clinics.
-
-Feel free to share it with your current night crew or treatment coordinator to benchmark what's being covered after hours at {{cleanBizName}}.`,
-    },
-    {
-        id: 'ortho_funnel_2_warm',
-        name: 'Ortho Touch 2 (Warm) — Ortho Checklist + Scope Benchmark',
-        category: 'ortho_lead',
-        sequence: 2,
-        subject: 're: quick question for {{cleanBizName}}',
-        body: `Hi {{contactFirstName}},
-
-Sharing our [2026 Orthodontic Practice Nightly Cleaning Checklist](https://xiri.ai/guides/orthodontic-office-cleaning-checklist?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t2_warm) — built specifically for open-bay ortho clinics in {{city}} and Metro NY.
-
-It covers chair upholstery protection (Boyd/A-dec/Belmont), anti-static dusting around iTero scanners and 3D retainer labs, brushing-station biofilm removal, and spotless teen/parent reception zones.
-
-Happy to spend 10 minutes benchmarking {{cleanBizName}}'s current cleaning scope against it — zero pressure. Would Thursday or Friday work?`,
-    },
-    {
-        id: 'ortho_funnel_2_cold',
-        name: 'Ortho Touch 2 (Cold) — Open-Bay Floor Haze, Brushing Stations & iTero Safety',
-        category: 'ortho_lead',
-        sequence: 2,
-        subject: 'open-bay floors & brushing stations at {{cleanBizName}}',
-        body: `Hi {{contactFirstName}},
-
-Three things parents notice in the first 15 seconds at an orthodontic clinic: smudged check-in glass, toothpaste buildup around the brushing station, and dull/sticky CaviWipe haze on open-bay LVT floors.
-
-We put together an [Orthodontic Clinic Nightly Sanitation Guide](https://xiri.ai/guides/orthodontic-office-cleaning-checklist?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t2_cold) covering how to fix all three without risking bleach damage to chair vinyl or overspray near iTero scanners.
-
-Are any of those headaches coming up with your current crew at {{cleanBizName}}?`,
-    },
-
-    // ── Touch 3 (Day 7): Interactive Tool CTA — Cost Benchmark / Compliance Checker ──
-    {
-        id: 'ortho_funnel_3',
-        name: 'Ortho Touch 3 — Interactive Cost & Compliance Tools',
-        category: 'ortho_lead',
-        sequence: 3,
-        subject: 'ortho cleaning benchmarks in {{city}} (no login needed)',
-        body: `Hi {{contactFirstName}},
-
-Two quick self-serve tools orthodontic office managers across Long Island, NYC, and Westchester have been using to gut-check their cleaning setup:
-
-1. [NY Clinical Cleaning Cost Calculator](https://xiri.ai/calculator?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t3) — see local 5x/week pricing benchmarks ($1,100–$2,400/mo for 2,000–3,500 sq ft) vs. assistant overtime.
-2. [60-Second Compliance Readiness Checker](https://xiri.ai/tools/compliance-checker?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t3) — checks OSHA, HIPAA BAA, and color-coded microfiber separation.
-
-If you'd like a flat-rate side-by-side number for {{cleanBizName}}, just reply with your chair count and days/week.`,
-    },
-    {
-        id: 'ortho_funnel_3_warm',
-        name: 'Ortho Touch 3 (Warm) — Compliance Readiness Checker',
-        category: 'ortho_lead',
-        sequence: 3,
-        subject: '60-second compliance check for {{cleanBizName}}',
-        body: `Hi {{contactFirstName}},
-
-Since you opened our ortho checklist, here's a quick 60-second [Clinical Cleaning Compliance Checker](https://xiri.ai/tools/compliance-checker?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t3_warm) to spot vendor gaps (HIPAA BAA, EPA List N dwell times, restroom-to-bay microfiber cross-contamination).
-
-If anything flags yellow or red, reply with your open-bay chair count and I'll send over a transparent flat-rate monthly scope for {{cleanBizName}}.`,
-    },
-    {
-        id: 'ortho_funnel_3_cold',
-        name: 'Ortho Touch 3 (Cold) — NY Ortho Cleaning Cost Calculator',
-        category: 'ortho_lead',
-        sequence: 3,
-        subject: 'what {{city}} orthodontic clinics pay for 5x/wk cleaning',
-        body: `Hi {{contactFirstName}},
-
-Between 3:00 PM school-release rushes and Saturday hours, paying clinical orthodontic assistants overtime to mop open bays or scrub brushing stations drains margins and burns out your team.
-
-You can check local Metro NY pricing for a practice the size of {{cleanBizName}} in 30 seconds with our [NY Clinical Cleaning Cost Calculator](https://xiri.ai/calculator?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t3_cold) — no signup required.
-
-Curious how your current monthly invoice stacks up?`,
-    },
-
-    // ── Touch 4 (Day 11): Local Proof & NFC Nightly Verification ──
-    {
-        id: 'ortho_funnel_4',
-        name: 'Ortho Touch 4 — Local Metro NY Proof & NFC Logs',
-        category: 'ortho_lead',
-        sequence: 4,
-        subject: 'no more 7:45 AM surprise inspections at {{cleanBizName}}',
-        body: `Hi {{contactFirstName}},
-
-The #1 complaint we hear from orthodontic practice managers isn't pricing — it's consistency. A crew starts strong for a month, then mirrors streak, brushing stations get skipped, and nobody catches it until the first family walks in.
-
-With XIRI's [NFC Zone Proof-of-Work](https://xiri.ai/solutions/nfc-proof-of-work?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t4), every cleaner physically taps in at your Open Bay, Brushing Station, Sterilization Galley, Restrooms, and Reception — sending a timestamped completion report before you open.
-
-Want me to send a 60-second sample verification report so you can see how it works?`,
-    },
-
-    // ── Touch 5 (Day 16): Risk-Reversal Direct Open-Bay Hygiene Audit ──
-    {
-        id: 'ortho_funnel_5',
-        name: 'Ortho Touch 5 — Free 15-Min Open-Bay Hygiene Audit',
-        category: 'ortho_lead',
-        sequence: 5,
-        subject: 'free 15-min open-bay hygiene audit for {{cleanBizName}}?',
-        body: `Hi {{contactFirstName}},
-
-Would you be open to a complimentary 15-minute after-hours Hygiene & Upholstery Audit at {{cleanBizName}}?
-
-We walk your open bay, brushing station, lab/scanner perimeter, and reception with you, hand you a scored zone report, and send a flat-rate monthly proposal with:
-- Chair-safe EPA List N protocols & HIPAA BAA
-- Nightly NFC photo-verified proof-of-work
-- Zero long-term contract lock-in
-
-[Pick a 15-min audit window here](https://xiri.ai/audit/start?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t5&facilityType=medical_dental&specialty=ortho) or reply "audit" and I'll send two times this week.`,
-    },
-
-    // ── Touch 6 (Day 21): Respectful Breakup + Free RFP Leave-Behind ──
-    {
-        id: 'ortho_funnel_6',
-        name: 'Ortho Touch 6 — Breakup + Free Clinical RFP Tool',
-        category: 'ortho_lead',
-        sequence: 6,
-        subject: 'closing your file for now — {{cleanBizName}}',
-        body: `Hi {{contactFirstName}},
-
-I know how packed an orthodontic schedule gets, so I won't keep nudging your inbox.
-
-If your current cleaning crew ever drops the ball — or you want a clean checklist when re-bidding — feel free to save our [Orthodontic Practice Cleaning Checklist](https://xiri.ai/guides/orthodontic-office-cleaning-checklist?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t6) and free [Clinical RFP Generator](https://xiri.ai/tools/janitorial-rfp/dental-offices?utm_source=sdr_email&utm_medium=email&utm_campaign=ortho_funnel_t6).
-
-Should I circle back in 6 months, or are you all set for the year at {{cleanBizName}}?`,
-    },
+// Obsolete split ortho templates/sequences to clean up from Firestore
+const OBSOLETE_TEMPLATE_IDS = [
+    'ortho_funnel_1',
+    'ortho_funnel_2',
+    'ortho_funnel_2_warm',
+    'ortho_funnel_2_cold',
+    'ortho_funnel_3',
+    'ortho_funnel_3_warm',
+    'ortho_funnel_3_cold',
+    'ortho_funnel_4',
+    'ortho_funnel_5',
+    'ortho_funnel_6',
+];
+const OBSOLETE_SEQUENCE_IDS = [
+    'ortho_funnel_v1',
+    'dental_lead_sequence',
 ];
 
 // ══════════════════════════════════════════════════════════════════════
@@ -396,7 +256,7 @@ Hope things are running smoothly at {{cleanBizName}}.
 
 As patient volume picks up across Metro NY, we've been helping local dental and orthodontic practices reset dull LVT operatory floors, deep-clean high-touch reception/brushing zones, and switch to NFC photo-verified nightly cleaning.
 
-If your current vendor has started slipping — or you'd like a fresh flat-rate benchmark — you can [request a free 15-min hygiene audit here](https://xiri.ai/audit/start?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_nurture_m3) or just reply to this email.`,
+If your current vendor has started slipping — or you'd like a fresh flat-rate benchmark — you can [book a quick 15-min virtual walkthrough here](https://xiri.ai/audit/start?utm_source=sdr_email&utm_medium=email&utm_campaign=dental_nurture_m3) or just reply to this email.`,
     },
 ];
 
@@ -407,56 +267,24 @@ If your current vendor has started slipping — or you'd like a fresh flat-rate 
 const SEQUENCES = [
     {
         id: 'dental_funnel_v1',
-        name: 'Dental Practice Content + CTA Funnel (6 Touches / 21 Days)',
-        description: 'Automated 21-day dental practice email funnel combining personalized NFC hook, CDC/OSHA terminal cleaning checklist, interactive compliance/cost calculators, local NY proof, 15-min audit CTA, and RFP leave-behind. Branches dynamically on opens/clicks and transitions to monthly value nurture.',
+        name: 'Dental & Orthodontic Content + CTA Funnel (6 Touches / 21 Days)',
+        description: 'Unified 21-day email funnel for private dental and orthodontic practices covering NFC verification, CDC/OSHA terminal cleaning (operatories, open bays, sterilization, iTero/CBCT, brushing stations), interactive compliance/cost calculators, local NY proof, 15-min audit CTA, and RFP leave-behind. Branches on opens/clicks and transitions to monthly value nurture.',
         category: 'dental_lead',
         senderId: 'sales',
         nextSequenceId: 'dental_monthly_nurture',
         steps: [
             { dayOffset: 0, templateId: 'dental_funnel_1', label: 'Touch 1 — Pre-Opening Verification Hook (AI Draft)', description: 'Personalized practice hook + soft reply CTA' },
-            { dayOffset: 3, templateId: 'dental_funnel_2', label: 'Touch 2 — Terminal Cleaning Checklist (Warm/Cold)', description: 'Warm: CDC/OSHA checklist | Cold: Chair upholstery & CaviWipe haze' },
+            { dayOffset: 3, templateId: 'dental_funnel_2', label: 'Touch 2 — Dental & Ortho Checklist (Warm/Cold)', description: 'Warm: Unified CDC/OSHA checklist | Cold: Chair upholstery, floor haze & brushing stations' },
             { dayOffset: 7, templateId: 'dental_funnel_3', label: 'Touch 3 — Compliance & Cost Tools (Warm/Cold)', description: 'Warm: 60-sec Compliance Checker | Cold: NY Cost Calculator' },
             { dayOffset: 11, templateId: 'dental_funnel_4', label: 'Touch 4 — Local NY Proof & NFC Logs', description: 'Local case proof + sample morning report offer' },
             { dayOffset: 16, templateId: 'dental_funnel_5', label: 'Touch 5 — Free 15-Min Hygiene Audit CTA', description: 'Direct risk-reversal hygiene audit & flat-rate proposal' },
-            { dayOffset: 21, templateId: 'dental_funnel_6', label: 'Touch 6 — Breakup + Dental RFP Generator', description: 'Respectful close + free RFP tool leave-behind' },
-        ],
-    },
-    {
-        id: 'ortho_funnel_v1',
-        name: 'Orthodontic Practice Content + CTA Funnel (6 Touches / 21 Days)',
-        description: 'Tailored 21-day orthodontic practice funnel highlighting open-bay chair rows, debonding dust, iTero scanner safety, patient brushing stations, teen/parent reception, and NFC morning verification. Branches on opens/clicks and transitions to monthly value nurture.',
-        category: 'ortho_lead',
-        senderId: 'sales',
-        nextSequenceId: 'dental_monthly_nurture',
-        steps: [
-            { dayOffset: 0, templateId: 'ortho_funnel_1', label: 'Touch 1 — Open-Bay Verification Hook (AI Draft)', description: 'Personalized ortho clinic hook + soft reply CTA' },
-            { dayOffset: 3, templateId: 'ortho_funnel_2', label: 'Touch 2 — Orthodontic Checklist (Warm/Cold)', description: 'Warm: Ortho Cleaning Checklist | Cold: Open-bay floors & brushing stations' },
-            { dayOffset: 7, templateId: 'ortho_funnel_3', label: 'Touch 3 — Cost & Compliance Benchmark (Warm/Cold)', description: 'Warm: Compliance Checker | Cold: NY Ortho Cost Calculator' },
-            { dayOffset: 11, templateId: 'ortho_funnel_4', label: 'Touch 4 — Local NY Proof & NFC Logs', description: 'Eliminating 7:45 AM surprise inspections' },
-            { dayOffset: 16, templateId: 'ortho_funnel_5', label: 'Touch 5 — Free 15-Min Open-Bay Audit CTA', description: 'Direct after-hours open-bay audit & flat-rate quote' },
-            { dayOffset: 21, templateId: 'ortho_funnel_6', label: 'Touch 6 — Breakup + Ortho Checklist & RFP Tool', description: 'Respectful close + free checklist/RFP leave-behind' },
-        ],
-    },
-    {
-        id: 'dental_lead_sequence',
-        name: 'Dental Lead Sequence (Alias → Dental Funnel v1)',
-        description: 'Legacy ID alias mapped to the 6-touch Dental Practice Content + CTA Funnel.',
-        category: 'dental_lead',
-        senderId: 'sales',
-        nextSequenceId: 'dental_monthly_nurture',
-        steps: [
-            { dayOffset: 0, templateId: 'dental_funnel_1', label: 'Touch 1 — Pre-Opening Verification Hook' },
-            { dayOffset: 3, templateId: 'dental_funnel_2', label: 'Touch 2 — Terminal Cleaning Checklist (Warm/Cold)' },
-            { dayOffset: 7, templateId: 'dental_funnel_3', label: 'Touch 3 — Compliance & Cost Tools (Warm/Cold)' },
-            { dayOffset: 11, templateId: 'dental_funnel_4', label: 'Touch 4 — Local NY Proof & NFC Logs' },
-            { dayOffset: 16, templateId: 'dental_funnel_5', label: 'Touch 5 — Free 15-Min Hygiene Audit CTA' },
-            { dayOffset: 21, templateId: 'dental_funnel_6', label: 'Touch 6 — Breakup + Dental RFP Generator' },
+            { dayOffset: 21, templateId: 'dental_funnel_6', label: 'Touch 6 — Breakup + Checklist & Clinical RFP Tool', description: 'Respectful close + free checklist & RFP tool leave-behind' },
         ],
     },
     {
         id: 'dental_monthly_nurture',
         name: 'Dental & Ortho Monthly Content Nurture',
-        description: 'Low-frequency monthly value emails (NYS Part 226 VOC, HIPAA BAA, seasonal reset) for practices that completed the 21-day funnel without replying or unsubscribing.',
+        description: 'Low-frequency monthly value emails (NYS Part 226 VOC, HIPAA BAA, seasonal reset) for dental & orthodontic practices that completed the 21-day funnel without replying or unsubscribing.',
         category: 'nurture',
         senderId: 'sales',
         steps: [
@@ -698,9 +526,9 @@ Return ONLY valid JSON:
 
 async function seedDentalSdrFunnel() {
     const now = new Date();
-    const allTemplates = [...DENTAL_TEMPLATES, ...ORTHO_TEMPLATES, ...MONTHLY_NURTURE_TEMPLATES];
+    const allTemplates = [...DENTAL_TEMPLATES, ...MONTHLY_NURTURE_TEMPLATES];
 
-    console.log(`\n🌱 Seeding ${allTemplates.length} Dental/Ortho funnel & nurture templates...`);
+    console.log(`\n🌱 Seeding ${allTemplates.length} unified Dental & Ortho funnel & nurture templates...`);
     for (const tpl of allTemplates) {
         await db.collection('templates').doc(tpl.id).set({
             name: tpl.name,
@@ -721,6 +549,16 @@ async function seedDentalSdrFunnel() {
             },
         }, { merge: true });
         console.log(`   ✓ template/${tpl.id}`);
+    }
+
+    console.log(`\n🧹 Removing obsolete split ortho templates & duplicate sequences...`);
+    for (const tplId of OBSOLETE_TEMPLATE_IDS) {
+        await db.collection('templates').doc(tplId).delete().catch(() => {});
+        console.log(`   ✗ template/${tplId}`);
+    }
+    for (const seqId of OBSOLETE_SEQUENCE_IDS) {
+        await db.collection('sequences').doc(seqId).delete().catch(() => {});
+        console.log(`   ✗ sequences/${seqId}`);
     }
 
     console.log(`\n🌱 Seeding ${SEQUENCES.length} sequences...`);
