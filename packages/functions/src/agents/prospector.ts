@@ -35,11 +35,40 @@ function splitPersonName(fullName?: string | null): { firstName?: string; lastNa
     };
 }
 
+function isSharedOrLocationInbox(email: string, website?: string): boolean {
+    const local = email.split('@')[0].toLowerCase().trim();
+    if (GENERIC_PREFIXES.test(email)) return true;
+    // Shared clinical/location/office inbox keywords (safe to address to the Office/Practice Manager or Owner)
+    if (/(?:office|clinic|dental|dentist|ortho|smile|smiles|tooth|teeth|kids|pediatric|endo|perio|implant|care|patient|frontdesk|reception|appt|appointment|schedule|booking|desk|nyc|ny|li|nj|bk|queens|bronx|brooklyn|manhattan|westchester|staten|deerpark|roslyn|huntington|williamsburg|dumbo|astoria|flushing|scarsdale|mineola|massapequa|smithtown|melville|syosset|greatneck|manhasset|whiteplains|yonkers|nofo|soho|tribeca|chelsea|midtown|uptown|downtown|east|west|north|south)/i.test(local)) {
+        return true;
+    }
+    // Matches website domain root (e.g. hiddensmilesortho@gmail.com for hiddensmiles.com)
+    const domainRoot = website ? extractDomain(website)?.split('.')[0]?.replace(/[^a-z0-9]/g, '') : '';
+    const normLocal = local.replace(/[^a-z0-9]/g, '');
+    if (domainRoot && domainRoot.length >= 5 && (normLocal.includes(domainRoot.slice(0, 6)) || domainRoot.includes(normLocal))) {
+        return true;
+    }
+    return false;
+}
+
+function extractDoctorNameFromEmail(email: string): string | null {
+    const local = email.split('@')[0].toLowerCase().trim();
+    const m = local.match(/^dr[._-]?([a-z]{3,18})$/i);
+    if (!m) return null;
+    const rawSurname = m[1];
+    // Exclude non-surname tokens like "dental", "office", "info"
+    if (/^(dental|dentist|ortho|office|info|smile|smiles|care|clinic|team|admin)$/i.test(rawSurname)) return null;
+    return `Dr. ${rawSurname.charAt(0).toUpperCase()}${rawSurname.slice(1).toLowerCase()}`;
+}
+
 /**
  * Pair up to MAX_CONTACTS_PER_COMPANY (3) distinct website-scraped emails
  * with the top-ranked cleaning decision-makers (Office Manager, Practice Manager,
  * Operations/Facilities Manager, Owner/Operator, Principal Doctor).
- * STRICT RULE: Only accepts emails actually scraped from the practice website (zero guessing).
+ * STRICT RULE:
+ * - Only accepts emails actually scraped from the practice website (zero guessing).
+ * - NEVER assigns an unrelated person's name onto a personal/doctor email
+ *   (e.g., never pair "Dr. Timothy Leung" with "drdelia@deliadentistry.com").
  */
 function buildTopWebsiteContacts(
     rawEmails: Array<{ email: string; source: EmailSource }>,
@@ -51,6 +80,7 @@ function buildTopWebsiteContacts(
         email: string;
         validation: 'domain_match' | 'free_provider';
         isGeneric: boolean;
+        isShared: boolean;
         score: number;
         source: EmailSource;
     }> = [];
@@ -63,11 +93,12 @@ function buildTopWebsiteContacts(
         seenEmails.add(cleaned);
 
         const isGeneric = GENERIC_PREFIXES.test(cleaned);
+        const isShared = isSharedOrLocationInbox(cleaned, website);
         let score = validation === 'domain_match' ? 100 : 60;
         if (!isGeneric) score += 20;
         // Boost manager/office prefixes over generic info@
         if (/^(manager|officemanager|practicemanager|admin|office)@/i.test(cleaned)) score += 10;
-        rankedEmails.push({ email: cleaned, validation, isGeneric, score, source: item.source });
+        rankedEmails.push({ email: cleaned, validation, isGeneric, isShared, score, source: item.source });
     }
 
     // Track which decision-makers have been paired with an email
@@ -84,7 +115,7 @@ function buildTopWebsiteContacts(
             }
         }
 
-        // 2. First/last name token match in the email local-part (e.g. "maryann@" or "drsmith@")
+        // 2. First/last name token match in the email local-part (e.g. "maryann@" or "drdelia@")
         for (let i = 0; i < decisionMakers.length; i++) {
             if (usedDmIdx.has(i)) continue;
             const tokens = decisionMakers[i].name
@@ -95,7 +126,7 @@ function buildTopWebsiteContacts(
                 .filter(t => t.length >= 3);
             if (tokens.some(t => local.includes(t))) {
                 usedDmIdx.add(i);
-                return { dm: decisionMakers[i], bonus: 30 };
+                return { dm: decisionMakers[i], bonus: 35 };
             }
         }
         return { bonus: 0 };
@@ -110,10 +141,21 @@ function buildTopWebsiteContacts(
     paired.sort((a, b) => b.totalScore - a.totalScore);
     const top = paired.slice(0, MAX_CONTACTS_PER_COMPANY);
 
-    // For unpaired top emails (e.g. deerpark@islandortho.com when Mary Ann is Office Manager),
-    // assign the highest-priority remaining decision-maker so outreach addresses the right person.
+    // Assign unpaired decision-makers safely:
+    // - If email is "dr<surname>@" (like drdelia@ or dr.mao@) and no scraped person matched,
+    //   derive "Dr. Delia" / "Dr. Mao" — NEVER slap a different doctor's name onto it!
+    // - ONLY shared/generic/location inboxes (info@, office@, deerpark@, queens@) inherit
+    //   the top unpaired Office Manager / Practice Manager / Owner.
     for (const entry of top) {
-        if (!entry.dm) {
+        if (entry.dm) continue;
+
+        const drFromEmail = extractDoctorNameFromEmail(entry.email);
+        if (drFromEmail) {
+            entry.dm = { name: drFromEmail, title: 'Practice Owner / Doctor', priority: 82 };
+            continue;
+        }
+
+        if (entry.isShared) {
             for (let i = 0; i < decisionMakers.length; i++) {
                 if (!usedDmIdx.has(i)) {
                     entry.dm = decisionMakers[i];

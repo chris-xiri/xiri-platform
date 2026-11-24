@@ -828,7 +828,8 @@ async function handleLeadSend(task: QueueItem): Promise<boolean> {
 
     if (stepIndex === 0 && template.useCustomDraft && draft?.subject && draft?.body) {
         subject = draft.subject;
-        body = draft.body;
+        // Safety belt: never send a broken "Hi Dr.," greeting from older drafts
+        body = draft.body.replace(/^Hi Dr\.,/i, `Hi ${mergeVars.contactFirstName},`);
         logger.info(`[LeadOutreach] Using AI SDR personalized draft for Step 1 to ${toEmail}`);
     } else {
         subject = template.subject || task.metadata?.subject || '';

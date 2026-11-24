@@ -39,9 +39,13 @@ function formatLifecycleDate(value: any): string | null {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function extractContactFirstName(contactName?: string | null): string {
+const BUSINESS_NAME_KEYWORDS = /\b(dental|dentistry|orthodont\w*|ortho|smiles?|clinic|studio|associates|center|group|pediatric|endo\w*|perio\w*|implant|care|practice|office|llc|p\.?c\.?|inc\.?|pllc|dds|dmd)\b/i;
+
+export function extractContactFirstName(contactName?: string | null, businessName?: string | null): string {
     if (!contactName) return "there";
-    const trimmed = contactName.trim();
+    const trimmed = contactName
+        .replace(/,?\s*(?:D\.?D\.?S\.?|D\.?M\.?D\.?|M\.?S\.?D\.?|M\.?S\.?|M\.?D\.?|P\.?C\.?)\b\.?/gi, "")
+        .trim();
     if (!trimmed) return "there";
     const lower = trimmed.toLowerCase();
     if (
@@ -49,14 +53,19 @@ export function extractContactFirstName(contactName?: string | null): string {
         lower === "office manager" ||
         lower === "practice administrator" ||
         lower === "front desk" ||
-        lower === "there"
+        lower === "there" ||
+        (businessName && lower === businessName.trim().toLowerCase())
     ) {
         return "there";
     }
-    // Preserve "Dr. LastName" when contact starts with Dr.
+    // Preserve "Dr. LastName" when contact starts with Dr. (even if business name also has dental/ortho)
     if (/^dr\.?\s+/i.test(trimmed)) {
         const parts = trimmed.split(/\s+/);
-        return parts.length >= 2 ? `Dr. ${parts[parts.length - 1]}` : trimmed;
+        return parts.length >= 2 ? `Dr. ${parts[parts.length - 1]}` : "there";
+    }
+    // Reject business names accidentally stored in contactName (e.g. "Hidden Smiles Orthodontic Studio")
+    if (BUSINESS_NAME_KEYWORDS.test(trimmed)) {
+        return "there";
     }
     return trimmed.split(/\s+/)[0];
 }

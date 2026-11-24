@@ -495,20 +495,41 @@ const MANAGER_TITLE_PATTERNS: Array<{ regex: RegExp; label: string; priority: nu
     { regex: /\btreatment\s+coordinator\b/i, label: 'Treatment Coordinator', priority: 72 },
 ];
 
+function titleCaseIfAllCaps(name: string): string {
+    if (name === name.toUpperCase() && /[A-Z]{2,}/.test(name)) {
+        return name
+            .toLowerCase()
+            .replace(/\b([a-z])/g, (_, c) => c.toUpperCase())
+            .replace(/\bDr\b\.?/g, 'Dr.');
+    }
+    return name;
+}
+
 function looksLikePersonName(raw: string): string | null {
-    const cleaned = raw.replace(/\s+/g, ' ').replace(/^[\-–—:|•,.\s]+|[\-–—:|•,.\s]+$/g, '').trim();
-    if (!cleaned || cleaned.length < 2 || cleaned.length > 48) return null;
-    if (/\d|@|http|www\.|office|manager|coordinator|assistant|hygienist|team|staff|location|dental|ortho|clinic|practice|meet\s+our|about|welcome|contact|hours|reviews|services/i.test(cleaned)) {
+    let cleaned = raw
+        .replace(/\s+/g, ' ')
+        .replace(/^(?:meet|about|welcome\s+to)\s+/i, '')
+        .replace(/^[\-–—:|•,.\s]+|[\-–—:|•,.\s]+$/g, '')
+        .trim();
+    if (!cleaned || cleaned.length < 2 || cleaned.length > 52) return null;
+    // Reject possessives ("Dr. Davis' Professional Associations") and non-person headings
+    if (/'s?\s/i.test(cleaned) || /\d|@|http|www\.|office|manager|coordinator|assistant|hygienist|team|staff|location|dental|ortho|clinic|practice|meet\s+our|about|welcome|contact|hours|reviews|services|professional|associations|memberships|education|experience|philosophy|biography|awards|certifications|testimonials|appointments|scheduling|insurance|financing|gallery|blog|privacy|policy|terms/i.test(cleaned)) {
         return null;
     }
-    // Strip trailing clinical credentials like ", DDS" or ", DMD"
-    const withoutCreds = cleaned.replace(/,?\s*(?:D\.?D\.?S\.?|D\.?M\.?D\.?|M\.?S\.?|M\.?D\.?|F\.?A\.?G\.?D\.?)\b\.?/gi, '').trim();
+    // Strip trailing clinical credentials like ", DDS" or ", D.M.D."
+    const withoutCreds = cleaned
+        .replace(/,?\s*(?:D\.?D\.?S\.?|D\.?M\.?D\.?|M\.?S\.?D\.?|M\.?S\.?|M\.?D\.?|F\.?A\.?G\.?D\.?|P\.?C\.?)\b\.?/gi, '')
+        .replace(/[,.\s]+$/, '')
+        .trim();
     if (!withoutCreds || withoutCreds.length < 2) return null;
-    const words = withoutCreds.split(/\s+/);
-    if (words.length < 1 || words.length > 4) return null;
-    // Allow optional "Dr." prefix + capitalized name parts
-    if (!/^(?:Dr\.?\s+)?[A-Z][a-zA-Z'.-]+(\s+[A-Z][a-zA-Z'.-]+){0,3}$/.test(withoutCreds)) return null;
-    return withoutCreds;
+    const normalized = titleCaseIfAllCaps(withoutCreds);
+    const words = normalized.split(/\s+/);
+    if (words.length < 1 || words.length > 5) return null;
+    // Allow optional "Dr." prefix + up to 4 name parts (including middle initial like "Dr. Gina F. Delia")
+    if (!/^(?:Dr\.?\s+)?[A-Z][a-zA-Z'.-]+(\s+[A-Z][a-zA-Z'.-]+){0,3}$/.test(normalized)) return null;
+    // Reject bare "Dr." with no actual name
+    if (/^Dr\.?$/i.test(normalized)) return null;
+    return normalized;
 }
 
 function extractCardEmail($: cheerio.CheerioAPI, $el: cheerio.Cheerio<any>): string | undefined {
@@ -588,8 +609,8 @@ function extractDecisionMakersFromPages(
                 }
             }
 
-            // Also detect Owner-Doctor headings like "Dr. Jane Smith, DDS" or "Dr. Brian Lee, DMD"
-            if (/^Dr\.?\s+[A-Z][a-zA-Z'.-]+(?:\s+[A-Z][a-zA-Z'.-]+){1,2}(?:,?\s*(?:D\.?D\.?S\.?|D\.?M\.?D\.?|M\.?S\.?))?/i.test(text) && text.length <= 60) {
+            // Also detect Owner-Doctor headings like "Meet Dr. Gina F. Delia, D.M.D." or "Dr. Jane Smith, DDS"
+            if (/^(?:meet\s+)?Dr\.?\s+[A-Z][a-zA-Z'.-]+(?:\s+[A-Z][a-zA-Z'.-]+){1,3}(?:,?\s*(?:D\.?D\.?S\.?|D\.?M\.?D\.?|M\.?S\.?))?/i.test(text) && text.length <= 68) {
                 const drName = looksLikePersonName(text);
                 if (drName && /^Dr\.?\s+/i.test(drName)) {
                     upsert({
@@ -623,7 +644,7 @@ function extractAllEmails(html: string): { email: string; type: 'personal' | 'ge
         const cleaned = raw.trim().toLowerCase();
         if (seen.has(cleaned)) continue;
         if (
-            /^(noreply|no-reply|donotreply|bounce|mailer-daemon|postmaster|webmaster|support)@/i.test(cleaned) ||
+            /^(noreply|no-reply|donotreply|bounce|mailer-daemon|postmaster|webmaster|support|careers|jobs|hr|recruiting|privacy|legal|abuse|dmca)@/i.test(cleaned) ||
             cleaned.includes('example.com') ||
             cleaned.includes('domain.com') ||
             cleaned.includes('sentry.io') ||

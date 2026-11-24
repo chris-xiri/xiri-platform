@@ -619,8 +619,9 @@ async function runDailyPipeline() {
                                     seenEmails.add(em);
                                     const cleanName = (fullName || "").trim();
                                     const parts = cleanName ? cleanName.split(/\s+/) : [];
-                                    const fName = parts[0] || "";
-                                    const lName = parts.length > 1 ? parts.slice(1).join(" ") : "";
+                                    const isDrPrefix = parts.length >= 2 && /^dr\.?$/i.test(parts[0]);
+                                    const fName = isDrPrefix ? `${parts[0]} ${parts[1]}` : (parts[0] || "");
+                                    const lName = isDrPrefix ? parts.slice(2).join(" ") : (parts.length > 1 ? parts.slice(1).join(" ") : "");
                                     const roleTitle = (title || "").trim() || resolvedTitle;
                                     contactPayloads.push({
                                         email: em,

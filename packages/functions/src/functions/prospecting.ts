@@ -220,8 +220,9 @@ export const addProspectsToCrm = onCall({
                 const contactRef = db.collection("contacts").doc();
                 contactIds.push(contactRef.id);
                 const parsedName = contact.name ? contact.name.trim().split(/\s+/) : [];
-                const firstName = parsedName[0] || '';
-                const lastName = parsedName.length > 1 ? parsedName.slice(1).join(' ') : '';
+                const isDrPrefix = parsedName.length >= 2 && /^dr\.?$/i.test(parsedName[0]);
+                const firstName = isDrPrefix ? `${parsedName[0]} ${parsedName[1]}` : (parsedName[0] || '');
+                const lastName = isDrPrefix ? parsedName.slice(2).join(' ') : (parsedName.length > 1 ? parsedName.slice(1).join(' ') : '');
                 // Activate top 3 verified website contacts (Office/Practice Manager + Owner/Operator + 3rd site contact)
                 const shouldActivate = index < 3 && (index === 0 || !contact.confidence || contact.confidence >= 80);
                 const lifecycleStatus = shouldActivate ? 'active' : 'review';

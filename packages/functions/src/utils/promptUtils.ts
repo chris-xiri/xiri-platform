@@ -149,6 +149,32 @@ export function cleanBusinessName(name: string): string {
     return sharedCleanBusinessName(name) || name.replace(/\s*,?\s*(P\.?C\.?|L\.?L\.?C\.?|P\.?L\.?L\.?C\.?|Inc\.?|Corp\.?|D\.?D\.?S\.?|D\.?M\.?D\.?|M\.?D\.?)$/i, '').trim();
 }
 
+export function formatGreetingName(contactName?: string | null): string {
+    if (!contactName) return 'there';
+    const trimmed = contactName
+        .replace(/,?\s*(?:D\.?D\.?S\.?|D\.?M\.?D\.?|M\.?S\.?D\.?|M\.?S\.?|M\.?D\.?|P\.?C\.?)\b\.?/gi, '')
+        .trim();
+    if (!trimmed) return 'there';
+    const lower = trimmed.toLowerCase();
+    if (
+        lower === 'practice manager' ||
+        lower === 'office manager' ||
+        lower === 'practice administrator' ||
+        lower === 'front desk' ||
+        lower === 'there'
+    ) {
+        return 'there';
+    }
+    if (/^dr\.?\s+/i.test(trimmed)) {
+        const parts = trimmed.split(/\s+/);
+        return parts.length >= 2 ? `Dr. ${parts[parts.length - 1]}` : 'there';
+    }
+    if (/\b(dental|dentistry|orthodont\w*|ortho|smiles?|clinic|studio|associates|center|group|pediatric|endo\w*|perio\w*|implant|care|practice|office|llc|p\.?c\.?|inc\.?|pllc)\b/i.test(trimmed)) {
+        return 'there';
+    }
+    return trimmed.split(/\s+/)[0];
+}
+
 /**
  * Generate a response-optimized personalized outreach draft for a target practice.
  */
@@ -168,6 +194,7 @@ export async function generateOutreachDraft(params: {
     const isOrtho = (params.clinicType || '').toLowerCase().includes('ortho') ||
         params.businessName.toLowerCase().includes('orthodont');
     const clinicTypeLabel = isOrtho ? 'orthodontic practice' : (params.clinicType || 'dental practice');
+    const greetingName = formatGreetingName(params.contactName);
 
     if (apiKey) {
         try {
@@ -181,9 +208,7 @@ export async function generateOutreachDraft(params: {
 
             const prompt = await getPrompt('sdr_copywriter', DEFAULT_SDR_COPYWRITER_PROMPT, {
                 cleanBizName: cleanBiz,
-                contactName: params.contactName && params.contactName !== 'Practice Manager' && params.contactName !== 'Office Manager'
-                    ? params.contactName.split(' ')[0]
-                    : 'there',
+                contactName: greetingName,
                 contactTitle: params.contactTitle || 'Office Manager',
                 city,
                 clinicType: clinicTypeLabel,
@@ -208,9 +233,7 @@ export async function generateOutreachDraft(params: {
         }
     }
 
-    const contact = params.contactName && params.contactName !== 'Practice Manager' && params.contactName !== 'Office Manager'
-        ? params.contactName.split(' ')[0]
-        : 'there';
+    const contact = greetingName;
 
     if (isOrtho) {
         return {
