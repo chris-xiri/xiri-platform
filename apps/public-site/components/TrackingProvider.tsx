@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { initTracking } from '@/lib/tracking';
+import { usePathname } from 'next/navigation';
+import { initTracking, recordPageVisit, captureFirstTouchAttribution } from '@/lib/tracking';
 import { TrackingDebugOverlay } from '@/components/TrackingDebugOverlay';
 
 export default function TrackingProvider({
@@ -10,6 +11,7 @@ export default function TrackingProvider({
     children: React.ReactNode;
 }) {
     const [showDebug, setShowDebug] = useState(false);
+    const pathname = usePathname();
 
     useEffect(() => {
         initTracking();
@@ -20,6 +22,13 @@ export default function TrackingProvider({
             setShowDebug(true);
         }
     }, []);
+
+    useEffect(() => {
+        if (!pathname) return;
+        recordPageVisit(pathname);
+        // Refresh last-touch if the visitor navigated in with fresh campaign params
+        captureFirstTouchAttribution();
+    }, [pathname]);
 
     return (
         <>

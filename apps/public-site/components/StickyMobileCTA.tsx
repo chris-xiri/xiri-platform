@@ -91,7 +91,15 @@ export function StickyMobileCTA() {
 
 
 
-        router.push(`/audit/start?zip=${zip}&email=${encodeURIComponent(email)}&service=general&source=sticky_mobile`);
+        const originPage = typeof window !== 'undefined' ? window.location.pathname : '/';
+        const params = new URLSearchParams({
+            zip,
+            email,
+            service: 'general',
+            source: 'sticky_mobile',
+            originPage,
+        });
+        router.push(`/audit/start?${params.toString()}`);
     };
 
     const handleContractorClick = () => {

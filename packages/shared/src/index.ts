@@ -444,6 +444,85 @@ export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'walkthrough' | 'pr
 
 export type LeadType = 'direct' | 'tenant' | 'referral_partnership' | 'enterprise';
 
+export type AttributionChannel =
+    | 'paid_search'
+    | 'organic_search'
+    | 'ai_search'
+    | 'paid_social'
+    | 'organic_social'
+    | 'email'
+    | 'referral'
+    | 'direct'
+    | 'campaign'
+    | 'manual';
+
+export interface LeadAttributionTouch {
+    source?: string;
+    medium?: string;
+    campaign?: string;
+    term?: string | null;
+    content?: string | null;
+    referrer?: string;
+    referrerDomain?: string | null;
+    landingPage?: string;
+    aiEngine?: string | null;
+    channel?: AttributionChannel | string;
+    searchQuery?: string | null;
+    gclid?: string | null;
+    gbraid?: string | null;
+    wbraid?: string | null;
+    msclkid?: string | null;
+    fbclid?: string | null;
+    liFatId?: string | null;
+    timestamp?: string;
+}
+
+export interface LeadAttribution {
+    // Core fields (backward compatible)
+    source: string;
+    medium: string;
+    campaign: string;
+    landingPage: string;
+
+    // Conversion & referrer context
+    formSource?: string;
+    conversionPage?: string;
+    referrer?: string;
+    referrerDomain?: string | null;
+    aiEngine?: string | null;
+    channel?: AttributionChannel | string;
+
+    // Raw UTM & search parameters
+    utmSource?: string | null;
+    utmMedium?: string | null;
+    utmCampaign?: string | null;
+    utmTerm?: string | null;
+    utmContent?: string | null;
+    searchQuery?: string | null;
+
+    // Ad click IDs
+    gclid?: string | null;
+    gbraid?: string | null;
+    wbraid?: string | null;
+    msclkid?: string | null;
+    fbclid?: string | null;
+    liFatId?: string | null;
+
+    // Journey & session context
+    pagesVisited?: string[];
+    pageCount?: number;
+    visitCount?: number;
+    firstTouchAt?: string | null;
+    convertedAt?: string | null;
+    deviceType?: 'mobile' | 'tablet' | 'desktop' | string | null;
+    browser?: string | null;
+    os?: string | null;
+    timezone?: string | null;
+    screenResolution?: string | null;
+    clarityTag?: string | null;
+    lastTouch?: LeadAttributionTouch | null;
+}
+
 export interface Lead {
     id?: string;
     businessName: string;
@@ -461,12 +540,7 @@ export interface Lead {
     notes?: string;
 
     // Growth Engine Attribution
-    attribution: {
-        source: string;        // e.g. "google", "linkedin"
-        medium: string;        // e.g. "cpc", "qr_code"
-        campaign: string;
-        landingPage: string;
-    };
+    attribution: LeadAttribution;
 
     createdAt: Date;
     status: LeadStatus;
@@ -624,12 +698,7 @@ export interface CrmContactRow {
     isPrimary: boolean;
     companyStage: LeadStatus;
     outreachStatus?: string | null;
-    attribution?: {
-        source?: string;
-        medium?: string;
-        campaign?: string;
-        landingPage?: string;
-    };
+    attribution?: Partial<LeadAttribution>;
     preferredAuditTimes?: any[];
     createdAt?: any;
     updatedAt?: any;

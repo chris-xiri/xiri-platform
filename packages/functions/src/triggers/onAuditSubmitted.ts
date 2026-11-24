@@ -2,6 +2,7 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import { sendLeadChatNotification } from "../utils/leadChatWebhook";
+import { formatAttributionSummary } from "../utils/attribution";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -77,7 +78,7 @@ export const onAuditSubmitted = onDocumentCreated({
 
   // 4. Send Google Chat notification to Leads/Customers space
   const locationText = [address, data.zipCode].filter(Boolean).join(' · ') || 'Not specified';
-  const sourceText = data.attribution?.formSource || data.attribution?.source || data.source || 'audit_wizard';
+  const sourceText = formatAttributionSummary(data.attribution, data.source || 'audit_wizard');
   await sendLeadChatNotification({
     cardId: `audit-lead-${leadId}`,
     title: '🏢 New Inbound Audit Lead',
@@ -91,7 +92,7 @@ export const onAuditSubmitted = onDocumentCreated({
     facilityType: data.facilityType || data.propertyType || undefined,
     squareFootage: data.squareFootage || data.sqft || null,
     services: Array.isArray(data.services) ? data.services.join(', ') : (data.serviceInterest || undefined),
-    source: `${sourceText}${data.attribution?.conversionPage ? ` (${data.attribution.conversionPage})` : ''}`,
+    source: sourceText,
     crmUrl: `https://app.xiri.ai/sales/crm/${leadId}`,
   });
 
@@ -181,6 +182,7 @@ function buildInternalNotificationEmail(
       <tr><td style="padding: 6px 0; color: #6b7280;">Facility Type:</td><td style="padding: 6px 0;">${facilityType}</td></tr>
       <tr><td style="padding: 6px 0; color: #6b7280;">Sq Ft:</td><td style="padding: 6px 0;">${sqft}</td></tr>
       <tr><td style="padding: 6px 0; color: #6b7280;">Services:</td><td style="padding: 6px 0;">${services}</td></tr>
+      <tr><td style="padding: 6px 0; color: #6b7280;">Attribution:</td><td style="padding: 6px 0;">${formatAttributionSummary(data.attribution, data.source || 'audit_wizard')}</td></tr>
     </table>
 
     <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb;">

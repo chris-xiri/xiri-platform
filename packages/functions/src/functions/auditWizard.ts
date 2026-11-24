@@ -4,6 +4,7 @@ import { db, admin } from "../utils/firebase";
 import { DASHBOARD_CORS } from "../utils/cors";
 import { cancelLeadTasks } from "../utils/queueUtils";
 import { sendLeadChatNotification } from "../utils/leadChatWebhook";
+import { normalizeAttribution, formatAttributionSummary } from "../utils/attribution";
 
 function cleanString(value: unknown, maxLen = 500): string {
     if (typeof value !== "string") return "";
@@ -55,20 +56,10 @@ export const createAuditLead = onCall({
         throw new HttpsError("invalid-argument", "ZIP code or facility address is required.");
     }
 
-    const attribution = {
-        source: cleanString(rawAttr.source, 150) || formSource,
-        formSource,
-        medium: cleanString(rawAttr.medium, 100) || "web_audit_flow",
-        campaign: cleanString(rawAttr.campaign, 150) || "seo_geo_2026",
-        landingPage: cleanString(rawAttr.landingPage, 300) || "/",
-        conversionPage: cleanString(rawAttr.conversionPage, 300) || "/",
-        referrer: cleanString(rawAttr.referrer, 300) || "direct",
-        aiEngine: cleanString(rawAttr.aiEngine, 100) || null,
-    };
-
     const now = admin.firestore.FieldValue.serverTimestamp();
     const companyRef = db.collection("companies").doc();
     const leadId = companyRef.id;
+    const attribution = normalizeAttribution(rawAttr, formSource, leadId);
 
     const batch = db.batch();
 
@@ -386,7 +377,7 @@ export const updateAuditLead = onCall({
             facilityType: sanitized.facilityType || existingData.facilityType || undefined,
             squareFootage: sanitized.squareFootage ?? existingData.squareFootage ?? null,
             services: mergedServices,
-            source: existingData.attribution?.formSource || "audit_wizard",
+            source: formatAttributionSummary(existingData.attribution, "audit_wizard"),
             crmUrl: `https://app.xiri.ai/sales/crm/${leadId}`,
         });
     }

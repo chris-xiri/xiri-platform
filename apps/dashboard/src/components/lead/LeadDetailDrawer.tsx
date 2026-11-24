@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import LeadActivityFeed from './LeadActivityFeed';
 import BookCallDialog from './BookCallDialog';
+import AttributionCard from './AttributionCard';
 import {
     VENDOR_CAPABILITIES,
     CAPABILITY_GROUP_LABELS,
@@ -112,11 +113,10 @@ function DrawerCapabilities({ capabilities, onSave }: { capabilities: string[]; 
                                                 key={cap.value}
                                                 type="button"
                                                 onClick={() => toggle(cap.value)}
-                                                className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all ${
-                                                    on
-                                                        ? 'bg-primary text-primary-foreground border-primary'
-                                                        : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted hover:border-primary/30'
-                                                }`}
+                                                className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all ${on
+                                                    ? 'bg-primary text-primary-foreground border-primary'
+                                                    : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted hover:border-primary/30'
+                                                    }`}
                                             >
                                                 {cap.label}
                                             </button>
@@ -662,471 +662,434 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
 
     return (
         <>
-        <Sheet open={open} onOpenChange={(o: boolean) => { if (!o) onClose(); }}>
-            <SheetContent className="w-full sm:max-w-[680px] overflow-y-auto p-0" side="right">
-                {loading ? (
-                    <div className="p-6 space-y-4">
-                        <SheetTitle className="sr-only">Loading lead details</SheetTitle>
-                        <Skeleton className="h-10 w-2/3" />
-                        <Skeleton className="h-[200px] w-full" />
-                    </div>
-                ) : !contact ? (
-                    <div className="p-6 text-muted-foreground">
-                        <SheetTitle className="sr-only">Lead not found</SheetTitle>
-                        Lead not found
-                    </div>
-                ) : (
-                    <>
-                        {/* ─── Header (Contact-focused) ──── */}
-                        <div className="sticky top-0 bg-card border-b px-5 py-4 z-10">
-                            <div className="flex items-center gap-3 mb-2">
-                                {/* Avatar — contact initials */}
-                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
-                                    {(contact.firstName?.charAt(0) || '').toUpperCase()}{(contact.lastName?.charAt(0) || '').toUpperCase() || '?'}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    {/* Contact name — primary title */}
-                                    <SheetTitle className="text-lg truncate">
-                                        {displayName || 'Unnamed Contact'}
-                                    </SheetTitle>
-                                    {/* Company — secondary subtitle */}
-                                    <div className="flex items-center gap-1.5 mt-0.5 text-sm text-muted-foreground">
-                                        <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
-                                        <EditableField
-                                            label="Business name"
-                                            value={businessName}
-                                            icon={() => null}
-                                            onSave={(v) => updateCompanyField('businessName', v)}
-                                            renderDisplay={(val) => (
-                                                <span className="truncate text-muted-foreground">{val || 'Add company'}</span>
-                                            )}
-                                        />
-                                    </div>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 text-xs gap-1 text-muted-foreground"
-                                    onClick={() => router.push(`/sales/crm/${company?.id || contact?.companyId || contactId}`)}
-                                >
-                                    <ExternalLink className="w-3 h-3" />
-                                    Full Page
-                                </Button>
-                            </div>
-                            {/* Company selectors — compact row */}
-                            <div className="flex items-center gap-2 pl-[52px]">
-                                <select
-                                    value={company?.status || 'new'}
-                                    onChange={(e) => handleStatusChange(e.target.value)}
-                                    disabled={statusUpdating}
-                                    className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    aria-label="Lead status"
-                                >
-                                    {STATUS_ORDER.map((s) => (
-                                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                                    ))}
-                                </select>
-                                <select
-                                    value={company?.leadType || 'direct'}
-                                    onChange={(e) => handleLeadTypeChange(e.target.value)}
-                                    className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
-                                    aria-label="Lead type"
-                                >
-                                    {Object.entries(LEAD_TYPE_LABELS).map(([key, label]) => (
-                                        <option key={key} value={key}>{label}</option>
-                                    ))}
-                                </select>
-                            </div>
+            <Sheet open={open} onOpenChange={(o: boolean) => { if (!o) onClose(); }}>
+                <SheetContent className="w-full sm:max-w-[680px] overflow-y-auto p-0" side="right">
+                    {loading ? (
+                        <div className="p-6 space-y-4">
+                            <SheetTitle className="sr-only">Loading lead details</SheetTitle>
+                            <Skeleton className="h-10 w-2/3" />
+                            <Skeleton className="h-[200px] w-full" />
                         </div>
-
-                        {/* ─── Content ─────────────────────────── */}
-                        <div className="p-5 space-y-4">
-                            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
-                                <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
-                                    <TabsTrigger value="overview" className="gap-1 text-xs"><LayoutDashboard className="w-3.5 h-3.5" /> Overview</TabsTrigger>
-                                    <TabsTrigger value="audit" className="gap-1 text-xs"><Calendar className="w-3.5 h-3.5" /> Audit</TabsTrigger>
-                                    <TabsTrigger value="attribution" className="gap-1 text-xs"><TrendingUp className="w-3.5 h-3.5" /> Attribution</TabsTrigger>
-                                    <TabsTrigger value="activity" className="gap-1 text-xs"><Activity className="w-3.5 h-3.5" /> Activity</TabsTrigger>
-                                </TabsList>
-
-                                <TabsContent value="overview" className="space-y-4">
-                                    {/* Contact — Inline Editable */}
-                                    <Card>
-                                        <CardHeader className="py-3">
-                                            <CardTitle className="text-sm flex items-center gap-2">
-                                                <User className="w-4 h-4" /> Contact
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-2.5">
-                                            {contact.unsubscribed && (
-                                                <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 text-xs">
-                                                    <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                                                    <div className="flex-1">
-                                                        <span className="font-semibold">Email bounced</span> — outreach blocked.
-                                                        Update the email address below to lift suppression and re-enable sequence enrollment.
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <EditableField
-                                                label="First name"
-                                                value={contact.firstName || ''}
-                                                icon={User}
-                                                onSave={(v) => updateContactField('firstName', v)}
-                                                renderDisplay={(val) => (
-                                                    <span>{displayName || 'Add contact name'}</span>
-                                                )}
-                                            />
-                                            <EditableField
-                                                label="Email"
-                                                value={contact.email || ''}
-                                                icon={Mail}
-                                                type="email"
-                                                linkPrefix="mailto:"
-                                                onSave={handleEmailSave}
-                                            />
-                                            <EditableField
-                                                label="Phone"
-                                                value={contact.phone || ''}
-                                                icon={Phone}
-                                                type="tel"
-                                                linkPrefix="tel:"
-                                                onSave={(v) => updateContactField('phone', v)}
-                                            />
-                                            <EditableAddressField
-                                                address={company?.address || ''}
-                                                city={company?.city || ''}
-                                                state={company?.state || ''}
-                                                zip={company?.zip || company?.zipCode || ''}
-                                                onSave={async (fields) => {
-                                                    if (!companyId) return;
-                                                    await updateDoc(doc(db, 'companies', companyId), {
-                                                        address: fields.address,
-                                                        city: fields.city,
-                                                        state: fields.state,
-                                                        zip: fields.zip,
-                                                        updatedAt: new Date(),
-                                                    });
-                                                    // Re-fetch company
-                                                    const compSnap = await getDoc(doc(db, 'companies', companyId));
-                                                    if (compSnap.exists()) {
-                                                        const compData = compSnap.data();
-                                                        setCompany({
-                                                            id: compSnap.id,
-                                                            ...compData,
-                                                            createdAt: compData.createdAt?.toDate ? compData.createdAt.toDate() : new Date(compData.createdAt || Date.now()),
-                                                            preferredAuditTimes: compData.preferredAuditTimes?.map((t: any) =>
-                                                                t?.toDate ? t.toDate() : new Date(t)
-                                                            ),
-                                                        } as Lead);
-                                                    }
-                                                }}
-                                            />
-                                        </CardContent>
-                                    </Card>
-
-
-                                    {/* Notes — Editable (stored on contact) */}
-                                    <Card>
-                                        <CardHeader className="py-3 flex flex-row items-center justify-between">
-                                            <CardTitle className="text-sm flex items-center gap-2">
-                                                <Pencil className="w-4 h-4" /> Notes
-                                            </CardTitle>
-                                            {!notesEditing && (
-                                                <Button variant="ghost" size="sm" className="h-6 text-xs gap-1"
-                                                    onClick={() => { setNotesDraft(contact.notes || ''); setNotesEditing(true); }}>
-                                                    <Pencil className="w-3 h-3" /> Edit
-                                                </Button>
-                                            )}
-                                        </CardHeader>
-                                        <CardContent>
-                                            {notesEditing ? (
-                                                <div className="space-y-2">
-                                                    <textarea
-                                                        className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y"
-                                                        value={notesDraft}
-                                                        onChange={(e) => setNotesDraft(e.target.value)}
-                                                        placeholder="Add notes about this lead..."
-                                                        autoFocus
-                                                    />
-                                                    <div className="flex gap-2 justify-end">
-                                                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setNotesEditing(false)}>
-                                                            Cancel
-                                                        </Button>
-                                                        <Button size="sm" className="h-7 text-xs gap-1" onClick={handleNotesSave} disabled={notesSaving}>
-                                                            {notesSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                                                            Save
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <p className={`text-sm ${contact.notes ? '' : 'text-muted-foreground italic'}`}>
-                                                    {contact.notes || 'No notes yet — click Edit to add'}
-                                                </p>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-
-                                    {/* Calculator Estimate — shown when company came from calculator */}
-                                    {company?.calculatorData && (
-                                        <Card className="border-sky-200 bg-sky-50/30">
-                                            <CardHeader className="py-3 flex flex-row items-center justify-between">
-                                                <CardTitle className="text-sm flex items-center gap-2">
-                                                    <Calculator className="w-4 h-4 text-sky-600" /> Calculator Estimate
-                                                </CardTitle>
-                                                <Badge variant="outline" className="text-[10px] border-sky-300 text-sky-700">
-                                                    {company.source === 'calculator_client' ? 'Client Calculator' : 'Calculator'}
-                                                </Badge>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                                                    {company.facilityType && (
-                                                        <div>
-                                                            <p className="text-[10px] uppercase text-muted-foreground">Facility Type</p>
-                                                            <p className="font-medium">{facilityTypeLabels[company.facilityType] || company.facilityType}</p>
-                                                        </div>
-                                                    )}
-                                                    {(company.sqft || company.sqft === '0') && (
-                                                        <div>
-                                                            <p className="text-[10px] uppercase text-muted-foreground">Square Footage</p>
-                                                            <p className="font-medium">{Number(company.sqft).toLocaleString()} sqft</p>
-                                                        </div>
-                                                    )}
-                                                    {company.calculatorData.daysPerWeek && (
-                                                        <div>
-                                                            <p className="text-[10px] uppercase text-muted-foreground">Frequency</p>
-                                                            <p className="font-medium">{company.calculatorData.daysPerWeek}x / week</p>
-                                                        </div>
-                                                    )}
-                                                    {company.state && (
-                                                        <div>
-                                                            <p className="text-[10px] uppercase text-muted-foreground">State</p>
-                                                            <p className="font-medium">{company.state}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                {(company.calculatorData.monthlyLow || company.calculatorData.monthlyEstimate) && (
-                                                    <div className="bg-card rounded-lg border p-3 text-center">
-                                                        <p className="text-[10px] uppercase text-muted-foreground mb-1">Monthly Estimate</p>
-                                                        {company.calculatorData.monthlyLow ? (
-                                                            <p className="text-lg font-bold text-sky-700">
-                                                                {fmt(company.calculatorData.monthlyLow)} – {fmt(company.calculatorData.monthlyHigh!)}
-                                                            </p>
-                                                        ) : (
-                                                            <p className="text-lg font-bold text-sky-700">
-                                                                ~{fmt(company.calculatorData.monthlyEstimate!)}/mo
-                                                            </p>
-                                                        )}
-                                                        {company.calculatorData.monthlyEstimate && (
-                                                            <p className="text-xs text-muted-foreground">Mid-point: {fmt(company.calculatorData.monthlyEstimate)}/mo</p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="w-full mt-3 h-8 text-xs gap-1.5 border-sky-300 text-sky-700 hover:bg-sky-100"
-                                                    onClick={() => {
-                                                        if (!companyId) return;
-                                                        const params = new URLSearchParams({
-                                                            new: 'true',
-                                                            leadId: companyId,
-                                                            ...(company.calculatorData?.monthlyEstimate ? { rate: String(company.calculatorData.monthlyEstimate) } : {}),
-                                                            ...(company.facilityType ? { facilityType: company.facilityType } : {}),
-                                                            ...(company.sqft ? { sqft: String(company.sqft) } : {}),
-                                                        });
-                                                        router.push(`/sales/quotes?${params.toString()}`);
-                                                    }}
-                                                >
-                                                    <Rocket className="w-3 h-3" /> Create Quote from Estimate
-                                                </Button>
-                                            </CardContent>
-                                        </Card>
-                                    )}
-
-                                    {/* Quotes — Linked Records */}
-                                    <Card>
-                                        <CardHeader className="py-3 flex flex-row items-center justify-between">
-                                            <CardTitle className="text-sm flex items-center gap-2">
-                                                <FileText className="w-4 h-4" /> Quotes
-                                                {quotes.length > 0 && (
-                                                    <Badge variant="secondary" className="text-[10px] ml-1">{quotes.length}</Badge>
-                                                )}
-                                            </CardTitle>
-                                            <Button variant="outline" size="sm" className="h-6 text-xs gap-1"
-                                                onClick={() => router.push(`/sales/quotes?new=true&leadId=${companyId}`)}>
-                                                <Plus className="w-3 h-3" /> Create Quote
-                                            </Button>
-                                        </CardHeader>
-                                        <CardContent>
-                                            {quotesLoading ? (
-                                                <Skeleton className="h-10 w-full" />
-                                            ) : quotes.length === 0 ? (
-                                                <p className="text-xs text-muted-foreground italic">No quotes yet for this lead</p>
-                                            ) : (
-                                                <div className="space-y-2">
-                                                    {quotes.map((q) => {
-                                                        const badge = QUOTE_BADGE[q.status] || QUOTE_BADGE.draft;
-                                                        const created = q.createdAt?.toDate?.()
-                                                            ? q.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                                                            : '—';
-                                                        const monthlyRate = q.totalMonthlyRate || 0;
-                                                        const oneTimeTotal = (q.lineItems || [])
-                                                            .filter((li: any) => li.frequency === 'one_time' || li.billingType === 'one_time')
-                                                            .reduce((sum: number, li: any) => sum + (li.clientRate || 0), 0) || (q as any).oneTimeTotal || (q as any).oneTimeCharges || 0;
-
-                                                        const rateDisplay = monthlyRate > 0 && oneTimeTotal > 0
-                                                            ? `${fmt(monthlyRate)}/mo + ${fmt(oneTimeTotal)} (One-Time)`
-                                                            : monthlyRate > 0
-                                                                ? `${fmt(monthlyRate)}/mo`
-                                                                : oneTimeTotal > 0
-                                                                    ? `${fmt(oneTimeTotal)} (One-Time)`
-                                                                    : `${fmt(0)}/mo`;
-
-                                                        return (
-                                                            <div
-                                                                key={q.id}
-                                                                className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/30 cursor-pointer transition-colors group"
-                                                                onClick={() => router.push(`/sales/quotes/${q.id}`)}
-                                                            >
-                                                                <div className="flex items-center gap-3 min-w-0">
-                                                                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                                    <div className="min-w-0">
-                                                                        <p className="text-sm font-medium truncate">
-                                                                            v{q.version || 1} — {rateDisplay}
-                                                                        </p>
-                                                                        <p className="text-[10px] text-muted-foreground">
-                                                                            {q.lineItems?.length || 0} service{(q.lineItems?.length || 0) !== 1 ? 's' : ''} • {created}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${badge.color}`}>
-                                                                        {badge.label}
-                                                                    </span>
-                                                                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-muted-foreground transition-opacity" />
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-
-                                    {/* Meta */}
-                                    <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-                                        <p><span className="font-medium">Contact ID:</span> {contact.id}</p>
-                                        {companyId && <p><span className="font-medium">Company ID:</span> {companyId}</p>}
-                                        {createdDate && <p><span className="font-medium">Created:</span> {format(createdDate, 'MMM d, yyyy h:mm a')}</p>}
+                    ) : !contact ? (
+                        <div className="p-6 text-muted-foreground">
+                            <SheetTitle className="sr-only">Lead not found</SheetTitle>
+                            Lead not found
+                        </div>
+                    ) : (
+                        <>
+                            {/* ─── Header (Contact-focused) ──── */}
+                            <div className="sticky top-0 bg-card border-b px-5 py-4 z-10">
+                                <div className="flex items-center gap-3 mb-2">
+                                    {/* Avatar — contact initials */}
+                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
+                                        {(contact.firstName?.charAt(0) || '').toUpperCase()}{(contact.lastName?.charAt(0) || '').toUpperCase() || '?'}
                                     </div>
-                                </TabsContent>
+                                    <div className="min-w-0 flex-1">
+                                        {/* Contact name — primary title */}
+                                        <SheetTitle className="text-lg truncate">
+                                            {displayName || 'Unnamed Contact'}
+                                        </SheetTitle>
+                                        {/* Company — secondary subtitle */}
+                                        <div className="flex items-center gap-1.5 mt-0.5 text-sm text-muted-foreground">
+                                            <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
+                                            <EditableField
+                                                label="Business name"
+                                                value={businessName}
+                                                icon={() => null}
+                                                onSave={(v) => updateCompanyField('businessName', v)}
+                                                renderDisplay={(val) => (
+                                                    <span className="truncate text-muted-foreground">{val || 'Add company'}</span>
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 text-xs gap-1 text-muted-foreground"
+                                        onClick={() => router.push(`/sales/crm/${company?.id || contact?.companyId || contactId}`)}
+                                    >
+                                        <ExternalLink className="w-3 h-3" />
+                                        Full Page
+                                    </Button>
+                                </div>
+                                {/* Company selectors — compact row */}
+                                <div className="flex items-center gap-2 pl-[52px]">
+                                    <select
+                                        value={company?.status || 'new'}
+                                        onChange={(e) => handleStatusChange(e.target.value)}
+                                        disabled={statusUpdating}
+                                        className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        aria-label="Lead status"
+                                    >
+                                        {STATUS_ORDER.map((s) => (
+                                            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        value={company?.leadType || 'direct'}
+                                        onChange={(e) => handleLeadTypeChange(e.target.value)}
+                                        className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
+                                        aria-label="Lead type"
+                                    >
+                                        {Object.entries(LEAD_TYPE_LABELS).map(([key, label]) => (
+                                            <option key={key} value={key}>{label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
 
-                                <TabsContent value="audit" className="space-y-4">
-                                    <Card>
-                                        <CardHeader className="py-3">
-                                            <CardTitle className="text-sm flex items-center gap-2">
-                                                <Calendar className="w-4 h-4" /> Audit Booking
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-3">
-                                            {company?.preferredAuditTimes && company.preferredAuditTimes.length > 0 ? (
-                                                <div className="space-y-2">
-                                                    {company.preferredAuditTimes.map((time, idx) => {
-                                                        const d = toDate(time);
-                                                        return d ? (
-                                                            <div key={idx} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg text-sm">
-                                                                <Clock className="w-4 h-4 text-muted-foreground" />
-                                                                <div>
-                                                                    <p className="font-medium">{format(d, 'EEEE, MMMM d, yyyy')}</p>
-                                                                    <p className="text-xs text-muted-foreground">{format(d, 'h:mm a')}</p>
-                                                                </div>
-                                                                {idx === 0 && <Badge variant="secondary" className="ml-auto text-[10px]">Primary</Badge>}
-                                                            </div>
-                                                        ) : null;
-                                                    })}
-                                                </div>
-                                            ) : (
-                                                <p className="text-xs text-muted-foreground">No audit times scheduled</p>
-                                            )}
-                                            {company?.serviceInterest && (
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
-                                                    <span className="capitalize">{company.serviceInterest.replace(/_/g, ' ')}</span>
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
+                            {/* ─── Content ─────────────────────────── */}
+                            <div className="p-5 space-y-4">
+                                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
+                                    <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
+                                        <TabsTrigger value="overview" className="gap-1 text-xs"><LayoutDashboard className="w-3.5 h-3.5" /> Overview</TabsTrigger>
+                                        <TabsTrigger value="audit" className="gap-1 text-xs"><Calendar className="w-3.5 h-3.5" /> Audit</TabsTrigger>
+                                        <TabsTrigger value="attribution" className="gap-1 text-xs"><TrendingUp className="w-3.5 h-3.5" /> Attribution</TabsTrigger>
+                                        <TabsTrigger value="activity" className="gap-1 text-xs"><Activity className="w-3.5 h-3.5" /> Activity</TabsTrigger>
+                                    </TabsList>
 
-                                    {/* Book Discovery Call via TidyCal */}
-                                    <Card>
-                                        <CardContent className="py-4">
-                                            <Button
-                                                onClick={() => setBookCallOpen(true)}
-                                                className="w-full gap-2"
-                                                variant="outline"
-                                            >
-                                                <Calendar className="w-4 h-4" />
-                                                Book Discovery Call
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                </TabsContent>
-
-                                <TabsContent value="attribution" className="space-y-4">
-                                    {company?.attribution && (company.attribution.source || company.attribution.medium || company.attribution.campaign) ? (
+                                    <TabsContent value="overview" className="space-y-4">
+                                        {/* Contact — Inline Editable */}
                                         <Card>
                                             <CardHeader className="py-3">
                                                 <CardTitle className="text-sm flex items-center gap-2">
-                                                    <TrendingUp className="w-4 h-4" /> Attribution
+                                                    <User className="w-4 h-4" /> Contact
                                                 </CardTitle>
                                             </CardHeader>
-                                            <CardContent>
-                                                <div className="grid grid-cols-2 gap-3 text-sm">
-                                                    {company.attribution.source && (
-                                                        <div>
-                                                            <p className="text-[10px] uppercase text-muted-foreground">Source</p>
-                                                            <p className="font-medium capitalize">{company.attribution.source}</p>
+                                            <CardContent className="space-y-2.5">
+                                                {contact.unsubscribed && (
+                                                    <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 text-xs">
+                                                        <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                                        <div className="flex-1">
+                                                            <span className="font-semibold">Email bounced</span> — outreach blocked.
+                                                            Update the email address below to lift suppression and re-enable sequence enrollment.
                                                         </div>
+                                                    </div>
+                                                )}
+                                                <EditableField
+                                                    label="First name"
+                                                    value={contact.firstName || ''}
+                                                    icon={User}
+                                                    onSave={(v) => updateContactField('firstName', v)}
+                                                    renderDisplay={(val) => (
+                                                        <span>{displayName || 'Add contact name'}</span>
                                                     )}
-                                                    {company.attribution.medium && (
-                                                        <div>
-                                                            <p className="text-[10px] uppercase text-muted-foreground">Medium</p>
-                                                            <p className="capitalize">{company.attribution.medium}</p>
-                                                        </div>
-                                                    )}
-                                                    {company.attribution.campaign && (
-                                                        <div className="col-span-2">
-                                                            <p className="text-[10px] uppercase text-muted-foreground">Campaign</p>
-                                                            <p>{company.attribution.campaign}</p>
-                                                        </div>
-                                                    )}
-                                                    {company.attribution.landingPage && (
-                                                        <div className="col-span-2">
-                                                            <p className="text-[10px] uppercase text-muted-foreground">Landing Page</p>
-                                                            <p className="text-xs text-primary break-all">{company.attribution.landingPage}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                />
+                                                <EditableField
+                                                    label="Email"
+                                                    value={contact.email || ''}
+                                                    icon={Mail}
+                                                    type="email"
+                                                    linkPrefix="mailto:"
+                                                    onSave={handleEmailSave}
+                                                />
+                                                <EditableField
+                                                    label="Phone"
+                                                    value={contact.phone || ''}
+                                                    icon={Phone}
+                                                    type="tel"
+                                                    linkPrefix="tel:"
+                                                    onSave={(v) => updateContactField('phone', v)}
+                                                />
+                                                <EditableAddressField
+                                                    address={company?.address || ''}
+                                                    city={company?.city || ''}
+                                                    state={company?.state || ''}
+                                                    zip={company?.zip || company?.zipCode || ''}
+                                                    onSave={async (fields) => {
+                                                        if (!companyId) return;
+                                                        await updateDoc(doc(db, 'companies', companyId), {
+                                                            address: fields.address,
+                                                            city: fields.city,
+                                                            state: fields.state,
+                                                            zip: fields.zip,
+                                                            updatedAt: new Date(),
+                                                        });
+                                                        // Re-fetch company
+                                                        const compSnap = await getDoc(doc(db, 'companies', companyId));
+                                                        if (compSnap.exists()) {
+                                                            const compData = compSnap.data();
+                                                            setCompany({
+                                                                id: compSnap.id,
+                                                                ...compData,
+                                                                createdAt: compData.createdAt?.toDate ? compData.createdAt.toDate() : new Date(compData.createdAt || Date.now()),
+                                                                preferredAuditTimes: compData.preferredAuditTimes?.map((t: any) =>
+                                                                    t?.toDate ? t.toDate() : new Date(t)
+                                                                ),
+                                                            } as Lead);
+                                                        }
+                                                    }}
+                                                />
                                             </CardContent>
                                         </Card>
-                                    ) : (
-                                        <div className="p-8 text-center">
-                                            <TrendingUp className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
-                                            <h3 className="font-medium text-sm">No Attribution Data</h3>
-                                            <p className="text-xs text-muted-foreground mt-1">Attribution data appears when leads come through tracked campaigns.</p>
-                                        </div>
-                                    )}
-                                </TabsContent>
 
-                                <TabsContent value="activity">
-                                    <LeadActivityFeed leadId={companyId || contactId!} />
-                                </TabsContent>
-                            </Tabs>
-                        </div>
-                    </>
-                )}
-            </SheetContent>
-        </Sheet>
+
+                                        {/* Notes — Editable (stored on contact) */}
+                                        <Card>
+                                            <CardHeader className="py-3 flex flex-row items-center justify-between">
+                                                <CardTitle className="text-sm flex items-center gap-2">
+                                                    <Pencil className="w-4 h-4" /> Notes
+                                                </CardTitle>
+                                                {!notesEditing && (
+                                                    <Button variant="ghost" size="sm" className="h-6 text-xs gap-1"
+                                                        onClick={() => { setNotesDraft(contact.notes || ''); setNotesEditing(true); }}>
+                                                        <Pencil className="w-3 h-3" /> Edit
+                                                    </Button>
+                                                )}
+                                            </CardHeader>
+                                            <CardContent>
+                                                {notesEditing ? (
+                                                    <div className="space-y-2">
+                                                        <textarea
+                                                            className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y"
+                                                            value={notesDraft}
+                                                            onChange={(e) => setNotesDraft(e.target.value)}
+                                                            placeholder="Add notes about this lead..."
+                                                            autoFocus
+                                                        />
+                                                        <div className="flex gap-2 justify-end">
+                                                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setNotesEditing(false)}>
+                                                                Cancel
+                                                            </Button>
+                                                            <Button size="sm" className="h-7 text-xs gap-1" onClick={handleNotesSave} disabled={notesSaving}>
+                                                                {notesSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                                                Save
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className={`text-sm ${contact.notes ? '' : 'text-muted-foreground italic'}`}>
+                                                        {contact.notes || 'No notes yet — click Edit to add'}
+                                                    </p>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        {/* Calculator Estimate — shown when company came from calculator */}
+                                        {company?.calculatorData && (
+                                            <Card className="border-sky-200 bg-sky-50/30">
+                                                <CardHeader className="py-3 flex flex-row items-center justify-between">
+                                                    <CardTitle className="text-sm flex items-center gap-2">
+                                                        <Calculator className="w-4 h-4 text-sky-600" /> Calculator Estimate
+                                                    </CardTitle>
+                                                    <Badge variant="outline" className="text-[10px] border-sky-300 text-sky-700">
+                                                        {company.source === 'calculator_client' ? 'Client Calculator' : 'Calculator'}
+                                                    </Badge>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                                                        {company.facilityType && (
+                                                            <div>
+                                                                <p className="text-[10px] uppercase text-muted-foreground">Facility Type</p>
+                                                                <p className="font-medium">{facilityTypeLabels[company.facilityType] || company.facilityType}</p>
+                                                            </div>
+                                                        )}
+                                                        {(company.sqft || company.sqft === '0') && (
+                                                            <div>
+                                                                <p className="text-[10px] uppercase text-muted-foreground">Square Footage</p>
+                                                                <p className="font-medium">{Number(company.sqft).toLocaleString()} sqft</p>
+                                                            </div>
+                                                        )}
+                                                        {company.calculatorData.daysPerWeek && (
+                                                            <div>
+                                                                <p className="text-[10px] uppercase text-muted-foreground">Frequency</p>
+                                                                <p className="font-medium">{company.calculatorData.daysPerWeek}x / week</p>
+                                                            </div>
+                                                        )}
+                                                        {company.state && (
+                                                            <div>
+                                                                <p className="text-[10px] uppercase text-muted-foreground">State</p>
+                                                                <p className="font-medium">{company.state}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {(company.calculatorData.monthlyLow || company.calculatorData.monthlyEstimate) && (
+                                                        <div className="bg-card rounded-lg border p-3 text-center">
+                                                            <p className="text-[10px] uppercase text-muted-foreground mb-1">Monthly Estimate</p>
+                                                            {company.calculatorData.monthlyLow ? (
+                                                                <p className="text-lg font-bold text-sky-700">
+                                                                    {fmt(company.calculatorData.monthlyLow)} – {fmt(company.calculatorData.monthlyHigh!)}
+                                                                </p>
+                                                            ) : (
+                                                                <p className="text-lg font-bold text-sky-700">
+                                                                    ~{fmt(company.calculatorData.monthlyEstimate!)}/mo
+                                                                </p>
+                                                            )}
+                                                            {company.calculatorData.monthlyEstimate && (
+                                                                <p className="text-xs text-muted-foreground">Mid-point: {fmt(company.calculatorData.monthlyEstimate)}/mo</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="w-full mt-3 h-8 text-xs gap-1.5 border-sky-300 text-sky-700 hover:bg-sky-100"
+                                                        onClick={() => {
+                                                            if (!companyId) return;
+                                                            const params = new URLSearchParams({
+                                                                new: 'true',
+                                                                leadId: companyId,
+                                                                ...(company.calculatorData?.monthlyEstimate ? { rate: String(company.calculatorData.monthlyEstimate) } : {}),
+                                                                ...(company.facilityType ? { facilityType: company.facilityType } : {}),
+                                                                ...(company.sqft ? { sqft: String(company.sqft) } : {}),
+                                                            });
+                                                            router.push(`/sales/quotes?${params.toString()}`);
+                                                        }}
+                                                    >
+                                                        <Rocket className="w-3 h-3" /> Create Quote from Estimate
+                                                    </Button>
+                                                </CardContent>
+                                            </Card>
+                                        )}
+
+                                        {/* Quotes — Linked Records */}
+                                        <Card>
+                                            <CardHeader className="py-3 flex flex-row items-center justify-between">
+                                                <CardTitle className="text-sm flex items-center gap-2">
+                                                    <FileText className="w-4 h-4" /> Quotes
+                                                    {quotes.length > 0 && (
+                                                        <Badge variant="secondary" className="text-[10px] ml-1">{quotes.length}</Badge>
+                                                    )}
+                                                </CardTitle>
+                                                <Button variant="outline" size="sm" className="h-6 text-xs gap-1"
+                                                    onClick={() => router.push(`/sales/quotes?new=true&leadId=${companyId}`)}>
+                                                    <Plus className="w-3 h-3" /> Create Quote
+                                                </Button>
+                                            </CardHeader>
+                                            <CardContent>
+                                                {quotesLoading ? (
+                                                    <Skeleton className="h-10 w-full" />
+                                                ) : quotes.length === 0 ? (
+                                                    <p className="text-xs text-muted-foreground italic">No quotes yet for this lead</p>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {quotes.map((q) => {
+                                                            const badge = QUOTE_BADGE[q.status] || QUOTE_BADGE.draft;
+                                                            const created = q.createdAt?.toDate?.()
+                                                                ? q.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                                                : '—';
+                                                            const monthlyRate = q.totalMonthlyRate || 0;
+                                                            const oneTimeTotal = (q.lineItems || [])
+                                                                .filter((li: any) => li.frequency === 'one_time' || li.billingType === 'one_time')
+                                                                .reduce((sum: number, li: any) => sum + (li.clientRate || 0), 0) || (q as any).oneTimeTotal || (q as any).oneTimeCharges || 0;
+
+                                                            const rateDisplay = monthlyRate > 0 && oneTimeTotal > 0
+                                                                ? `${fmt(monthlyRate)}/mo + ${fmt(oneTimeTotal)} (One-Time)`
+                                                                : monthlyRate > 0
+                                                                    ? `${fmt(monthlyRate)}/mo`
+                                                                    : oneTimeTotal > 0
+                                                                        ? `${fmt(oneTimeTotal)} (One-Time)`
+                                                                        : `${fmt(0)}/mo`;
+
+                                                            return (
+                                                                <div
+                                                                    key={q.id}
+                                                                    className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/30 cursor-pointer transition-colors group"
+                                                                    onClick={() => router.push(`/sales/quotes/${q.id}`)}
+                                                                >
+                                                                    <div className="flex items-center gap-3 min-w-0">
+                                                                        <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                                        <div className="min-w-0">
+                                                                            <p className="text-sm font-medium truncate">
+                                                                                v{q.version || 1} — {rateDisplay}
+                                                                            </p>
+                                                                            <p className="text-[10px] text-muted-foreground">
+                                                                                {q.lineItems?.length || 0} service{(q.lineItems?.length || 0) !== 1 ? 's' : ''} • {created}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${badge.color}`}>
+                                                                            {badge.label}
+                                                                        </span>
+                                                                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-muted-foreground transition-opacity" />
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        {/* Meta */}
+                                        <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                                            <p><span className="font-medium">Contact ID:</span> {contact.id}</p>
+                                            {companyId && <p><span className="font-medium">Company ID:</span> {companyId}</p>}
+                                            {createdDate && <p><span className="font-medium">Created:</span> {format(createdDate, 'MMM d, yyyy h:mm a')}</p>}
+                                        </div>
+                                    </TabsContent>
+
+                                    <TabsContent value="audit" className="space-y-4">
+                                        <Card>
+                                            <CardHeader className="py-3">
+                                                <CardTitle className="text-sm flex items-center gap-2">
+                                                    <Calendar className="w-4 h-4" /> Audit Booking
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-3">
+                                                {company?.preferredAuditTimes && company.preferredAuditTimes.length > 0 ? (
+                                                    <div className="space-y-2">
+                                                        {company.preferredAuditTimes.map((time, idx) => {
+                                                            const d = toDate(time);
+                                                            return d ? (
+                                                                <div key={idx} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg text-sm">
+                                                                    <Clock className="w-4 h-4 text-muted-foreground" />
+                                                                    <div>
+                                                                        <p className="font-medium">{format(d, 'EEEE, MMMM d, yyyy')}</p>
+                                                                        <p className="text-xs text-muted-foreground">{format(d, 'h:mm a')}</p>
+                                                                    </div>
+                                                                    {idx === 0 && <Badge variant="secondary" className="ml-auto text-[10px]">Primary</Badge>}
+                                                                </div>
+                                                            ) : null;
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-muted-foreground">No audit times scheduled</p>
+                                                )}
+                                                {company?.serviceInterest && (
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+                                                        <span className="capitalize">{company.serviceInterest.replace(/_/g, ' ')}</span>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        {/* Book Discovery Call via TidyCal */}
+                                        <Card>
+                                            <CardContent className="py-4">
+                                                <Button
+                                                    onClick={() => setBookCallOpen(true)}
+                                                    className="w-full gap-2"
+                                                    variant="outline"
+                                                >
+                                                    <Calendar className="w-4 h-4" />
+                                                    Book Discovery Call
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    </TabsContent>
+
+                                    <TabsContent value="attribution" className="space-y-4">
+                                        <AttributionCard
+                                            attribution={company?.attribution}
+                                            leadId={companyId}
+                                            createdAt={company?.createdAt}
+                                            compact
+                                        />
+                                    </TabsContent>
+
+                                    <TabsContent value="activity">
+                                        <LeadActivityFeed leadId={companyId || contactId!} />
+                                    </TabsContent>
+                                </Tabs>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
 
             {contact && (
                 <BookCallDialog

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { trackEvent } from '@/lib/tracking';
+import { trackEvent, buildLeadAttributionPayload } from '@/lib/tracking';
 import { REFERRAL_PARTNERS, REFERRAL_FEE, WALKTHROUGH_BONUS, CLOSE_BONUS, RECURRING_BONUS } from '@/data/dlp-referral-partners';
 import { CheckCircle, Loader2, Send, DollarSign, Clock } from 'lucide-react';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
@@ -131,6 +131,7 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                 managerPhone: managerPhone.trim(),
                 notes: notes.trim(),
                 source: source || 'direct',
+                attribution: buildLeadAttributionPayload({ formSource: source || 'referral_form' }),
                 status: 'new',
                 payoutStatus: 'new',
                 createdAt: serverTimestamp(),

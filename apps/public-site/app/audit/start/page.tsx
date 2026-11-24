@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "@/lib/firebase";
 import { Loader2, AlertCircle } from "lucide-react";
-import { trackEvent, getFirstTouchAttribution } from "@/lib/tracking";
+import { trackEvent, buildLeadAttributionPayload, tagClarityLead } from "@/lib/tracking";
 
 function AuditInitializer() {
     const router = useRouter();
@@ -32,7 +32,10 @@ function AuditInitializer() {
                 const transitionDate = searchParams.get("transitionDate") || "";
                 const scopeBrief = searchParams.get("scopeBrief") || "";
                 const originPage = searchParams.get("originPage") || "";
-                const firstTouch = getFirstTouchAttribution();
+                const attributionPayload = buildLeadAttributionPayload({
+                    formSource: source,
+                    originPage: originPage || undefined,
+                });
 
                 if (!zip && !address) {
                     router.replace("/");
@@ -57,16 +60,7 @@ function AuditInitializer() {
                     transitionDate,
                     scopeBrief,
                     originPage,
-                    attribution: {
-                        source: firstTouch?.aiSource ? `ai_${firstTouch.aiSource}` : source,
-                        formSource: source,
-                        medium: firstTouch?.utmMedium || (firstTouch?.aiSource ? "ai_answer_engine" : "web_audit_flow"),
-                        campaign: firstTouch?.utmCampaign || "seo_geo_2026",
-                        landingPage: firstTouch?.initialLandingPage || originPage || window.location.pathname,
-                        conversionPage: originPage || window.location.pathname,
-                        referrer: firstTouch?.initialReferrer || document.referrer || "direct",
-                        aiEngine: firstTouch?.aiSource || null,
-                    },
+                    attribution: attributionPayload,
                 });
 
                 const leadId = result.data?.leadId;
@@ -74,12 +68,15 @@ function AuditInitializer() {
                     throw new Error("Missing leadId from createAuditLead");
                 }
 
+                tagClarityLead(leadId);
+
                 trackEvent("audit_start", {
                     zip: zip || "",
                     service,
-                    source,
+                    source: attributionPayload.source,
+                    channel: attributionPayload.channel,
                     origin_page: originPage || "",
-                    ai_engine: firstTouch?.aiSource || "none",
+                    ai_engine: attributionPayload.aiEngine || "none",
                 });
                 router.replace(`/audit/${leadId}`);
             } catch (err) {

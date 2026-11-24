@@ -5,7 +5,7 @@ import { app } from '@/lib/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { Copy, Download, Mail, Send } from 'lucide-react';
 import { buildRfpDraft, type RfpDocument, type RfpInput } from '@xiri-facility-solutions/shared';
-import { trackEvent } from '@/lib/tracking';
+import { trackEvent, buildLeadAttributionPayload, tagClarityLead } from '@/lib/tracking';
 
 const DEFAULT_INPUT: RfpInput = {
     facilityName: '',
@@ -483,6 +483,7 @@ export default function RfpBidAnalyzerTool({ initialInput }: RfpBidAnalyzerToolP
             picName: input.picName?.trim() || '',
             picEmail: input.picEmail?.trim() || '',
             scopeBrief: brief || undefined,
+            attribution: buildLeadAttributionPayload({ formSource: 'janitorial_rfp_tool' }),
         };
     };
 
@@ -503,8 +504,11 @@ export default function RfpBidAnalyzerTool({ initialInput }: RfpBidAnalyzerToolP
         setIsSubmittingXiri(true);
         try {
             const functions = getFunctions(app, 'us-central1');
-            const submitLeadCallable = httpsCallable<{ payload: ReturnType<typeof buildRfpLeadPayload> }, { success: boolean; deduped?: boolean }>(functions, 'submitRfpLead');
+            const submitLeadCallable = httpsCallable<{ payload: ReturnType<typeof buildRfpLeadPayload> }, { success: boolean; deduped?: boolean; leadId?: string }>(functions, 'submitRfpLead');
             const result = await submitLeadCallable({ payload: buildRfpLeadPayload(true) });
+            if (result.data?.leadId) {
+                tagClarityLead(result.data.leadId);
+            }
             if (result.data?.success) {
                 setRfpActionStatus(result.data?.deduped ? 'Request already submitted. We will follow up shortly.' : 'Request submitted. XIRI will follow up within one business day.');
             } else {

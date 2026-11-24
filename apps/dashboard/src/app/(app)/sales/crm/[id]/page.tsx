@@ -37,6 +37,7 @@ import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import CompanyHub from './CompanyHub';
+import AttributionCard from '@/components/lead/AttributionCard';
 
 
 
@@ -409,11 +410,10 @@ function ServiceCapabilitiesCard({ capabilities, onSave }: { capabilities: strin
                                                 key={cap.value}
                                                 type="button"
                                                 onClick={() => toggle(cap.value)}
-                                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                                                    on
-                                                        ? 'bg-primary text-primary-foreground border-primary'
-                                                        : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted hover:border-primary/30'
-                                                }`}
+                                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${on
+                                                    ? 'bg-primary text-primary-foreground border-primary'
+                                                    : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted hover:border-primary/30'
+                                                    }`}
                                             >
                                                 {cap.label}
                                             </button>
@@ -734,39 +734,11 @@ export default function LeadDetailPage() {
                         )}
 
                         {/* Attribution */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                    <TrendingUp className="w-4 h-4" /> Attribution
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {lead.attribution?.source && (
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Source</label>
-                                        <p className="text-sm font-medium capitalize">{lead.attribution.source}</p>
-                                    </div>
-                                )}
-                                {lead.attribution?.medium && (
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Medium</label>
-                                        <p className="text-sm capitalize">{lead.attribution.medium}</p>
-                                    </div>
-                                )}
-                                {lead.attribution?.campaign && (
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Campaign</label>
-                                        <p className="text-sm">{lead.attribution.campaign}</p>
-                                    </div>
-                                )}
-                                {lead.attribution?.landingPage && (
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Landing Page</label>
-                                        <p className="text-xs text-blue-600 break-all">{lead.attribution.landingPage}</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                        <AttributionCard
+                            attribution={lead.attribution}
+                            leadId={lead.id}
+                            createdAt={lead.createdAt}
+                        />
 
                         {/* Metadata */}
                         <Card>

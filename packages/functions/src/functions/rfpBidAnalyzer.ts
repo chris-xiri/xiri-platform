@@ -2,6 +2,7 @@ import { onCall } from "firebase-functions/v2/https";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { DASHBOARD_CORS } from "../utils/cors";
 import { sendLeadChatNotification } from "../utils/leadChatWebhook";
+import { normalizeAttribution, formatAttributionSummary } from "../utils/attribution";
 import { db } from "../utils/firebase";
 import { resolveGeminiModel } from "../utils/gemini";
 import {
@@ -218,9 +219,13 @@ export const submitRfpLead = onCall({
         return { success: true, deduped: true, leadId: existing.id };
     }
 
+    const rawAttribution = (data?.payload as unknown as Record<string, unknown> | undefined)?.attribution;
+    const attribution = normalizeAttribution(rawAttribution, payload.source || "janitorial_rfp_tool", leadRef.id);
+
     await leadRef.set({
         status: "new",
         source: payload.source,
+        attribution,
         requestedXiri: Boolean(payload.requestedXiri),
         requestedXiriAt: payload.requestedXiri ? new Date().toISOString() : null,
         facilityName: payload.facilityName || null,
@@ -247,7 +252,7 @@ export const submitRfpLead = onCall({
         location: [payload.location, payload.zipCode].filter(Boolean).join(" · "),
         facilityType: payload.facilityType || undefined,
         squareFootage: payload.estimatedSqft || null,
-        source: payload.source || "rfp_tool",
+        source: formatAttributionSummary(attribution, payload.source || "rfp_tool"),
         notes: payload.scopeBrief ? payload.scopeBrief.slice(0, 300) : undefined,
         crmUrl: "https://app.xiri.ai/sales/crm",
     });
