@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import LeadDetailDrawer from '@/components/lead/LeadDetailDrawer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,9 +34,13 @@ import { format } from 'date-fns';
 
 function toDate(val: any): Date | null {
     if (!val) return null;
-    if (val.toDate) return val.toDate();
-    if (val instanceof Date) return val;
-    return new Date(val);
+    if (val.toDate && typeof val.toDate === 'function') {
+        const d = val.toDate();
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+    if (val instanceof Date) return Number.isNaN(val.getTime()) ? null : val;
+    const d = new Date(val);
+    return Number.isNaN(d.getTime()) ? null : d;
 }
 
 const WO_STATUS: Record<string, { label: string; cls: string }> = {
@@ -153,7 +159,7 @@ function EmailEngagementCard({ activities, contacts }: { activities: CompanyHubP
             {expanded && (
                 <CardContent className="space-y-4">
                     {/* Aggregate Stats */}
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                         {stats.map(s => (
                             <div key={s.label} className={`rounded-lg ${s.bg} p-2.5 text-center`}>
                                 <s.icon className={`w-4 h-4 mx-auto mb-1 ${s.color}`} />
@@ -408,7 +414,7 @@ export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
                                 return (
                                     <div
                                         key={q.id}
-                                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors cursor-pointer"
+                                        className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors cursor-pointer"
                                         onClick={() => router.push(`/sales/quotes/${q.id}`)}
                                     >
                                         <div className="flex items-center gap-3 min-w-0">
@@ -494,27 +500,26 @@ export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
                                     return (
                                         <div key={act.id} className="flex gap-3">
                                             <div className="flex flex-col items-center">
-                                                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                                    act.type === 'OUTREACH_SENT' ? 'bg-green-100 text-green-600' :
-                                                    act.type === 'OUTREACH_FAILED' ? 'bg-red-100 text-red-600' :
-                                                    act.type === 'SEQUENCE_STARTED' ? 'bg-blue-100 text-blue-600' :
-                                                    act.type === 'OUTREACH_QUEUED' ? 'bg-amber-100 text-amber-600' :
-                                                    act.type === 'EMAIL_DELIVERED' ? 'bg-green-100 text-green-600' :
-                                                    act.type === 'EMAIL_OPENED' ? 'bg-violet-100 text-violet-600' :
-                                                    act.type === 'EMAIL_CLICKED' ? 'bg-amber-100 text-amber-600' :
-                                                    act.type === 'EMAIL_BOUNCED' ? 'bg-red-100 text-red-600' :
-                                                    act.type === 'EMAIL_COMPLAINED' ? 'bg-red-100 text-red-600' :
-                                                    'bg-muted text-muted-foreground'
-                                                }`}>
+                                                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${act.type === 'OUTREACH_SENT' ? 'bg-green-100 text-green-600' :
+                                                        act.type === 'OUTREACH_FAILED' ? 'bg-red-100 text-red-600' :
+                                                            act.type === 'SEQUENCE_STARTED' ? 'bg-blue-100 text-blue-600' :
+                                                                act.type === 'OUTREACH_QUEUED' ? 'bg-amber-100 text-amber-600' :
+                                                                    act.type === 'EMAIL_DELIVERED' ? 'bg-green-100 text-green-600' :
+                                                                        act.type === 'EMAIL_OPENED' ? 'bg-violet-100 text-violet-600' :
+                                                                            act.type === 'EMAIL_CLICKED' ? 'bg-amber-100 text-amber-600' :
+                                                                                act.type === 'EMAIL_BOUNCED' ? 'bg-red-100 text-red-600' :
+                                                                                    act.type === 'EMAIL_COMPLAINED' ? 'bg-red-100 text-red-600' :
+                                                                                        'bg-muted text-muted-foreground'
+                                                    }`}>
                                                     {act.type === 'OUTREACH_SENT' ? <Send className="w-3.5 h-3.5" /> :
                                                         act.type === 'OUTREACH_FAILED' ? <XCircle className="w-3.5 h-3.5" /> :
-                                                        act.type === 'SEQUENCE_STARTED' ? <Play className="w-3.5 h-3.5" /> :
-                                                        act.type === 'EMAIL_DELIVERED' ? <CheckCircle2 className="w-3.5 h-3.5" /> :
-                                                        act.type === 'EMAIL_OPENED' ? <MailOpen className="w-3.5 h-3.5" /> :
-                                                        act.type === 'EMAIL_CLICKED' ? <MousePointerClick className="w-3.5 h-3.5" /> :
-                                                        act.type === 'EMAIL_BOUNCED' ? <AlertTriangle className="w-3.5 h-3.5" /> :
-                                                        act.type === 'EMAIL_COMPLAINED' ? <AlertTriangle className="w-3.5 h-3.5" /> :
-                                                        <Activity className="w-3.5 h-3.5" />}
+                                                            act.type === 'SEQUENCE_STARTED' ? <Play className="w-3.5 h-3.5" /> :
+                                                                act.type === 'EMAIL_DELIVERED' ? <CheckCircle2 className="w-3.5 h-3.5" /> :
+                                                                    act.type === 'EMAIL_OPENED' ? <MailOpen className="w-3.5 h-3.5" /> :
+                                                                        act.type === 'EMAIL_CLICKED' ? <MousePointerClick className="w-3.5 h-3.5" /> :
+                                                                            act.type === 'EMAIL_BOUNCED' ? <AlertTriangle className="w-3.5 h-3.5" /> :
+                                                                                act.type === 'EMAIL_COMPLAINED' ? <AlertTriangle className="w-3.5 h-3.5" /> :
+                                                                                    <Activity className="w-3.5 h-3.5" />}
                                                 </div>
                                                 {!isLast && <div className="w-px bg-border flex-1 min-h-[16px]" />}
                                             </div>
