@@ -126,7 +126,7 @@ export default function MonitoringSettingsPage() {
                         <p className="text-xs text-muted-foreground">
                             Minutes after scheduled start before a <strong>Late Warning</strong> card is sent. Tags NM + FSM.
                         </p>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             <Input id="graceMinutes" type="number" min={5} max={360}
                                 value={settings.graceMinutes}
                                 onChange={(e) => setSettings(prev => ({ ...prev, graceMinutes: parseInt(e.target.value) || 0 }))}
@@ -136,14 +136,14 @@ export default function MonitoringSettingsPage() {
                     </div>
 
                     {/* Late Reminder Interval */}
-                    <div className="space-y-2 ml-6 border-l-2 border-amber-300 pl-4">
+                    <div className="space-y-2 ml-2 pl-3 sm:ml-6 sm:pl-4 border-l-2 border-amber-300">
                         <Label htmlFor="lateReminderInterval" className="text-sm font-medium">
                             🔔 Late Reminders (during grace period)
                         </Label>
                         <p className="text-xs text-muted-foreground">
                             Send a &quot;crew is late&quot; reminder every X minutes <em>before</em> the Late Warning fires.
                         </p>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             <Input id="lateReminderInterval" type="number" min={5} max={120}
                                 value={settings.lateReminderIntervalMinutes}
                                 onChange={(e) => setSettings(prev => ({ ...prev, lateReminderIntervalMinutes: parseInt(e.target.value) || 15 }))}
@@ -164,7 +164,7 @@ export default function MonitoringSettingsPage() {
                         <p className="text-xs text-muted-foreground">
                             Minutes after scheduled start before a <strong>No-Show</strong> is declared. Red alert card sent, tags NM + FSM.
                         </p>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             <Input id="noShowMinutes" type="number" min={15} max={720}
                                 value={settings.noShowMinutes}
                                 onChange={(e) => setSettings(prev => ({ ...prev, noShowMinutes: parseInt(e.target.value) || 0 }))}
@@ -174,14 +174,14 @@ export default function MonitoringSettingsPage() {
                     </div>
 
                     {/* Escalation Reminder Interval */}
-                    <div className="space-y-2 ml-6 border-l-2 border-red-300 pl-4">
+                    <div className="space-y-2 ml-2 pl-3 sm:ml-6 sm:pl-4 border-l-2 border-red-300">
                         <Label htmlFor="escalationReminderInterval" className="text-sm font-medium">
                             🚨 Escalation Reminders (between grace &amp; no-show)
                         </Label>
                         <p className="text-xs text-muted-foreground">
                             Send &quot;prepare backup vendor&quot; reminders every X minutes after the Late Warning and before the No-Show declaration.
                         </p>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             <Input id="escalationReminderInterval" type="number" min={5} max={120}
                                 value={settings.escalationReminderIntervalMinutes}
                                 onChange={(e) => setSettings(prev => ({ ...prev, escalationReminderIntervalMinutes: parseInt(e.target.value) || 15 }))}
@@ -204,31 +204,31 @@ export default function MonitoringSettingsPage() {
                 <CardContent>
                     <div className="relative space-y-0 text-sm">
                         <div className="flex items-center gap-3 py-2">
-                            <span className="w-16 text-right font-mono text-xs text-muted-foreground">+0m</span>
+                            <span className="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">+0m</span>
                             <span className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
                             <span>Scheduled start time</span>
                         </div>
                         {lateReminders.map((t) => (
                             <div key={`late-${t}`} className="flex items-center gap-3 py-1.5">
-                                <span className="w-16 text-right font-mono text-xs text-muted-foreground">+{minutesToLabel(t)}</span>
+                                <span className="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">+{minutesToLabel(t)}</span>
                                 <span className="w-3 h-3 rounded-full bg-amber-400 shrink-0" />
                                 <span className="text-muted-foreground">🔔 Late reminder → NM + FSM</span>
                             </div>
                         ))}
                         <div className="flex items-center gap-3 py-2">
-                            <span className="w-16 text-right font-mono text-xs text-muted-foreground">+{minutesToLabel(settings.graceMinutes)}</span>
+                            <span className="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">+{minutesToLabel(settings.graceMinutes)}</span>
                             <span className="w-3 h-3 rounded-full bg-amber-500 shrink-0" />
                             <span className="font-medium">⚠️ Late Warning card → NM + FSM</span>
                         </div>
                         {escalationReminders.map((t) => (
                             <div key={`esc-${t}`} className="flex items-center gap-3 py-1.5">
-                                <span className="w-16 text-right font-mono text-xs text-muted-foreground">+{minutesToLabel(t)}</span>
+                                <span className="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">+{minutesToLabel(t)}</span>
                                 <span className="w-3 h-3 rounded-full bg-orange-400 shrink-0" />
                                 <span className="text-muted-foreground">🚨 Escalation reminder → FSM: prepare backup</span>
                             </div>
                         ))}
                         <div className="flex items-center gap-3 py-2">
-                            <span className="w-16 text-right font-mono text-xs text-muted-foreground">+{minutesToLabel(settings.noShowMinutes)}</span>
+                            <span className="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">+{minutesToLabel(settings.noShowMinutes)}</span>
                             <span className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
                             <span className="font-medium">🔴 No-Show declared → NM + FSM</span>
                         </div>

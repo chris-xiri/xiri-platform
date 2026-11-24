@@ -344,8 +344,8 @@ export default function EmailTemplatesPage() {
                         {/* ─── Templates Tab: Flat Searchable List ─── */}
                         <div className="space-y-4">
                             {/* Toolbar */}
-                            <div className="flex items-center gap-3">
-                                <div className="relative flex-1 max-w-sm">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="relative flex-1 min-w-[200px] max-w-sm">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                     <Input
                                         value={searchQuery}
@@ -354,7 +354,7 @@ export default function EmailTemplatesPage() {
                                         className="pl-9 h-9 text-sm"
                                     />
                                 </div>
-                                <Button onClick={() => setShowCreateDialog(true)} size="sm" className="gap-1.5 h-9">
+                                <Button onClick={() => setShowCreateDialog(true)} size="sm" className="gap-1.5 h-9 shrink-0">
                                     <Plus className="w-4 h-4" />
                                     New Template
                                 </Button>
@@ -414,8 +414,8 @@ export default function EmailTemplatesPage() {
                                                     className="cursor-pointer hover:bg-muted/30 transition-colors py-3"
                                                     onClick={() => handleExpand(template)}
                                                 >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <div className="flex items-center gap-3 min-w-0 flex-1">
                                                             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted/60 text-muted-foreground flex-shrink-0">
                                                                 <Mail className="w-4 h-4" />
                                                             </div>
@@ -428,7 +428,7 @@ export default function EmailTemplatesPage() {
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                        <div className="flex flex-wrap items-center gap-1.5 flex-shrink-0">
                                                             <Badge variant="secondary" className={`text-[10px] ${catBadge.className}`}>
                                                                 {catBadge.label}
                                                             </Badge>
@@ -450,20 +450,20 @@ export default function EmailTemplatesPage() {
                                                 {isExpanded && (
                                                     <CardContent className="border-t pt-4 space-y-4">
                                                         {/* Toolbar */}
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                                            <div className="flex flex-wrap items-center gap-2 min-w-0">
                                                                 <Button
                                                                     size="sm"
                                                                     variant={previewMode ? "default" : "outline"}
-                                                                    className="h-7 text-xs"
+                                                                    className="h-7 text-xs shrink-0"
                                                                     onClick={() => setPreviewMode(!previewMode)}
                                                                 >
                                                                     {previewMode ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
                                                                     {previewMode ? "Edit" : "Preview"}
                                                                 </Button>
-                                                                <code className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{template.id}</code>
+                                                                <code className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded break-all">{template.id}</code>
                                                             </div>
-                                                            <div className="flex items-center gap-2">
+                                                            <div className="flex flex-wrap items-center gap-2">
                                                                 <Button
                                                                     size="sm"
                                                                     variant="ghost"
@@ -579,9 +579,9 @@ export default function EmailTemplatesPage() {
                                                         </div>
 
                                                         {/* Template ID */}
-                                                        <div className="text-[10px] text-muted-foreground flex items-center gap-2 pt-1 border-t">
+                                                        <div className="text-[10px] text-muted-foreground flex flex-wrap items-center gap-2 pt-1 border-t">
                                                             <span>Firestore ID:</span>
-                                                            <code className="bg-muted px-1.5 py-0.5 rounded">{template.id}</code>
+                                                            <code className="bg-muted px-1.5 py-0.5 rounded break-all">{template.id}</code>
                                                         </div>
                                                     </CardContent>
                                                 )}

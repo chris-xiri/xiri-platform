@@ -302,14 +302,14 @@ export default function CRMReviewQueue({ onRowClick }: CRMReviewQueueProps) {
     }, [activeBucket]);
 
     return (
-        <Card className="border shadow-sm">
+        <Card className="border shadow-sm min-w-0">
             <CardHeader className="pb-3">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <CardTitle className="text-base">Contact Review Queue</CardTitle>
                         <p className="text-sm text-muted-foreground mt-1">{bucketDescription}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Button
                             variant="outline"
                             size="sm"
@@ -335,9 +335,9 @@ export default function CRMReviewQueue({ onRowClick }: CRMReviewQueueProps) {
             </CardHeader>
             <CardContent className="space-y-4">
                 <Tabs value={activeBucket} onValueChange={(value) => setActiveBucket(value as ReviewBucket)}>
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="flex w-full max-w-full overflow-x-auto h-auto justify-start sm:grid sm:grid-cols-3">
                         {(["due_held", "invalid_email", "duplicates"] as ReviewBucket[]).map((bucket) => (
-                            <TabsTrigger key={bucket} value={bucket} className="gap-2">
+                            <TabsTrigger key={bucket} value={bucket} className="flex-1 min-w-fit gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm sm:gap-2">
                                 <span>{BUCKET_LABELS[bucket]}</span>
                                 <Badge variant="secondary" className="tabular-nums">
                                     {counts[bucket]}
@@ -445,7 +445,7 @@ export default function CRMReviewQueue({ onRowClick }: CRMReviewQueueProps) {
                                         <div className="min-w-0">
                                             <button
                                                 type="button"
-                                                className="text-left"
+                                                className="block w-full min-w-0 text-left"
                                                 onClick={() => contact.id && onRowClick?.(contact.id)}
                                             >
                                                 <div className="truncate font-medium text-foreground">{displayName}</div>
@@ -457,8 +457,8 @@ export default function CRMReviewQueue({ onRowClick }: CRMReviewQueueProps) {
                                             <div className="truncate font-medium">{contact.companyName || "Unknown"}</div>
                                             <div className="truncate text-sm text-muted-foreground">{contact.companyId || "No company link"}</div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
                                             <span className="text-sm">{getReasonLabel(contact)}</span>
                                         </div>
                                         <div className="flex flex-wrap gap-2">

@@ -204,10 +204,10 @@ export default function AIAgentsPage() {
                                     return (
                                         <Card key={prompt.id} className={isExpanded ? "border-primary" : ""}>
                                             <CardHeader className="pb-3">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <CardTitle className="flex items-center gap-2 text-base">
-                                                            <Bot className="w-4 h-4 text-muted-foreground" />
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                                                            <Bot className="w-4 h-4 text-muted-foreground shrink-0" />
                                                             {prompt.name}
                                                             {prompt.model && (
                                                                 <Badge variant="secondary" className="text-[10px] font-mono">
@@ -225,7 +225,7 @@ export default function AIAgentsPage() {
                                                                 {prompt.description}
                                                             </p>
                                                         )}
-                                                        <CardDescription className="mt-1 font-mono text-xs">
+                                                        <CardDescription className="mt-1 font-mono text-xs break-all">
                                                             {prompt.id}
                                                         </CardDescription>
                                                     </div>
@@ -233,7 +233,7 @@ export default function AIAgentsPage() {
                                                         onClick={() => handleExpand(prompt)}
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="gap-1.5 text-xs"
+                                                        className="gap-1.5 text-xs shrink-0"
                                                     >
                                                         {isExpanded ? (
                                                             <><ChevronUp className="w-3.5 h-3.5" /> Collapse</>

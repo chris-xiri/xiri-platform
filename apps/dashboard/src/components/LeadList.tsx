@@ -128,7 +128,7 @@ export default function LeadList({
     const [contacts, setContacts] = useState<ContactRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
-    const [bulkAction, setBulkAction] = useState<'status'|'type'|'sequence'|'delete'|null>(null);
+    const [bulkAction, setBulkAction] = useState<'status' | 'type' | 'sequence' | 'delete' | null>(null);
     const [bulkStatus, setBulkStatus] = useState<LeadStatus | "">("");
     const [bulkLeadType, setBulkLeadType] = useState<LeadType | "">("");
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -146,11 +146,11 @@ export default function LeadList({
     });
     // Bulk sequence
     const [showBulkSequenceDialog, setShowBulkSequenceDialog] = useState(false);
-    const [bulkSequences, setBulkSequences] = useState<{id:string;name:string;description?:string;steps:any[]}[]>([]);
+    const [bulkSequences, setBulkSequences] = useState<{ id: string; name: string; description?: string; steps: any[] }[]>([]);
     const [bulkSelectedSequenceId, setBulkSelectedSequenceId] = useState('');
     const [enrollingSequence, setEnrollingSequence] = useState(false);
     const [loadingBulkSequences, setLoadingBulkSequences] = useState(false);
-    const [bulkSequenceProgress, setBulkSequenceProgress] = useState<{done:number;total:number;errors:string[]}|null>(null);
+    const [bulkSequenceProgress, setBulkSequenceProgress] = useState<{ done: number; total: number; errors: string[] } | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [refreshNonce, setRefreshNonce] = useState(0);
     const PAGE_SIZE = 50;
@@ -628,7 +628,7 @@ export default function LeadList({
 
             {/* Bulk Actions Bar */}
             {selectedLeads.size > 0 && (
-                <div className="px-3 py-2 bg-primary/5 border border-primary/15 rounded-lg mb-2 flex items-center gap-2">
+                <div className="px-3 py-2 bg-primary/5 border border-primary/15 rounded-lg mb-2 flex flex-wrap items-center gap-2">
                     <Checkbox
                         checked={allSelected}
                         onCheckedChange={handleSelectAll}
@@ -642,7 +642,7 @@ export default function LeadList({
 
                     {/* ─── Inline quick-actions ─── */}
                     {!bulkAction && (
-                        <div className="flex items-center gap-1 flex-1">
+                        <div className="flex flex-wrap items-center gap-1 flex-1 min-w-0">
                             <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 px-2.5" onClick={() => setBulkAction('status')}>
                                 <Edit className="w-3 h-3" /> Status
                             </Button>
@@ -670,9 +670,9 @@ export default function LeadList({
 
                     {/* ─── Status inline picker ─── */}
                     {bulkAction === 'status' && (
-                        <div className="flex items-center gap-2 flex-1 animate-in fade-in slide-in-from-left-2 duration-150">
+                        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0 animate-in fade-in slide-in-from-left-2 duration-150">
                             <Select value={bulkStatus} onValueChange={(v: string) => setBulkStatus(v as LeadStatus)}>
-                                <SelectTrigger className="w-[160px] h-7 text-xs">
+                                <SelectTrigger className="w-full sm:w-[160px] h-7 text-xs">
                                     <SelectValue placeholder="Choose status…" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -696,9 +696,9 @@ export default function LeadList({
 
                     {/* ─── Type inline picker ─── */}
                     {bulkAction === 'type' && (
-                        <div className="flex items-center gap-2 flex-1 animate-in fade-in slide-in-from-left-2 duration-150">
+                        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0 animate-in fade-in slide-in-from-left-2 duration-150">
                             <Select value={bulkLeadType} onValueChange={(v: string) => setBulkLeadType(v as LeadType)}>
-                                <SelectTrigger className="w-[180px] h-7 text-xs">
+                                <SelectTrigger className="w-full sm:w-[180px] h-7 text-xs">
                                     <SelectValue placeholder="Choose type…" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -734,35 +734,35 @@ export default function LeadList({
                     Contact Lifecycle
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                {(() => {
-                    const lifecycles: { value: ContactLifecycleFilter; label: string; color: string }[] = [
-                        { value: 'active', label: 'Active', color: 'bg-emerald-100 text-emerald-800' },
-                        { value: 'held', label: 'Held', color: 'bg-amber-100 text-amber-900' },
-                        { value: 'suppressed', label: 'Suppressed', color: 'bg-red-100 text-red-800' },
-                        { value: 'all', label: 'All', color: 'bg-secondary text-secondary-foreground' },
-                    ];
-                    return lifecycles.map(item => {
-                        const count = lifecycleCounts[item.value] || 0;
-                        if (item.value !== 'all' && count === 0) return null;
-                        const isActive = lifecycleFilter === item.value;
-                        return (
-                            <button
-                                key={item.value}
-                                onClick={() => { setLifecycleFilter(item.value); setCurrentPage(1); }}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all
+                    {(() => {
+                        const lifecycles: { value: ContactLifecycleFilter; label: string; color: string }[] = [
+                            { value: 'active', label: 'Active', color: 'bg-emerald-100 text-emerald-800' },
+                            { value: 'held', label: 'Held', color: 'bg-amber-100 text-amber-900' },
+                            { value: 'suppressed', label: 'Suppressed', color: 'bg-red-100 text-red-800' },
+                            { value: 'all', label: 'All', color: 'bg-secondary text-secondary-foreground' },
+                        ];
+                        return lifecycles.map(item => {
+                            const count = lifecycleCounts[item.value] || 0;
+                            if (item.value !== 'all' && count === 0) return null;
+                            const isActive = lifecycleFilter === item.value;
+                            return (
+                                <button
+                                    key={item.value}
+                                    onClick={() => { setLifecycleFilter(item.value); setCurrentPage(1); }}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all
                                     ${isActive
-                                        ? `${item.color} ring-2 ring-offset-1 ring-primary/30 shadow-sm`
-                                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                                    }`}
-                            >
-                                {item.label}
-                                <span className={`tabular-nums text-[10px] ${isActive ? 'opacity-90' : 'opacity-60'}`}>
-                                    {count}
-                                </span>
-                            </button>
-                        );
-                    });
-                })()}
+                                            ? `${item.color} ring-2 ring-offset-1 ring-primary/30 shadow-sm`
+                                            : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                                        }`}
+                                >
+                                    {item.label}
+                                    <span className={`tabular-nums text-[10px] ${isActive ? 'opacity-90' : 'opacity-60'}`}>
+                                        {count}
+                                    </span>
+                                </button>
+                            );
+                        });
+                    })()}
                 </div>
             </div>
 
@@ -891,15 +891,15 @@ export default function LeadList({
                                             />
                                         </TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-10 shadow-sm text-center text-xs">#</TableHead>
-                                        {visibleColumns.has('contact') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '22%'}}>Contact</TableHead>}
-                                        {visibleColumns.has('business') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '18%'}}>Company</TableHead>}
-                                        {visibleColumns.has('type') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '8%'}}>Type</TableHead>}
-                                        {visibleColumns.has('location') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '16%'}}>Location</TableHead>}
-                                        {visibleColumns.has('auditTime') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '8%'}}>Audit Time</TableHead>}
-                                        {visibleColumns.has('status') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '10%'}}>Status</TableHead>}
-                                        {visibleColumns.has('source') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '8%'}}>Source</TableHead>}
-                                        {visibleColumns.has('created') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '9%'}}>Created</TableHead>}
-                                        {visibleColumns.has('actions') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '12%'}}></TableHead>}
+                                        {visibleColumns.has('contact') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{ width: '22%' }}>Contact</TableHead>}
+                                        {visibleColumns.has('business') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{ width: '18%' }}>Company</TableHead>}
+                                        {visibleColumns.has('type') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{ width: '8%' }}>Type</TableHead>}
+                                        {visibleColumns.has('location') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{ width: '16%' }}>Location</TableHead>}
+                                        {visibleColumns.has('auditTime') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{ width: '8%' }}>Audit Time</TableHead>}
+                                        {visibleColumns.has('status') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{ width: '10%' }}>Status</TableHead>}
+                                        {visibleColumns.has('source') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{ width: '8%' }}>Source</TableHead>}
+                                        {visibleColumns.has('created') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{ width: '9%' }}>Created</TableHead>}
+                                        {visibleColumns.has('actions') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{ width: '12%' }}></TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -948,6 +948,7 @@ export default function LeadList({
                                                                 index={globalIndex}
                                                                 isSelected={selectedLeads.has(contact.id!)}
                                                                 onSelect={(checked) => handleSelectLead(contact.id!, checked)}
+
                                                                 onRowClick={onRowClick}
                                                                 visibleColumns={visibleColumns}
                                                                 facilityTypeLabels={facilityTypeLabels}
@@ -965,6 +966,7 @@ export default function LeadList({
                                                 index={startIdx + index - 1}
                                                 isSelected={selectedLeads.has(contact.id!)}
                                                 onSelect={(checked) => handleSelectLead(contact.id!, checked)}
+
                                                 onRowClick={onRowClick}
                                                 visibleColumns={visibleColumns}
                                                 facilityTypeLabels={facilityTypeLabels}
@@ -976,14 +978,16 @@ export default function LeadList({
                         </div>
 
                         {/* Mobile Card View */}
-                        <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-3 bg-muted/50">
+                        <div className="md:hidden flex-1 overflow-y-auto p-3 space-y-3 bg-muted/50">
                             {paginatedContacts.map((contact, index) => (
                                 <LeadCard
+                                    onRowClick={onRowClick}
                                     key={contact.id}
                                     lead={contact}
                                     index={startIdx + index - 1}
                                     isSelected={selectedLeads.has(contact.id!)}
                                     onSelect={(checked) => handleSelectLead(contact.id!, checked)}
+
                                     facilityTypeLabels={facilityTypeLabels}
                                 />
                             ))}
@@ -993,7 +997,7 @@ export default function LeadList({
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t bg-card">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-3 border-t bg-card">
                         <p className="text-sm text-muted-foreground">
                             Showing {startIdx}–{endIdx} of {requiresFullDataset ? filteredContacts.length : totalCount} contacts
                         </p>

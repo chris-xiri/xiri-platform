@@ -994,14 +994,14 @@ export default function QuoteDetailPage({ params }: PageProps) {
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                    <Link href="/sales/quotes" className="text-muted-foreground hover:text-foreground">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <Link href="/sales/quotes" className="text-muted-foreground hover:text-foreground shrink-0">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-3">
-                            Quote for {quote.leadBusinessName}
-                            <Badge variant={badge.variant}>{badge.label}</Badge>
+                    <div className="min-w-0">
+                        <h1 className="text-xl sm:text-2xl font-bold flex flex-wrap items-center gap-2 sm:gap-3">
+                            <span className="break-words">Quote for {quote.leadBusinessName}</span>
+                            <Badge variant={badge.variant} className="shrink-0">{badge.label}</Badge>
                         </h1>
                         <p className="text-sm text-muted-foreground">
                             Created {quoteDateStr}
@@ -1099,26 +1099,26 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 <CardContent className="p-4">
                     <div className="flex items-center justify-between flex-wrap gap-4">
                         {/* Timeline */}
-                        <div className="flex items-center gap-6 text-sm">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm">
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full bg-green-500" />
+                                <div className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
                                 <span className="text-muted-foreground">Created</span>
                             </div>
-                            <div className="w-8 h-px bg-border" />
+                            <div className="hidden sm:block w-8 h-px bg-border" />
                             <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${quote.sentAt ? 'bg-green-500' : 'bg-muted'}`} />
+                                <div className={`w-3 h-3 rounded-full shrink-0 ${quote.sentAt ? 'bg-green-500' : 'bg-muted'}`} />
                                 <span className={quote.sentAt ? '' : 'text-muted-foreground'}>
                                     Sent {quote.sentAt ? (quote.sentAt?.toDate?.()?.toLocaleDateString() || '') : ''}
                                 </span>
                             </div>
-                            <div className="w-8 h-px bg-border" />
+                            <div className="hidden sm:block w-8 h-px bg-border" />
                             <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${quote.viewedAt ? 'bg-green-500' : 'bg-muted'}`} />
+                                <div className={`w-3 h-3 rounded-full shrink-0 ${quote.viewedAt ? 'bg-green-500' : 'bg-muted'}`} />
                                 <span className={quote.viewedAt ? '' : 'text-muted-foreground'}>Viewed</span>
                             </div>
-                            <div className="w-8 h-px bg-border" />
+                            <div className="hidden sm:block w-8 h-px bg-border" />
                             <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${quote.status === 'accepted' ? 'bg-green-500' : quote.status === 'rejected' ? 'bg-red-500' : 'bg-muted'}`} />
+                                <div className={`w-3 h-3 rounded-full shrink-0 ${quote.status === 'accepted' ? 'bg-green-500' : quote.status === 'rejected' ? 'bg-red-500' : 'bg-muted'}`} />
                                 <span className={quote.clientResponseAt ? '' : 'text-muted-foreground'}>
                                     {quote.status === 'accepted' ? 'Accepted ✓' : quote.status === 'rejected' ? 'Rejected' : 'Response'}
                                 </span>
@@ -1139,7 +1139,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                                 ) : 'Assign FSM'}
                             </Button>
                             {showFsmDropdown && (
-                                <div className="absolute right-0 mt-1 w-56 bg-background border rounded-lg shadow-xl z-50 py-1">
+                                <div className="absolute left-0 sm:left-auto sm:right-0 mt-1 w-56 max-w-[calc(100vw-2rem)] bg-background border rounded-lg shadow-xl z-50 py-1">
                                     {fsmUsers.length === 0 ? (
                                         <p className="text-xs text-muted-foreground p-3">No FSM users found</p>
                                     ) : (
@@ -1149,8 +1149,8 @@ export default function QuoteDetailPage({ params }: PageProps) {
                                                 className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center justify-between"
                                                 onClick={() => handleAssignFsm(fsm)}
                                             >
-                                                <span>{fsm.displayName}</span>
-                                                {quote.assignedFsmId === fsm.uid && <Check className="w-4 h-4 text-green-600" />}
+                                                <span className="truncate">{fsm.displayName}</span>
+                                                {quote.assignedFsmId === fsm.uid && <Check className="w-4 h-4 text-green-600 shrink-0" />}
                                             </button>
                                         ))
                                     )}
@@ -1161,11 +1161,13 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
                     {/* Client email info */}
                     {quote.clientEmail && (
-                        <div className="mt-3 pt-3 border-t flex items-center gap-2 text-xs text-muted-foreground">
-                            <Mail className="w-3.5 h-3.5" /> Sent to {quote.clientEmail}
+                        <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1.5 min-w-0 break-all">
+                                <Mail className="w-3.5 h-3.5 shrink-0" /> Sent to {quote.clientEmail}
+                            </span>
                             {quote.clientResponseNotes && (
-                                <span className="ml-4 flex items-center gap-1">
-                                    <MessageSquare className="w-3.5 h-3.5" /> Client notes: &quot;{quote.clientResponseNotes}&quot;
+                                <span className="flex items-center gap-1">
+                                    <MessageSquare className="w-3.5 h-3.5 shrink-0" /> Client notes: &quot;{quote.clientResponseNotes}&quot;
                                 </span>
                             )}
                         </div>
@@ -1216,7 +1218,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                                                 <div className="min-w-0">
                                                     <span className="font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors flex items-center gap-1.5">
                                                         {wo.serviceType}
-                                                        <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-indigo-600 transition-opacity shrink-0" />
+                                                        <ExternalLink className="w-3.5 h-3.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 text-indigo-600 transition-opacity shrink-0" />
                                                     </span>
                                                     {isWoOneTime && (
                                                         <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700 border-purple-200 font-semibold px-1.5 py-0 h-4 mt-1">
@@ -1277,19 +1279,19 @@ export default function QuoteDetailPage({ params }: PageProps) {
             {/* VIEW MODE 1: STATEMENT OF WORK (SOW) & WORK AUTHORIZATION          */}
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {viewMode === 'sow' ? (
-                <div className="bg-white text-slate-900 border rounded-xl shadow-xs p-6 md:p-8 space-y-6 print:border-0 print:shadow-none print:p-0" id="quote-printable">
+                <div className="bg-white text-slate-900 border rounded-xl shadow-xs p-4 sm:p-6 md:p-8 space-y-6 print:border-0 print:shadow-none print:p-0" id="quote-printable">
                     {/* SOW Top Header */}
-                    <div className="flex items-start justify-between border-b pb-4">
-                        <div>
-                            <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-start justify-between gap-2 border-b pb-4">
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                 <span className="text-2xl font-black tracking-tight text-sky-700 font-sans">XIRI</span>
-                                <span className="text-lg font-light tracking-wide text-slate-600 uppercase">FACILITY SOLUTIONS</span>
+                                <span className="text-base sm:text-lg font-light tracking-wide text-slate-600 uppercase">FACILITY SOLUTIONS</span>
                             </div>
                             <p className="text-xs text-slate-500 font-normal mt-0.5">
                                 XIRI Group LLC | New Hyde Park, NY | Facility Solutions & Commercial Services
                             </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right shrink-0">
                             <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
                                 DATE: {quoteDateStr}
                             </p>
@@ -1384,7 +1386,8 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
                     {/* Dual-Pricing Line Items Table */}
                     <div className="border rounded-lg overflow-hidden">
-                        <table className="w-full text-xs">
+                        <div className="w-full overflow-x-auto">
+                        <table className="w-full min-w-[540px] text-xs">
                             <thead className="bg-slate-50 border-b text-slate-700 font-bold">
                                 <tr>
                                     <th className="text-left py-2.5 px-3">Item / Scope Description</th>
@@ -1433,6 +1436,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                                 })}
                             </tbody>
                         </table>
+                        </div>
                     </div>
 
                     {/* ═══ SIDE-BY-SIDE DUAL PAYMENT SUMMARY BOXES ═══ */}
@@ -1554,13 +1558,13 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 <div className="print:shadow-none space-y-6" id="quote-printable">
                     {/* Client Info */}
                     <Card className="print:border print:shadow-none">
-                        <CardContent className="p-6">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
+                        <CardContent className="p-4 sm:p-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                <div className="min-w-0">
                                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Prepared For</p>
-                                    <p className="text-lg font-bold">{quote.leadBusinessName}</p>
+                                    <p className="text-lg font-bold break-words">{quote.leadBusinessName}</p>
                                 </div>
-                                <div className="text-right">
+                                <div className="sm:text-right">
                                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Quote Total (Cash / ACH)</p>
                                     <p className="text-3xl font-bold text-primary">{formatCurrency(dual.cashTotal)}</p>
                                 </div>
@@ -1627,25 +1631,26 @@ export default function QuoteDetailPage({ params }: PageProps) {
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <table className="w-full text-sm">
+                                <div className="w-full overflow-x-auto">
+                                <table className="w-full min-w-[560px] text-sm">
                                     <thead>
                                         <tr className="border-b text-xs text-muted-foreground uppercase">
-                                            <th className="text-left py-2 font-medium">Service</th>
-                                            <th className="text-left py-2 font-medium">Frequency</th>
-                                            <th className="text-left py-2 font-medium">Status</th>
-                                            <th className="text-right py-2 font-medium">ACH Rate</th>
-                                            <th className="text-right py-2 font-medium">Credit Rate (+3%)</th>
+                                            <th className="text-left py-2 pr-3 font-medium">Service</th>
+                                            <th className="text-left py-2 pr-3 font-medium">Frequency</th>
+                                            <th className="text-left py-2 pr-3 font-medium">Status</th>
+                                            <th className="text-right py-2 px-2 font-medium">ACH Rate</th>
+                                            <th className="text-right py-2 pl-2 font-medium">Credit Rate (+3%)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {items.map((item) => (
                                             <tr key={item.id} className="border-b last:border-0">
-                                                <td className="py-3">
+                                                <td className="py-3 pr-3">
                                                     <span className="font-medium">{item.serviceType}</span>
                                                     {item.description && <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>}
                                                 </td>
-                                                <td className="py-3 text-sm">{formatFrequency(item.frequency, item.daysOfWeek)}</td>
-                                                <td className="py-3 text-sm">
+                                                <td className="py-3 pr-3 text-sm">{formatFrequency(item.frequency, item.daysOfWeek)}</td>
+                                                <td className="py-3 pr-3 text-sm">
                                                     {item.lineItemStatus === 'accepted' ? (
                                                         <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded text-xs font-medium">
                                                             <Check className="w-3 h-3" /> Accepted
@@ -1656,12 +1661,13 @@ export default function QuoteDetailPage({ params }: PageProps) {
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="py-3 text-right font-medium font-mono">{formatCurrency(item.clientRate)}</td>
-                                                <td className="py-3 text-right font-medium font-mono text-blue-700">{formatCurrency(getCreditPrice(item.clientRate))}</td>
+                                                <td className="py-3 px-2 text-right font-medium font-mono">{formatCurrency(item.clientRate)}</td>
+                                                <td className="py-3 pl-2 text-right font-medium font-mono text-blue-700">{formatCurrency(getCreditPrice(item.clientRate))}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
+                                </div>
                             </CardContent>
                         </Card>
                     ))}
@@ -1671,7 +1677,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">Contract Terms</CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-3 gap-4 text-sm">
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase mb-1">Tenure</p>
                                 <p className="font-medium flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {quote.contractTenure} Months</p>
@@ -1740,12 +1746,12 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
                     {(quote as any).signedSowUrl ? (
                         <div className="flex items-center justify-between p-3 rounded-lg border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/10 flex-wrap gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 shrink-0">
                                     <FileText className="w-5 h-5" />
                                 </div>
-                                <div>
-                                    <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-200">
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-200 break-all sm:truncate">
                                         {(quote as any).signedSowName || 'Signed_Statement_of_Work.pdf'}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
@@ -1753,7 +1759,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                     size="sm"
                                     className="gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs"
@@ -1900,18 +1906,18 @@ export default function QuoteDetailPage({ params }: PageProps) {
             {/* Send to Client (bottom — preferred action) */}
             {quote.status === 'draft' && (
                 <Card className="print:hidden border-blue-600/30 bg-blue-50 dark:bg-blue-950/20">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
+                    <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="min-w-0">
                                 <h3 className="font-bold text-lg flex items-center gap-2">
-                                    <Mail className="w-5 h-5 text-blue-600" />
+                                    <Mail className="w-5 h-5 text-blue-600 shrink-0" />
                                     Send to Client for Review
                                 </h3>
                                 <p className="text-sm text-muted-foreground">
                                     Email the proposal — the client can accept or request changes without logging in.
                                 </p>
                             </div>
-                            <Button className="gap-2" onClick={() => setShowSendModal(true)}>
+                            <Button className="gap-2 shrink-0 self-start sm:self-auto" onClick={() => setShowSendModal(true)}>
                                 <Send className="w-4 h-4" /> Send to Client
                             </Button>
                         </div>
@@ -2072,12 +2078,12 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     <CardContent>
                         <div className="space-y-2">
                             {workOrders.map((wo: any) => (
-                                <div key={wo.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors">
-                                    <div>
-                                        <p className="text-sm font-medium">{wo.serviceType}</p>
-                                        <p className="text-xs text-muted-foreground">{wo.locationName}</p>
+                                <div key={wo.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium truncate">{wo.serviceType}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{wo.locationName}</p>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 shrink-0">
                                         <Badge variant={wo.status === 'active' ? 'default' : wo.status === 'pending_assignment' ? 'secondary' : 'outline'}>
                                             {wo.status?.replace(/_/g, ' ')}
                                         </Badge>

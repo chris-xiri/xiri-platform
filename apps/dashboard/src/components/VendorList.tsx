@@ -457,13 +457,13 @@ export default function VendorList({
 
             {/* Bulk Actions Bar */}
             {selectedVendors.size > 0 && (
-                <div className="px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg mb-2 flex items-center gap-3">
-                    <span className="text-sm font-medium text-primary tabular-nums">
+                <div className="px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
+                    <span className="text-sm font-medium text-primary tabular-nums whitespace-nowrap">
                         {selectedVendors.size} selected
                     </span>
-                    <div className="flex items-center gap-2 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
                         <Select value={bulkStatus} onValueChange={(value: string) => setBulkStatus(value as VendorStatus)}>
-                            <SelectTrigger className="w-[200px] h-8 text-sm">
+                            <SelectTrigger className="w-full sm:w-[200px] h-8 text-sm">
                                 <SelectValue placeholder="Update status..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -602,7 +602,7 @@ export default function VendorList({
                         </div>
 
                         {/* Mobile Card View */}
-                        <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-3 bg-muted/50">
+                        <div className="md:hidden flex-1 overflow-y-auto p-3 space-y-3 bg-muted/50">
                             {sortedDisplayVendors.map((vendor, index) => (
                                 <VendorCard
                                     key={vendor.id}
@@ -611,6 +611,7 @@ export default function VendorList({
                                     isRecruitmentMode={isRecruitmentMode}
                                     isSelected={selectedVendors.has(vendor.id!)}
                                     onSelectChange={(checked: boolean) => handleSelectVendor(vendor.id!, checked)}
+                                    onSelect={onSelectVendor}
                                 />
                             ))}
 
@@ -634,6 +635,7 @@ export default function VendorList({
                                                     isRecruitmentMode={isRecruitmentMode}
                                                     isSelected={selectedVendors.has(vendor.id!)}
                                                     onSelectChange={(checked: boolean) => handleSelectVendor(vendor.id!, checked)}
+                                                    onSelect={onSelectVendor}
                                                 />
                                             ))}
                                         </div>

@@ -216,35 +216,36 @@ export default function ReferralPartnersPage() {
                             <Card key={referral.id} className="overflow-hidden">
                                 <div className="flex flex-col lg:flex-row">
                                     {/* Main info */}
-                                    <div className="flex-1 p-4 space-y-3">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <Building2 className="w-4 h-4 text-muted-foreground" />
-                                                    <h3 className="font-semibold text-base">{referral.buildingName}</h3>
+                                    <div className="flex-1 min-w-0 p-4 space-y-3">
+                                        <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                                                    <h3 className="font-semibold text-base break-words">{referral.buildingName}</h3>
                                                 </div>
                                                 {referral.buildingAddress && (
-                                                    <p className="text-sm text-muted-foreground ml-6">{referral.buildingAddress}</p>
+                                                    <p className="text-sm text-muted-foreground ml-6 break-words">{referral.buildingAddress}</p>
                                                 )}
                                             </div>
-                                            <Badge className={`${statusCfg.color} flex items-center gap-1 text-xs whitespace-nowrap`}>
-                                                {statusCfg.icon} {statusCfg.label}
+                                            <Badge className={`${statusCfg.color} flex items-center gap-1 text-xs whitespace-normal sm:whitespace-nowrap max-w-full`}>
+                                                <span className="shrink-0">{statusCfg.icon}</span>
+                                                <span>{statusCfg.label}</span>
                                             </Badge>
                                         </div>
 
                                         {/* Referrer info */}
-                                        <div className="flex flex-wrap items-center gap-4 text-sm">
-                                            <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                <Users className="w-3.5 h-3.5" />
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
+                                            <span className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                                                <Users className="w-3.5 h-3.5 shrink-0" />
                                                 <span className="font-medium text-foreground">{referral.referrerName}</span>
                                             </span>
-                                            <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                <Mail className="w-3.5 h-3.5" />
-                                                <a href={`mailto:${referral.referrerEmail}`} className="hover:text-foreground">{referral.referrerEmail}</a>
+                                            <span className="flex items-center gap-1.5 text-muted-foreground min-w-0 max-w-full">
+                                                <Mail className="w-3.5 h-3.5 shrink-0" />
+                                                <a href={`mailto:${referral.referrerEmail}`} className="hover:text-foreground break-all min-w-0">{referral.referrerEmail}</a>
                                             </span>
                                             {referral.referrerPhone && (
-                                                <span className="flex items-center gap-1.5 text-muted-foreground">
-                                                    <Phone className="w-3.5 h-3.5" />
+                                                <span className="flex items-center gap-1.5 text-muted-foreground shrink-0">
+                                                    <Phone className="w-3.5 h-3.5 shrink-0" />
                                                     <a href={`tel:${referral.referrerPhone}`} className="hover:text-foreground">{referral.referrerPhone}</a>
                                                 </span>
                                             )}
@@ -255,7 +256,7 @@ export default function ReferralPartnersPage() {
                                             <Badge variant="outline" className="text-xs">{referral.trade?.replace(/-referral-partner$/, '').replace(/-/g, ' ')}</Badge>
                                             <span>Referred {createdDate}</span>
                                             {referral.managerName && <span>Manager: {referral.managerName}</span>}
-                                            {referral.managerEmail && <span>Manager Email: {referral.managerEmail}</span>}
+                                            {referral.managerEmail && <span className="break-all min-w-0">Manager Email: {referral.managerEmail}</span>}
                                             {referral.managerPhone && <span>Manager Phone: {referral.managerPhone}</span>}
                                             {!referral.managerEmail && !referral.managerPhone && referral.managerContact && (
                                                 <span>Contact: {referral.managerContact}</span>

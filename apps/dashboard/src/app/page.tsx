@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getLastRoute } from '@/lib/persistence';
 
 export default function HomePage() {
     const router = useRouter();
@@ -11,22 +12,32 @@ export default function HomePage() {
     useEffect(() => {
         if (!loading) {
             if (!profile) {
-                router.push('/login');
-            } else if (profile.roles.includes('admin')) {
-                router.push('/supply/dashboard'); // Admin default view
-            } else if (profile.roles.includes('recruiter')) {
-                router.push('/supply/dashboard');
+                router.replace('/login');
+                return;
+            }
+
+            // Restore the user's last visited module when reopening the PWA
+            const lastRoute = getLastRoute();
+            if (lastRoute) {
+                router.replace(lastRoute);
+                return;
+            }
+
+            if (profile.roles.includes('admin') || profile.roles.includes('recruiter')) {
+                router.replace('/supply/dashboard');
             } else if (profile.roles.includes('sales')) {
-                router.push('/sales/crm');
+                router.replace('/sales/crm');
+            } else {
+                router.replace('/sales/crm');
             }
         }
     }, [profile, loading, router]);
 
     return (
-        <div className="flex min-h-screen items-center justify-center">
+        <div className="flex min-h-dvh items-center justify-center bg-background">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Redirecting...</p>
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3"></div>
+                <p className="text-sm text-muted-foreground">Loading XIRI...</p>
             </div>
         </div>
     );

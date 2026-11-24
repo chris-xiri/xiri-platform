@@ -216,22 +216,22 @@ export default function InvoiceDetailPage({ params }: PageProps) {
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Link href="/accounting/invoices" className="text-muted-foreground hover:text-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <Link href="/accounting/invoices" className="text-muted-foreground hover:text-foreground shrink-0">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-3">
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-bold flex flex-wrap items-center gap-2 sm:gap-3">
                             Invoice
                             <Badge variant={config.variant}>{config.label}</Badge>
                         </h1>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground truncate">
                             {invoice.clientBusinessName} • {invoice.billingPeriod?.start || '—'}
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {invoice.status === 'draft' && (
                         <Button onClick={() => setShowSendModal(true)} disabled={updating} className="gap-2">
                             <Send className="w-4 h-4" /> Send to Client
@@ -260,7 +260,7 @@ export default function InvoiceDetailPage({ params }: PageProps) {
                                 <Building2 className="w-4 h-4 text-muted-foreground" /> Client Details
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase mb-1">Business</p>
                                 <p className="font-medium">{invoice.clientBusinessName}</p>
@@ -288,9 +288,9 @@ export default function InvoiceDetailPage({ params }: PageProps) {
                                 <p className="font-mono text-xs">{invoice.id.slice(0, 12)}</p>
                             </div>
                             {invoice.clientEmail && (
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-xs text-muted-foreground uppercase mb-1">Email</p>
-                                    <p className="text-xs">{invoice.clientEmail}</p>
+                                    <p className="text-xs break-all">{invoice.clientEmail}</p>
                                 </div>
                             )}
                         </CardContent>
@@ -305,48 +305,50 @@ export default function InvoiceDetailPage({ params }: PageProps) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b bg-muted/30">
-                                        <th className="text-left px-4 py-2 font-medium text-muted-foreground">Service</th>
-                                        <th className="text-left px-4 py-2 font-medium text-muted-foreground">Location</th>
-                                        <th className="text-left px-4 py-2 font-medium text-muted-foreground">Freq</th>
-                                        <th className="text-right px-4 py-2 font-medium text-muted-foreground">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {(invoice.lineItems || []).map((li, i) => (
-                                        <tr key={i} className="border-b last:border-0">
-                                            <td className="px-4 py-3 font-medium">{li.serviceType}</td>
-                                            <td className="px-4 py-3 text-muted-foreground">{li.locationName}</td>
-                                            <td className="px-4 py-3 text-muted-foreground capitalize">{li.frequency}</td>
-                                            <td className="px-4 py-3 text-right font-medium">{formatCurrency(li.amount)}</td>
+                            <div className="w-full overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b bg-muted/30">
+                                            <th className="text-left px-4 py-2 font-medium text-muted-foreground">Service</th>
+                                            <th className="text-left px-4 py-2 font-medium text-muted-foreground">Location</th>
+                                            <th className="text-left px-4 py-2 font-medium text-muted-foreground">Freq</th>
+                                            <th className="text-right px-4 py-2 font-medium text-muted-foreground">Amount</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="bg-muted/20">
-                                        <td colSpan={3} className="px-4 py-3 text-right font-medium">Subtotal</td>
-                                        <td className="px-4 py-3 text-right font-bold">{formatCurrency(invoice.subtotal)}</td>
-                                    </tr>
-                                    {(invoice.totalTax ?? 0) > 0 && (
-                                        <tr>
-                                            <td colSpan={3} className="px-4 py-2 text-right text-sm text-muted-foreground">Sales Tax</td>
-                                            <td className="px-4 py-2 text-right text-sm">{formatCurrency(invoice.totalTax!)}</td>
+                                    </thead>
+                                    <tbody>
+                                        {(invoice.lineItems || []).map((li, i) => (
+                                            <tr key={i} className="border-b last:border-0">
+                                                <td className="px-4 py-3 font-medium">{li.serviceType}</td>
+                                                <td className="px-4 py-3 text-muted-foreground">{li.locationName}</td>
+                                                <td className="px-4 py-3 text-muted-foreground capitalize">{li.frequency}</td>
+                                                <td className="px-4 py-3 text-right font-medium">{formatCurrency(li.amount)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="bg-muted/20">
+                                            <td colSpan={3} className="px-4 py-3 text-right font-medium">Subtotal</td>
+                                            <td className="px-4 py-3 text-right font-bold">{formatCurrency(invoice.subtotal)}</td>
                                         </tr>
-                                    )}
-                                    {invoice.adjustments !== undefined && invoice.adjustments !== 0 && (
-                                        <tr>
-                                            <td colSpan={3} className="px-4 py-2 text-right text-sm text-muted-foreground">Adjustments</td>
-                                            <td className="px-4 py-2 text-right text-sm">{formatCurrency(invoice.adjustments!)}</td>
+                                        {(invoice.totalTax ?? 0) > 0 && (
+                                            <tr>
+                                                <td colSpan={3} className="px-4 py-2 text-right text-sm text-muted-foreground">Sales Tax</td>
+                                                <td className="px-4 py-2 text-right text-sm">{formatCurrency(invoice.totalTax!)}</td>
+                                            </tr>
+                                        )}
+                                        {invoice.adjustments !== undefined && invoice.adjustments !== 0 && (
+                                            <tr>
+                                                <td colSpan={3} className="px-4 py-2 text-right text-sm text-muted-foreground">Adjustments</td>
+                                                <td className="px-4 py-2 text-right text-sm">{formatCurrency(invoice.adjustments!)}</td>
+                                            </tr>
+                                        )}
+                                        <tr className="border-t-2">
+                                            <td colSpan={3} className="px-4 py-3 text-right font-bold text-base">Total Due</td>
+                                            <td className="px-4 py-3 text-right font-bold text-base text-primary">{formatCurrency(invoice.totalAmount)}</td>
                                         </tr>
-                                    )}
-                                    <tr className="border-t-2">
-                                        <td colSpan={3} className="px-4 py-3 text-right font-bold text-base">Total Due</td>
-                                        <td className="px-4 py-3 text-right font-bold text-base text-primary">{formatCurrency(invoice.totalAmount)}</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -360,37 +362,39 @@ export default function InvoiceDetailPage({ params }: PageProps) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b bg-muted/30">
-                                            <th className="text-left px-4 py-2 font-medium text-muted-foreground">Vendor</th>
-                                            <th className="text-left px-4 py-2 font-medium text-muted-foreground">Service</th>
-                                            <th className="text-right px-4 py-2 font-medium text-muted-foreground">Amount</th>
-                                            <th className="text-center px-4 py-2 font-medium text-muted-foreground">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {invoice.vendorPayouts.map((vp, i) => (
-                                            <tr key={i} className="border-b last:border-0">
-                                                <td className="px-4 py-3 font-medium">{vp.vendorName}</td>
-                                                <td className="px-4 py-3 text-muted-foreground">{vp.serviceType}</td>
-                                                <td className="px-4 py-3 text-right font-medium">{formatCurrency(vp.amount)}</td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <Badge variant={vp.status === 'paid' ? 'outline' : 'secondary'} className="text-xs capitalize">
-                                                        {vp.status}
-                                                    </Badge>
-                                                </td>
+                                <div className="w-full overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b bg-muted/30">
+                                                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Vendor</th>
+                                                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Service</th>
+                                                <th className="text-right px-4 py-2 font-medium text-muted-foreground">Amount</th>
+                                                <th className="text-center px-4 py-2 font-medium text-muted-foreground">Status</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                    <tfoot>
-                                        <tr className="bg-muted/20">
-                                            <td colSpan={2} className="px-4 py-3 text-right font-medium">Total Payouts</td>
-                                            <td className="px-4 py-3 text-right font-bold">{formatCurrency(invoice.totalPayouts)}</td>
-                                            <td />
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {invoice.vendorPayouts.map((vp, i) => (
+                                                <tr key={i} className="border-b last:border-0">
+                                                    <td className="px-4 py-3 font-medium">{vp.vendorName}</td>
+                                                    <td className="px-4 py-3 text-muted-foreground">{vp.serviceType}</td>
+                                                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(vp.amount)}</td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <Badge variant={vp.status === 'paid' ? 'outline' : 'secondary'} className="text-xs capitalize">
+                                                            {vp.status}
+                                                        </Badge>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-muted/20">
+                                                <td colSpan={2} className="px-4 py-3 text-right font-medium">Total Payouts</td>
+                                                <td className="px-4 py-3 text-right font-bold">{formatCurrency(invoice.totalPayouts)}</td>
+                                                <td />
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
                             </CardContent>
                         </Card>
                     )}
@@ -406,15 +410,15 @@ export default function InvoiceDetailPage({ params }: PageProps) {
                                     <Link
                                         key={rem.id}
                                         href={`/accounting/vendor-remittances/${rem.id}`}
-                                        className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/50 transition-all"
+                                        className="flex items-center justify-between gap-3 p-3 rounded-lg border hover:border-primary/50 transition-all"
                                     >
-                                        <div>
-                                            <p className="font-medium text-sm">{rem.vendorName}</p>
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-sm truncate">{rem.vendorName}</p>
                                             <p className="text-xs text-muted-foreground">
                                                 {rem.lineItems?.length || 0} line items
                                             </p>
                                         </div>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                                             <span className="font-medium text-sm">{formatCurrency(rem.totalAmount)}</span>
                                             <Badge variant={rem.status === 'paid' ? 'outline' : 'secondary'} className="text-xs capitalize">
                                                 {rem.status}

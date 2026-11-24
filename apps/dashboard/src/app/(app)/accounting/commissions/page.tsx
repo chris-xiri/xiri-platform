@@ -199,7 +199,7 @@ export default function AccountingCommissionsPage() {
 
                 {/* Filters */}
                 <div className="flex flex-wrap gap-3 items-center">
-                    <div className="relative w-64">
+                    <div className="relative w-full sm:w-64">
                         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Search by rep, client, quote..."
@@ -284,22 +284,22 @@ export default function AccountingCommissionsPage() {
                                                     <td colSpan={9} className="bg-muted/10 p-4">
                                                         <div className="space-y-2">
                                                             <p className="text-xs font-medium text-muted-foreground mb-2">PAYOUT SCHEDULE</p>
-                                                            <div className="grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground pb-1 border-b">
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-medium text-muted-foreground pb-1 border-b">
                                                                 <span>Payout</span>
                                                                 <span className="text-right">Amount</span>
-                                                                <span className="text-center">Scheduled</span>
-                                                                <span className="text-center">Status</span>
+                                                                <span className="sm:text-center">Scheduled</span>
+                                                                <span className="text-right sm:text-center">Status</span>
                                                             </div>
                                                             {c.payoutSchedule.map((p, i) => (
-                                                                <div key={i} className="grid grid-cols-4 gap-2 text-sm items-center py-1">
+                                                                <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm items-center py-1">
                                                                     <span>Payout {i + 1} ({p.percentage}%)</span>
                                                                     <span className="text-right font-mono">{formatCurrency(p.amount)}</span>
-                                                                    <span className="text-center text-xs text-muted-foreground">
+                                                                    <span className="sm:text-center text-xs text-muted-foreground">
                                                                         {p.scheduledAt
                                                                             ? (p.scheduledAt.toDate?.() || new Date(p.scheduledAt)).toLocaleDateString()
                                                                             : 'Awaiting invoice'}
                                                                     </span>
-                                                                    <span className="flex items-center justify-center gap-1">
+                                                                    <span className="flex items-center justify-end sm:justify-center gap-1">
                                                                         {PAYOUT_ICONS[p.status]}
                                                                         <span className={`text-xs ${STATUS_COLORS[p.status] || ''} px-1.5 py-0.5 rounded`}>
                                                                             {p.status}

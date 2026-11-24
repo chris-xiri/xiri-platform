@@ -714,7 +714,7 @@ export default function SocialMediaPage() {
         <>
             <div className="space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                             <Share2 className="w-6 h-6 text-blue-600" />
@@ -724,7 +724,7 @@ export default function SocialMediaPage() {
                             Manage content across platforms — post, schedule, and review AI-generated content
                         </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {/* Hidden file input for video uploads */}
                         <input
                             ref={videoInputRef}
@@ -760,7 +760,7 @@ export default function SocialMediaPage() {
                 </div>
 
                 {/* Channel Selector */}
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     {CHANNELS.map(ch => (
                         <button
                             key={ch.id}
@@ -888,12 +888,12 @@ export default function SocialMediaPage() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-1 border-b">
+                <div className="flex gap-1 border-b overflow-x-auto max-w-full">
                     {(['feed', 'drafts', 'campaigns', 'settings'] as const).map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize
+                            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize shrink-0 whitespace-nowrap
                             ${activeTab === tab
                                     ? 'border-blue-600 text-blue-600'
                                     : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -1003,9 +1003,9 @@ export default function SocialMediaPage() {
                                 ) : (<div className="space-y-4">{posts.map(post => (
                                     <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
                                         <CardContent className="p-0">
-                                            <div className="flex">
+                                            <div className="flex flex-col md:flex-row">
                                                 {/* Left: Image thumbnail */}
-                                                <div className="w-80 shrink-0 bg-muted/30">
+                                                <div className="w-full md:w-80 md:shrink-0 bg-muted/30">
                                                     {post.full_picture ? (
                                                         <img src={post.full_picture} alt="Post" className="w-full aspect-square object-contain bg-muted/50 cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => setLightboxMedia({ url: post.full_picture!, type: 'image' })} />
                                                     ) : (
@@ -1098,9 +1098,9 @@ export default function SocialMediaPage() {
                                             draft.status === 'rejected' ? 'opacity-50 border-dashed' : ''
                                             }`}>
                                             <CardContent className="p-0">
-                                                <div className="flex">
+                                                <div className="flex flex-col md:flex-row">
                                                     {/* ── Left: Media Thumbnail ── */}
-                                                    <div className="w-80 shrink-0 bg-muted/30 relative">
+                                                    <div className="w-full md:w-80 md:shrink-0 bg-muted/30 relative">
                                                         {activeChannel === 'facebook_reels' && (draft as any).videoUrl ? (
                                                             <video
                                                                 src={(draft as any).videoUrl}
@@ -1131,7 +1131,7 @@ export default function SocialMediaPage() {
                                                     {/* ── Right: Content + Actions ── */}
                                                     <div className="flex-1 p-3 flex flex-col min-w-0">
                                                         {/* Top row: badges + countdown */}
-                                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                                 <Badge variant={
                                                                     draft.status === 'draft' ? 'secondary' :
@@ -1461,12 +1461,12 @@ export default function SocialMediaPage() {
                 {
                     activeTab === 'campaigns' && (
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <div>
-                                    <h2 className="text-lg font-semibold flex items-center gap-2"><Zap className="w-5 h-5 text-amber-500" /> Recruitment Drive Campaigns</h2>
+                                    <h2 className="text-lg font-semibold flex items-center gap-2"><Zap className="w-5 h-5 text-amber-500 shrink-0" /> Recruitment Drive Campaigns</h2>
                                     <p className="text-sm text-muted-foreground">Active campaigns override standard AI generic generation to focus exclusively on specific recruitment goals and verified locations.</p>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap items-center gap-2 shrink-0">
                                     <Button variant="ghost" size="sm" onClick={fetchCampaigns} disabled={loadingCampaigns}>
                                         <RefreshCw className={`w-4 h-4 mr-1 ${loadingCampaigns ? 'animate-spin' : ''}`} /> Refresh
                                     </Button>
@@ -1501,9 +1501,9 @@ export default function SocialMediaPage() {
 
                                         return (
                                             <Card key={campaign.id} className={isActive ? 'border-blue-200 dark:border-blue-800 bg-blue-50/20 dark:bg-blue-900/10' : ''}>
-                                                <CardContent className="p-4 flex items-center justify-between">
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-2">
+                                                <CardContent className="p-4 flex items-start sm:items-center justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <div className="flex flex-wrap items-center gap-2 mb-2">
                                                             <h3 className="font-semibold text-lg">{campaign.name}</h3>
                                                             {isActive && <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 pointer-events-none">Active Run</Badge>}
                                                             {isUpcoming && <Badge variant="secondary" className="pointer-events-none">Upcoming</Badge>}
@@ -1564,7 +1564,7 @@ export default function SocialMediaPage() {
                                     {/* Cadence */}
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Posting Cadence</label>
-                                        <div className="grid grid-cols-4 gap-2">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                             {CADENCE_OPTIONS.map(opt => (
                                                 <button key={opt.value}
                                                     onClick={() => setConfig(prev => ({ ...prev, cadence: opt.value }))}
@@ -1757,7 +1757,7 @@ export default function SocialMediaPage() {
                                 <label className="text-sm font-semibold mb-1.5 block">Campaign internal name</label>
                                 <input type="text" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Winter Queens Cleaning Partners" value={newCampaign.name || ''} onChange={e => setNewCampaign({ ...newCampaign, name: e.target.value })} />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-sm font-semibold mb-1.5 block">Start Date</label>
                                     <input type="date" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={newCampaign.startDate || ''} onChange={e => setNewCampaign({ ...newCampaign, startDate: e.target.value })} />

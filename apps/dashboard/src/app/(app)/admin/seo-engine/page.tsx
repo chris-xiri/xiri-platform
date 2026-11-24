@@ -404,7 +404,7 @@ export default function SeoEnginePage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                         <Search className="w-6 h-6 text-violet-600" />
@@ -414,7 +414,7 @@ export default function SeoEnginePage() {
                         AI-powered content optimization — review, approve, and deploy SEO improvements
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {/* Run Now */}
                     <Button
                         size="sm"
@@ -467,14 +467,14 @@ export default function SeoEnginePage() {
                 <Card className="border-violet-200 bg-gradient-to-r from-violet-50 to-indigo-50 dark:border-violet-800 dark:from-violet-950/30 dark:to-indigo-950/30">
                     <CardContent className="pt-4 pb-4">
                         <div className="space-y-3">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
-                                    <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
+                                    <Loader2 className="w-4 h-4 animate-spin text-violet-600 shrink-0" />
                                     <span className="font-medium text-sm text-violet-900 dark:text-violet-100">
                                         {runStatus.phase || 'Initializing…'}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                                     {runStatus.startedAt && (
                                         <span className="flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
@@ -505,7 +505,7 @@ export default function SeoEnginePage() {
             )}
 
             {/* Segment Toggle */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-muted-foreground">Segment:</span>
                 <div className="flex gap-1 border border-border rounded-lg p-1 bg-muted">
                     <button
@@ -547,7 +547,7 @@ export default function SeoEnginePage() {
 
             {/* Main Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList>
+                <TabsList className="flex-wrap h-auto max-w-full">
                     <TabsTrigger value="inbox" className="gap-1.5">
                         <Sparkles className="w-3.5 h-3.5" />
                         Inbox
@@ -599,8 +599,8 @@ export default function SeoEnginePage() {
                     </div>
 
                     {/* Status filter pills */}
-                    <div className="flex items-center gap-2">
-                        <Filter className="w-4 h-4 text-muted-foreground" />
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
                         {(['all', 'pending', 'approved', 'rejected', 'deferred'] as const).map(status => (
                             <button
                                 key={status}
@@ -816,7 +816,7 @@ export default function SeoEnginePage() {
 
                                                 {/* Action Buttons */}
                                                 {nudge.status === 'pending' && (
-                                                    <div className="mt-4 flex items-center gap-2 border-t pt-4">
+                                                    <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
                                                         <Button
                                                             size="sm"
                                                             onClick={() => handleReview(nudge.id, 'approved')}
@@ -921,7 +921,7 @@ export default function SeoEnginePage() {
                                             </div>
 
                                             {/* Scope breakdown */}
-                                            <div className="flex gap-3 mb-3">
+                                            <div className="flex flex-wrap gap-3 mb-3">
                                                 {Object.entries(batch.breakdown || {}).map(([scope, count]) => (
                                                     <div key={scope} className="flex items-center gap-1.5 text-xs">
                                                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: scopeColors[scope as NudgeScope] }} />
@@ -944,7 +944,7 @@ export default function SeoEnginePage() {
                                             </div>
 
                                             {/* Status counts */}
-                                            <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                                            <div className="flex flex-wrap gap-3 sm:gap-4 mt-2 text-xs text-muted-foreground">
                                                 <span className="flex items-center gap-1">
                                                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
                                                     {batch.approvedCount} approved
@@ -964,7 +964,7 @@ export default function SeoEnginePage() {
                                             </div>
 
                                             {/* Deploy Actions */}
-                                            <div className="mt-3 flex items-center gap-2 border-t pt-3">
+                                            <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
                                                 {batch.prUrl ? (
                                                     <>
                                                         <a
@@ -1033,7 +1033,7 @@ export default function SeoEnginePage() {
                                 <>
                                     <div className="flex items-start gap-4 rounded-lg p-4" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', borderLeft: '4px solid #16a34a' }}>
                                         <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0" style={{ color: '#16a34a' }} />
-                                        <div>
+                                        <div className="min-w-0 break-all">
                                             <p className="font-semibold" style={{ color: '#15803d' }}>Connected</p>
                                             <p className="text-sm mt-0.5" style={{ color: '#374151' }}>
                                                 Account: <span className="font-medium" style={{ color: '#111827' }}>{gscStatus.email}</span>
@@ -1051,7 +1051,7 @@ export default function SeoEnginePage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-wrap gap-2">
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -1185,7 +1185,7 @@ export default function SeoEnginePage() {
                                         <div className="min-w-0">
                                             <p className="text-sm font-medium">{rule.label}</p>
                                             <p className="text-xs text-muted-foreground">{rule.description}</p>
-                                            <div className="flex gap-1 mt-1">
+                                            <div className="flex flex-wrap gap-1 mt-1">
                                                 {rule.metricsUsed.map((m, i) => (
                                                     <Badge key={i} variant="secondary" className="text-[9px] h-4">{m}</Badge>
                                                 ))}

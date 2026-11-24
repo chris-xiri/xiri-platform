@@ -59,6 +59,42 @@ export default function SalesCRMPage() {
     });
     const [crmView, setCrmView] = useState<'pipeline' | 'review'>('pipeline');
     const [engagementFilter, setEngagementFilter] = useState<EngagementFilter>(null);
+    const [prefsHydrated, setPrefsHydrated] = useState(false);
+
+    useEffect(() => {
+        try {
+            const savedFunnel = window.localStorage.getItem('xiri:crm:funnelCollapsed');
+            if (savedFunnel === 'true' || savedFunnel === 'false') {
+                setFunnelCollapsed(savedFunnel === 'true');
+            }
+            const savedView = window.localStorage.getItem('xiri:crm:view');
+            if (savedView === 'pipeline' || savedView === 'review') {
+                setCrmView(savedView);
+            }
+        } catch {
+            // Ignore localStorage access errors
+        } finally {
+            setPrefsHydrated(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!prefsHydrated) return;
+        try {
+            window.localStorage.setItem('xiri:crm:funnelCollapsed', String(funnelCollapsed));
+        } catch {
+            // Ignore localStorage access errors
+        }
+    }, [funnelCollapsed, prefsHydrated]);
+
+    useEffect(() => {
+        if (!prefsHydrated) return;
+        try {
+            window.localStorage.setItem('xiri:crm:view', crmView);
+        } catch {
+            // Ignore localStorage access errors
+        }
+    }, [crmView, prefsHydrated]);
 
     // Toggle engagement filter — clicking the same segment twice clears it
     const handleEngagementClick = (filter: NonNullable<EngagementFilter>) => {
@@ -109,17 +145,17 @@ export default function SalesCRMPage() {
 
     return (
         <ProtectedRoute resource="sales/crm">
-            <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+            <div className="flex flex-col min-h-full lg:h-[calc(100dvh-64px)] lg:overflow-hidden">
                 {/* ─── Header ────────────────────────────────────────────── */}
                 <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b bg-card">
-                    <div className="flex items-center justify-between">
-                        <div>
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                        <div className="min-w-0">
                             <h1 className="text-2xl font-bold">Sales CRM</h1>
                             <p className="text-sm text-muted-foreground">
                                 {funnel.total} contacts • Email engagement funnel + pipeline
                             </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <Tabs value={crmView} onValueChange={(value) => setCrmView(value as 'pipeline' | 'review')}>
                                 <TabsList className="h-8">
                                     <TabsTrigger value="pipeline" className="text-xs">Pipeline</TabsTrigger>
@@ -294,13 +330,13 @@ export default function SalesCRMPage() {
 
                 {/* ─── Active Engagement Filter Banner ────────────────────── */}
                 {crmView === 'pipeline' && engagementFilter && (
-                    <div className="flex-shrink-0 px-4 sm:px-6 py-2 bg-primary/5 border-b border-primary/10 flex items-center justify-between">
-                        <p className="text-xs text-primary font-medium">
+                    <div className="flex-shrink-0 px-4 sm:px-6 py-2 bg-primary/5 border-b border-primary/10 flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs text-primary font-medium min-w-0">
                             Filtering by: <span className="font-bold">{ENGAGEMENT_LABELS[engagementFilter]}</span>
                         </p>
                         <button
                             onClick={() => setEngagementFilter(null)}
-                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
                         >
                             <X className="w-3 h-3" /> Clear filter
                         </button>
@@ -308,7 +344,7 @@ export default function SalesCRMPage() {
                 )}
 
                 {/* ─── Pipeline Table ─────────────────────────────────────── */}
-                <div className="flex-1 overflow-hidden px-4 sm:px-6 py-2">
+                <div className="flex-1 min-h-0 lg:overflow-hidden px-0 sm:px-6 py-2">
                     {crmView === 'pipeline' ? (
                         <LeadList
                             title="Sales Pipeline"
@@ -316,7 +352,9 @@ export default function SalesCRMPage() {
                             engagementFilter={engagementFilter}
                         />
                     ) : (
-                        <CRMReviewQueue onRowClick={(contactId) => setDrawerContactId(contactId)} />
+                        <div className="px-4 sm:px-0 lg:h-full lg:overflow-y-auto">
+                            <CRMReviewQueue onRowClick={(contactId) => setDrawerContactId(contactId)} />
+                        </div>
                     )}
                 </div>
             </div>

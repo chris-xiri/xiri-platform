@@ -167,11 +167,11 @@ export function ConfigPanel({
         <div className="mb-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
             {/* ── Autonomous SDR Agent Studio (Prompts) ──────────────── */}
             <Card className="border-emerald-500/30 shadow-sm bg-card/60 backdrop-blur">
-                <CardHeader className="pb-3 flex flex-row items-start justify-between">
-                    <div>
-                        <CardTitle className="text-xl flex items-center gap-2">
-                            <Bot className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                            Autonomous SDR Agent Studio
+                <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="min-w-0">
+                        <CardTitle className="text-xl flex flex-wrap items-center gap-2">
+                            <Bot className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span>Autonomous SDR Agent Studio</span>
                             <Badge variant="outline" className="text-[10px] font-semibold border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
                                 Dental Practice ICP
                             </Badge>
@@ -184,7 +184,7 @@ export function ConfigPanel({
                         variant="outline"
                         size="sm"
                         onClick={onResetDentalPrompts}
-                        className="h-8 text-xs border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                        className="h-8 text-xs shrink-0 self-start border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                         title="Reset all prompts to optimized dental practice defaults"
                     >
                         <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
@@ -235,8 +235,8 @@ export function ConfigPanel({
                     {/* Active Prompt Content */}
                     {activeAgentTab === 'profiler' && (
                         <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="space-y-0.5 min-w-0">
                                     <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                         Agent 1 Prompt — Clinic Website & Persona Analysis
                                     </Label>
@@ -244,7 +244,7 @@ export function ConfigPanel({
                                         Analyzes clinic websites, detects operatory count, identifies private practice vs corporate DSO, and finds Office Managers.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
                                     <span>Variables:</span>
                                     <code className="px-1 py-0.5 rounded bg-muted">{"{{businessName}}"}</code>
                                     <code className="px-1 py-0.5 rounded bg-muted">{"{{address}}"}</code>
@@ -263,8 +263,8 @@ export function ConfigPanel({
 
                     {activeAgentTab === 'copywriter' && (
                         <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="space-y-0.5 min-w-0">
                                     <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                         Agent 2 Prompt — 1-to-1 Hyper-Personalized Copywriter
                                     </Label>
@@ -272,7 +272,7 @@ export function ConfigPanel({
                                         Writes plain-text emails focused on dental morning prep, operatory turnover, and OSHA logs without generic marketing jargon.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
                                     <span>Variables:</span>
                                     <code className="px-1 py-0.5 rounded bg-muted">{"{{cleanBizName}}"}</code>
                                     <code className="px-1 py-0.5 rounded bg-muted">{"{{contactName}}"}</code>
@@ -291,8 +291,8 @@ export function ConfigPanel({
 
                     {activeAgentTab === 'intent' && (
                         <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="space-y-0.5 min-w-0">
                                     <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                         Agent 3 Prompt — Inbound Intent Radar & Human Handoff
                                     </Label>
@@ -300,7 +300,7 @@ export function ConfigPanel({
                                         Classifies inbound emails/clicks. Freezes automated cold drips, creates CRM deals, and triggers Google Chat alerts for human closing.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
                                     <span>Variables:</span>
                                     <code className="px-1 py-0.5 rounded bg-muted">{"{{businessName}}"}</code>
                                     <code className="px-1 py-0.5 rounded bg-muted">{"{{contactName}}"}</code>
@@ -320,17 +320,17 @@ export function ConfigPanel({
             </Card>
 
             <Card className="border-primary/20 shadow-sm bg-card/50 backdrop-blur">
-                <CardHeader className="pb-3 flex flex-row items-start justify-between">
-                    <div>
+                <CardHeader className="pb-3 flex flex-row items-start justify-between gap-2">
+                    <div className="min-w-0">
                         <CardTitle className="text-xl flex items-center gap-2">
-                            <Settings2 className="w-5 h-5 text-primary" />
+                            <Settings2 className="w-5 h-5 text-primary shrink-0" />
                             ICP Config Dashboard
                         </CardTitle>
                         <CardDescription>
                             Define logic for the background prospector engine. Grouped by Ideal Customer Profile.
                         </CardDescription>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+                    <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 shrink-0">
                         <X className="w-4 h-4" />
                     </Button>
                 </CardHeader>
@@ -338,7 +338,7 @@ export function ConfigPanel({
                 {/* Summary / Stats Row */}
                 {config?.lastRunStats && (
                     <div className="px-6 pb-2">
-                        <div className="flex items-center gap-4 text-xs bg-muted/50 p-2 rounded-md border border-border/50">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs bg-muted/50 p-2 rounded-md border border-border/50">
                             <div className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-muted-foreground" /> Last Run:</div>
                             <div className="font-medium text-emerald-600 dark:text-emerald-400">{config.lastRunStats.added} imported</div>
                             <div className="text-muted-foreground">{config.lastRunStats.withEmail} e-mails</div>
@@ -493,12 +493,12 @@ export function ConfigPanel({
                                     </Badge>
                                 ))}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap sm:flex-nowrap gap-2">
                                 <Input
                                     value={newExclude}
                                     onChange={(e) => setNewExclude(e.target.value)}
                                     placeholder="Exclude match..."
-                                    className="h-8 text-sm w-48"
+                                    className="h-8 text-sm flex-1 min-w-[160px] sm:w-48 sm:flex-initial"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && newExclude.trim()) {
                                             if (!editExclude.includes(newExclude.trim())) {
@@ -568,8 +568,8 @@ export function ConfigPanel({
                                     <ToggleSwitch checked={editAutoEnrollEnabled} onToggle={setEditAutoEnrollEnabled} />
                                 </div>
                                 {editAutoEnrollEnabled && (
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4 text-emerald-600" />
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
                                         <span className="text-xs text-muted-foreground">Min ICP Score:</span>
                                         <Input
                                             type="number"
@@ -587,7 +587,7 @@ export function ConfigPanel({
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t">
                         <Button
                             variant="outline"
                             className="bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary"
@@ -608,7 +608,7 @@ export function ConfigPanel({
             <Card className="border-indigo-500/20 shadow-sm bg-card/50 backdrop-blur">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2">
-                        <Briefcase className="w-5 h-5 text-indigo-500" />
+                        <Briefcase className="w-5 h-5 text-indigo-500 shrink-0" />
                         Job Board Trigger — Exclusions
                     </CardTitle>
                     <CardDescription>
@@ -631,12 +631,12 @@ export function ConfigPanel({
                             <span className="text-xs text-muted-foreground italic">No exclusion patterns configured. All employers will be included.</span>
                         )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap sm:flex-nowrap gap-2">
                         <Input
                             value={newTriggerExclude}
                             onChange={(e) => setNewTriggerExclude(e.target.value)}
                             placeholder="Add exclusion (e.g. facility solutions)..."
-                            className="h-8 text-sm flex-1"
+                            className="h-8 text-sm flex-1 min-w-[180px]"
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && newTriggerExclude.trim()) {
                                     if (!editTriggerExclude.includes(newTriggerExclude.trim())) {

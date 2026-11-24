@@ -112,7 +112,7 @@ export default function ProfilePage() {
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-muted-foreground">Display Name</label>
                         {editingName ? (
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <Input
                                     value={displayName}
                                     onChange={(e) => setDisplayName(e.target.value)}
@@ -128,7 +128,7 @@ export default function ProfilePage() {
                                 </Button>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3">
                                 <p className="text-sm font-medium">{profile.displayName}</p>
                                 {nameSaved ? (
                                     <span className="text-xs text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> Saved</span>
@@ -144,10 +144,10 @@ export default function ProfilePage() {
                     {/* Email (read-only for non-admin) */}
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-muted-foreground">Email</label>
-                        <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-muted-foreground" />
-                            <p className="text-sm">{profile.email}</p>
-                            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded">Login credential</span>
+                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                            <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                            <p className="text-sm break-all">{profile.email}</p>
+                            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">Login credential</span>
                         </div>
                         <p className="text-xs text-muted-foreground">Contact an admin to change your login email</p>
                     </div>
@@ -155,7 +155,7 @@ export default function ProfilePage() {
                     {/* Firebase UID */}
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-muted-foreground">User ID</label>
-                        <p className="text-xs font-mono text-muted-foreground select-all">{user?.uid}</p>
+                        <p className="text-xs font-mono text-muted-foreground select-all break-all">{user?.uid}</p>
                     </div>
                 </CardContent>
             </Card>

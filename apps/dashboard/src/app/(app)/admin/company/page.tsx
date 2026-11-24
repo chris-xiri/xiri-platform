@@ -165,7 +165,7 @@ export default function CompanySettingsPage() {
 
     return (
         <div className="max-w-3xl mx-auto py-8 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <Building2 className="w-6 h-6" /> Company Settings
@@ -174,7 +174,7 @@ export default function CompanySettingsPage() {
                         Default proposal terms &amp; company info. These pre-fill every new quote.
                     </p>
                 </div>
-                <Button onClick={handleSave} disabled={saving} className="gap-2">
+                <Button onClick={handleSave} disabled={saving} className="gap-2 shrink-0 self-start sm:self-auto">
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                     {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
                 </Button>
@@ -183,17 +183,17 @@ export default function CompanySettingsPage() {
             {/* Company Info */}
             <Card>
                 <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => toggleSection('company')}>
-                    <div className="flex items-center justify-between">
-                        <div>
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
                             <CardTitle className="text-sm">Company Information</CardTitle>
                             <CardDescription className="text-xs">Used on proposals and contracts</CardDescription>
                         </div>
-                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openSections.has('company') ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform ${openSections.has('company') ? 'rotate-180' : ''}`} />
                     </div>
                 </CardHeader>
                 {openSections.has('company') && (
                 <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <Label className="text-xs">Company Name</Label>
                             <Input
@@ -212,7 +212,7 @@ export default function CompanySettingsPage() {
                             />
                         </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <Label className="text-xs">Phone</Label>
                             <Input value={data.phone || ''} onChange={e => update('phone', e.target.value)} className="mt-1" />
@@ -233,22 +233,22 @@ export default function CompanySettingsPage() {
             {/* Quote Calculator Defaults */}
             <Card>
                 <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => toggleSection('calculator')}>
-                    <div className="flex items-center justify-between">
-                        <div>
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
                             <CardTitle className="text-sm flex items-center gap-2">
-                                <Calculator className="w-4 h-4" /> Quote Calculator Defaults
+                                <Calculator className="w-4 h-4 shrink-0" /> Quote Calculator Defaults
                             </CardTitle>
                             <CardDescription className="text-xs">
                                 These values pre-fill the Building Scope calculator when creating new quotes.
                                 State-based wages still auto-fill when a lead&apos;s state is known.
                             </CardDescription>
                         </div>
-                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openSections.has('calculator') ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform ${openSections.has('calculator') ? 'rotate-180' : ''}`} />
                     </div>
                 </CardHeader>
                 {openSections.has('calculator') && (
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <Label className="text-xs">Default Wage Rate ($/hr)</Label>
                             <Input
@@ -285,7 +285,7 @@ export default function CompanySettingsPage() {
                             />
                         </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <Label className="text-xs">Profit Margin %</Label>
                             <Input
@@ -383,7 +383,7 @@ export default function CompanySettingsPage() {
                             <option value="both">Shared (Both Provide)</option>
                         </select>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <Label className="text-xs">Supplies We Provide</Label>
                             <textarea
@@ -407,7 +407,7 @@ export default function CompanySettingsPage() {
                     <Separator />
 
                     {/* Boolean toggles */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <label className="flex items-center gap-2 rounded-lg border p-3 cursor-pointer hover:bg-muted/30 transition-colors">
                             <input
                                 type="checkbox"
@@ -451,29 +451,29 @@ export default function CompanySettingsPage() {
             {/* Email Signature Settings */}
             <Card>
                 <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => toggleSection('signature')}>
-                    <div className="flex items-center justify-between">
-                        <div>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="min-w-0">
                             <CardTitle className="text-sm flex items-center gap-2">
-                                <Mail className="w-4 h-4" /> Email Signature
+                                <Mail className="w-4 h-4 shrink-0" /> Email Signature
                             </CardTitle>
                             <CardDescription className="text-xs">
                                 Auto-appended to all outgoing emails via Resend
                             </CardDescription>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                             {openSections.has('signature') && (
                                 <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveSig(); }} disabled={sigSaving} className="gap-2">
                                     {sigSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : sigSaved ? <CheckCircle className="w-3 h-3" /> : <Save className="w-3 h-3" />}
                                     {sigSaving ? 'Saving...' : sigSaved ? 'Saved!' : 'Save Signature'}
                                 </Button>
                             )}
-                            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openSections.has('signature') ? 'rotate-180' : ''}`} />
+                            <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform ${openSections.has('signature') ? 'rotate-180' : ''}`} />
                         </div>
                     </div>
                 </CardHeader>
                 {openSections.has('signature') && (
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <Label className="text-xs">Closing</Label>
                             <Input
@@ -492,7 +492,7 @@ export default function CompanySettingsPage() {
                             />
                         </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <Label className="text-xs">Title / Company</Label>
                             <Input

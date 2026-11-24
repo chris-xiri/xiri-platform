@@ -600,13 +600,13 @@ export default function SequenceBuilder() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <p className="text-muted-foreground text-sm">
                         Multi-step email sequences with inline template previews. Click any step to view & edit its email.
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <Button onClick={() => { setShowAI(true); setAiResult(null); setAiError(null); }}
                         variant="outline" className="gap-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20">
                         <Sparkles className="w-4 h-4" />
@@ -658,19 +658,19 @@ export default function SequenceBuilder() {
                                                 setPreviewMode(false);
                                             }}
                                         >
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`flex items-center justify-center w-8 h-8 rounded-full ${catCfg.color}`}>
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`flex items-center justify-center w-8 h-8 rounded-full shrink-0 ${catCfg.color}`}>
                                                         {catCfg.icon}
                                                     </div>
-                                                    <div>
+                                                    <div className="min-w-0">
                                                         <CardTitle className="text-sm">{seq.name}</CardTitle>
                                                         {seq.description && (
                                                             <p className="text-[11px] text-muted-foreground mt-0.5">{seq.description}</p>
                                                         )}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center gap-2 shrink-0">
                                                     <Badge variant="secondary" className={`text-[10px] ${catCfg.color}`}>
                                                         {catCfg.label}
                                                     </Badge>
@@ -771,19 +771,19 @@ export default function SequenceBuilder() {
                                                     return (
                                                         <Card className={`border-2 ${vm.border} transition-all`}>
                                                             <CardHeader className="py-3">
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                    <div className="flex items-center gap-3 min-w-0">
+                                                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm shrink-0">
                                                                             {expandedStepIdx + 1}
                                                                         </div>
-                                                                        <div>
+                                                                        <div className="min-w-0">
                                                                             <CardTitle className="text-sm">{step.label}</CardTitle>
                                                                             <p className="text-[11px] text-muted-foreground">
                                                                                 {hasWarmCold ? 'Branched — sends different copy based on open behavior' : 'Single template — no branching'}
                                                                             </p>
                                                                         </div>
                                                                     </div>
-                                                                    <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setExpandedStepIdx(null); setEditingTemplateId(null); setPreviewMode(false); }}>
+                                                                    <Button variant="ghost" size="sm" className="text-xs shrink-0" onClick={() => { setExpandedStepIdx(null); setEditingTemplateId(null); setPreviewMode(false); }}>
                                                                         <X className="w-3.5 h-3.5 mr-1" /> Close
                                                                     </Button>
                                                                 </div>
@@ -818,20 +818,20 @@ export default function SequenceBuilder() {
 
                                                             <CardContent className="border-t pt-4 space-y-4">
                                                                 {/* Toolbar */}
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center gap-2">
+                                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                    <div className="flex flex-wrap items-center gap-2 min-w-0">
                                                                         <Button
                                                                             size="sm"
                                                                             variant={previewMode ? "default" : "outline"}
-                                                                            className="h-7 text-xs"
+                                                                            className="h-7 text-xs shrink-0"
                                                                             onClick={() => setPreviewMode(!previewMode)}
                                                                         >
                                                                             {previewMode ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
                                                                             {previewMode ? "Edit" : "Preview"}
                                                                         </Button>
-                                                                        <code className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{currentTemplate.id}</code>
+                                                                        <code className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded break-all">{currentTemplate.id}</code>
                                                                     </div>
-                                                                    <div className="flex items-center gap-2">
+                                                                    <div className="flex flex-wrap items-center gap-2">
                                                                         <Button
                                                                             size="sm"
                                                                             className="h-7 text-xs"
@@ -887,7 +887,7 @@ export default function SequenceBuilder() {
 
                                                                 {/* Live Preview Toggle */}
                                                                 {previewMode && (
-                                                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/30 border border-dashed">
+                                                                    <div className="flex flex-wrap items-center gap-3 p-2.5 rounded-lg bg-muted/30 border border-dashed">
                                                                         <button
                                                                             onClick={() => setUseLivePreview(!useLivePreview)}
                                                                             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
@@ -1045,7 +1045,7 @@ export default function SequenceBuilder() {
                                                 })()}
 
                                                 {/* Actions */}
-                                                <div className="flex items-center gap-2 pt-2 border-t">
+                                                <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
                                                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openEdit(seq)}>
                                                         <Edit3 className="w-3 h-3" /> Edit Sequence
                                                     </Button>
@@ -1056,8 +1056,8 @@ export default function SequenceBuilder() {
                                                     >
                                                         <Trash2 className="w-3 h-3" /> Delete
                                                     </Button>
-                                                    <div className="flex-1" />
-                                                    <span className="text-[10px] text-muted-foreground">
+                                                    <div className="flex-1 hidden sm:block" />
+                                                    <span className="text-[10px] text-muted-foreground break-all">
                                                         ID: <code className="bg-muted px-1 rounded">{seq.id}</code>
                                                     </span>
                                                 </div>
@@ -1121,7 +1121,7 @@ export default function SequenceBuilder() {
 
                             <div className="space-y-2">
                                 {editorSteps.map((step, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/20">
+                                    <div key={idx} className="flex flex-wrap items-center gap-2 p-2 rounded-lg border bg-muted/20">
                                         <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex-shrink-0">
                                             {idx + 1}
                                         </div>
@@ -1130,7 +1130,7 @@ export default function SequenceBuilder() {
                                             value={step.label}
                                             onChange={e => updateStep(idx, 'label', e.target.value)}
                                             placeholder="Step label..."
-                                            className="h-8 text-xs flex-1 min-w-0"
+                                            className="h-8 text-xs flex-1 min-w-[140px]"
                                         />
 
                                         <div className="flex items-center gap-1 flex-shrink-0">
@@ -1145,7 +1145,7 @@ export default function SequenceBuilder() {
                                         </div>
 
                                         <Select value={step.templateId} onValueChange={(v: string) => updateStep(idx, 'templateId', v)}>
-                                            <SelectTrigger className="h-8 text-xs w-48 flex-shrink-0">
+                                            <SelectTrigger className="h-8 text-xs w-full sm:w-48 flex-shrink-0">
                                                 <SelectValue placeholder="Template..." />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -1240,7 +1240,7 @@ export default function SequenceBuilder() {
                         </div>
 
                         {/* Settings row */}
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
                                 <label className="text-xs font-medium text-muted-foreground">Category</label>
                                 <Select value={aiCategory} onValueChange={setAiCategory} disabled={aiGenerating}>

@@ -167,22 +167,22 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Link href="/accounting/vendor-remittances" className="text-muted-foreground hover:text-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <Link href="/accounting/vendor-remittances" className="text-muted-foreground hover:text-foreground shrink-0">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-3">
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-bold flex flex-wrap items-center gap-2 sm:gap-3">
                             Vendor Remittance
                             <Badge variant={config.variant}>{config.label}</Badge>
                         </h1>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground truncate">
                             {rem.vendorName} • {rem.billingPeriod?.start || '—'}
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {(rem.status === 'pending') && (
                         <Button onClick={() => setShowSendModal(true)} disabled={updating} className="gap-2">
                             <Send className="w-4 h-4" /> Send to Vendor
@@ -205,7 +205,7 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
                                 <Building2 className="w-4 h-4 text-muted-foreground" /> Vendor Details
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase mb-1">Vendor</p>
                                 <p className="font-medium">{rem.vendorName}</p>
@@ -215,9 +215,9 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
                                 <p className="font-medium">{rem.billingPeriod?.start} to {rem.billingPeriod?.end}</p>
                             </div>
                             {rem.vendorEmail && (
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-xs text-muted-foreground uppercase mb-1">Email</p>
-                                    <p className="text-xs">{rem.vendorEmail}</p>
+                                    <p className="text-xs break-all">{rem.vendorEmail}</p>
                                 </div>
                             )}
                             <div>
@@ -247,60 +247,62 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b bg-muted/30">
-                                        <th className="text-left px-4 py-2 font-medium text-muted-foreground">Service</th>
-                                        <th className="text-left px-4 py-2 font-medium text-muted-foreground">Location</th>
-                                        <th className="text-left px-4 py-2 font-medium text-muted-foreground">Freq</th>
-                                        <th className="text-right px-4 py-2 font-medium text-muted-foreground">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {(rem.lineItems || []).map((li, i) => (
-                                        <tr key={i} className="border-b last:border-0">
-                                            <td className="px-4 py-3 font-medium">
-                                                {li.serviceType}
-                                                {li.taxExempt && (
-                                                    <span className="ml-2 text-xs text-green-600">✓ Exempt</span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <span className="text-muted-foreground">{li.locationName}</span>
-                                                {li.locationAddress && (
-                                                    <span className="block text-xs text-muted-foreground/70">{li.locationAddress}</span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-muted-foreground capitalize">
-                                                {li.frequency === 'one_time' ? 'One-Time' : li.frequency === 'custom_days' ? 'Custom' : li.frequency}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-medium">{formatCurrency(li.amount)}</td>
+                            <div className="w-full overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b bg-muted/30">
+                                            <th className="text-left px-4 py-2 font-medium text-muted-foreground">Service</th>
+                                            <th className="text-left px-4 py-2 font-medium text-muted-foreground">Location</th>
+                                            <th className="text-left px-4 py-2 font-medium text-muted-foreground">Freq</th>
+                                            <th className="text-right px-4 py-2 font-medium text-muted-foreground">Amount</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="bg-muted/20">
-                                        <td colSpan={3} className="px-4 py-2 text-right font-medium text-sm">Subtotal</td>
-                                        <td className="px-4 py-2 text-right font-medium text-sm">{formatCurrency(rem.totalAmount)}</td>
-                                    </tr>
-                                    {(rem.totalTax ?? 0) > 0 && (
-                                        <tr>
-                                            <td colSpan={3} className="px-4 py-2 text-right text-sm text-muted-foreground">Sales Tax</td>
-                                            <td className="px-4 py-2 text-right text-sm">{formatCurrency(rem.totalTax!)}</td>
+                                    </thead>
+                                    <tbody>
+                                        {(rem.lineItems || []).map((li, i) => (
+                                            <tr key={i} className="border-b last:border-0">
+                                                <td className="px-4 py-3 font-medium">
+                                                    {li.serviceType}
+                                                    {li.taxExempt && (
+                                                        <span className="ml-2 text-xs text-green-600">✓ Exempt</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="text-muted-foreground">{li.locationName}</span>
+                                                    {li.locationAddress && (
+                                                        <span className="block text-xs text-muted-foreground/70">{li.locationAddress}</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-muted-foreground capitalize">
+                                                    {li.frequency === 'one_time' ? 'One-Time' : li.frequency === 'custom_days' ? 'Custom' : li.frequency}
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-medium">{formatCurrency(li.amount)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="bg-muted/20">
+                                            <td colSpan={3} className="px-4 py-2 text-right font-medium text-sm">Subtotal</td>
+                                            <td className="px-4 py-2 text-right font-medium text-sm">{formatCurrency(rem.totalAmount)}</td>
                                         </tr>
-                                    )}
-                                    {(rem.xiriAbsorbedTax ?? 0) > 0 && (
-                                        <tr>
-                                            <td colSpan={3} className="px-4 py-2 text-right text-xs text-amber-600">XIRI Absorbed Tax (no exemption on file)</td>
-                                            <td className="px-4 py-2 text-right text-xs text-amber-600">{formatCurrency(rem.xiriAbsorbedTax!)}</td>
+                                        {(rem.totalTax ?? 0) > 0 && (
+                                            <tr>
+                                                <td colSpan={3} className="px-4 py-2 text-right text-sm text-muted-foreground">Sales Tax</td>
+                                                <td className="px-4 py-2 text-right text-sm">{formatCurrency(rem.totalTax!)}</td>
+                                            </tr>
+                                        )}
+                                        {(rem.xiriAbsorbedTax ?? 0) > 0 && (
+                                            <tr>
+                                                <td colSpan={3} className="px-4 py-2 text-right text-xs text-amber-600">XIRI Absorbed Tax (no exemption on file)</td>
+                                                <td className="px-4 py-2 text-right text-xs text-amber-600">{formatCurrency(rem.xiriAbsorbedTax!)}</td>
+                                            </tr>
+                                        )}
+                                        <tr className="border-t-2">
+                                            <td colSpan={3} className="px-4 py-3 text-right font-bold text-base">Total Owed</td>
+                                            <td className="px-4 py-3 text-right font-bold text-base text-primary">{formatCurrency(rem.totalAmount + (rem.totalTax ?? 0))}</td>
                                         </tr>
-                                    )}
-                                    <tr className="border-t-2">
-                                        <td colSpan={3} className="px-4 py-3 text-right font-bold text-base">Total Owed</td>
-                                        <td className="px-4 py-3 text-right font-bold text-base text-primary">{formatCurrency(rem.totalAmount + (rem.totalTax ?? 0))}</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>

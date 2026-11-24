@@ -69,7 +69,7 @@ function UserForm({
                 <CardTitle className="text-lg">{initialData?.uid ? "Edit User" : "Add User"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label className="text-sm font-medium mb-1.5 block">Display Name</label>
                         <Input
@@ -256,13 +256,13 @@ export default function UserManagerPage() {
     return (
         <ProtectedRoute resource="admin/users">
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         <h2 className="text-2xl font-bold mb-1">Team Roster</h2>
                         <p className="text-muted-foreground">{users.length} team member{users.length !== 1 ? 's' : ''} across {activeRoles.length} roles</p>
                     </div>
                     {!showForm && (
-                        <Button onClick={() => setShowForm(true)} className="gap-2">
+                        <Button onClick={() => setShowForm(true)} className="gap-2 self-start sm:self-auto">
                             <Plus className="w-4 h-4" /> Add User
                         </Button>
                     )}
@@ -302,7 +302,7 @@ export default function UserManagerPage() {
                                     {roleUsers.map(user => (
                                         <div
                                             key={user.uid}
-                                            className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
+                                            className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
                                         >
                                             <div className="flex items-center gap-2.5 min-w-0">
                                                 <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -311,29 +311,29 @@ export default function UserManagerPage() {
                                                     </span>
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-sm font-medium">{user.displayName}</p>
-                                                    <p className="text-[10px] text-muted-foreground">{user.email}</p>
+                                                    <p className="text-sm font-medium truncate">{user.displayName}</p>
+                                                    <p className="text-[10px] text-muted-foreground break-all sm:truncate">{user.email}</p>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                            <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleEdit(user)}
-                                                    className="h-6 w-6"
+                                                    className="h-8 w-8 md:h-6 md:w-6"
                                                 >
-                                                    <Pencil className="w-3 h-3" />
+                                                    <Pencil className="w-3.5 h-3.5 md:w-3 md:h-3" />
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleDelete(user.uid)}
                                                     disabled={deletingUid === user.uid}
-                                                    className="h-6 w-6 text-destructive hover:text-destructive"
+                                                    className="h-8 w-8 md:h-6 md:w-6 text-destructive hover:text-destructive"
                                                 >
                                                     {deletingUid === user.uid
-                                                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                                                        : <Trash2 className="w-3 h-3" />}
+                                                        ? <Loader2 className="w-3.5 h-3.5 md:w-3 md:h-3 animate-spin" />
+                                                        : <Trash2 className="w-3.5 h-3.5 md:w-3 md:h-3" />}
                                                 </Button>
                                             </div>
                                         </div>
@@ -370,31 +370,31 @@ export default function UserManagerPage() {
                             <CardContent className="space-y-4">
                                 {resetLinkResult.emailSent ? (
                                     <div className="flex items-start gap-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                                        <span className="text-green-500 text-lg">✅</span>
-                                        <p className="text-sm text-green-700 dark:text-green-300">
-                                            An invite email with login credentials has been sent to <strong>{resetLinkResult.email}</strong>
+                                        <span className="text-green-500 text-lg shrink-0">✅</span>
+                                        <p className="text-sm text-green-700 dark:text-green-300 min-w-0">
+                                            An invite email with login credentials has been sent to <strong className="break-all">{resetLinkResult.email}</strong>
                                         </p>
                                     </div>
                                 ) : (
                                     <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                                        <span className="text-amber-500 text-lg">⚠️</span>
+                                        <span className="text-amber-500 text-lg shrink-0">⚠️</span>
                                         <p className="text-sm text-amber-700 dark:text-amber-300">
                                             Email failed to send. Share the credentials below manually.
                                         </p>
                                     </div>
                                 )}
                                 <div className="bg-muted rounded-lg p-4 space-y-2">
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-muted-foreground w-20">Email</span>
-                                        <span className="font-medium">{resetLinkResult.email}</span>
+                                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground w-20 shrink-0">Email</span>
+                                        <span className="font-medium break-all">{resetLinkResult.email}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-muted-foreground w-20">Password</span>
-                                        <code className="font-mono text-sm bg-background px-2 py-1 rounded border select-all">{resetLinkResult.tempPassword}</code>
+                                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground w-20 shrink-0">Password</span>
+                                        <code className="font-mono text-sm bg-background px-2 py-1 rounded border select-all break-all">{resetLinkResult.tempPassword}</code>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-muted-foreground w-20">Dashboard</span>
-                                        <a href="https://app.xiri.ai" className="text-blue-500 hover:underline">app.xiri.ai</a>
+                                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground w-20 shrink-0">Dashboard</span>
+                                        <a href="https://app.xiri.ai" className="text-blue-500 hover:underline break-all">app.xiri.ai</a>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">

@@ -225,17 +225,17 @@ export default function ConductVisitFlow() {
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
             {/* Header */}
             <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={() => router.push('/operations/site-visits')}>
+                <Button variant="ghost" size="sm" className="shrink-0" onClick={() => router.push('/operations/site-visits')}>
                     <ArrowLeft className="w-4 h-4" />
                 </Button>
-                <div>
-                    <h1 className="text-lg font-bold">Conduct Site Visit</h1>
+                <div className="min-w-0 flex-1">
+                    <h1 className="text-lg font-bold truncate">Conduct Site Visit</h1>
                     {selectedWO && (
-                        <p className="text-sm text-muted-foreground">{selectedWO.locationName}</p>
+                        <p className="text-sm text-muted-foreground truncate">{selectedWO.locationName}</p>
                     )}
                 </div>
                 {isFirstVisit && selectedWO && (
-                    <Badge variant="outline" className="text-blue-600 border-blue-200 ml-auto">
+                    <Badge variant="outline" className="text-blue-600 border-blue-200 ml-auto shrink-0">
                         ★ First Visit
                     </Badge>
                 )}
@@ -321,14 +321,15 @@ export default function ConductVisitFlow() {
                     <CardContent className="space-y-4">
                         {areaRatings.map((area, idx) => (
                             <div key={area.area} className="p-3 rounded-lg border space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <p className="font-medium text-sm">{area.area}</p>
-                                    <div className="flex gap-1">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="font-medium text-sm min-w-0">{area.area}</p>
+                                    <div className="flex items-center gap-0.5 shrink-0">
                                         {[1, 2, 3, 4, 5].map(n => (
                                             <button
                                                 key={n}
+                                                type="button"
                                                 onClick={() => setRating(idx, n)}
-                                                className="focus:outline-none"
+                                                className="p-1 focus:outline-none rounded hover:bg-muted/50"
                                             >
                                                 <Star
                                                     className={`w-5 h-5 transition-colors ${n <= area.rating
@@ -410,8 +411,9 @@ export default function ConductVisitFlow() {
                                         {[1, 2, 3, 4, 5].map(n => (
                                             <button
                                                 key={n}
+                                                type="button"
                                                 onClick={() => setClientSatisfaction(n)}
-                                                className="focus:outline-none"
+                                                className="p-1 focus:outline-none rounded hover:bg-muted/50"
                                             >
                                                 <Star
                                                     className={`w-8 h-8 transition-colors ${n <= clientSatisfaction
@@ -494,10 +496,10 @@ export default function ConductVisitFlow() {
                                 value={newAction}
                                 onChange={(e) => setNewAction(e.target.value)}
                             />
-                            <div className="flex gap-2">
-                                <div className="flex-1">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <div className="flex-1 min-w-0">
                                     <Label className="text-[10px] text-muted-foreground">Assign To</Label>
-                                    <div className="flex gap-1 mt-1">
+                                    <div className="flex flex-wrap gap-1 mt-1">
                                         {(['vendor', 'client', 'xiri'] as const).map(v => (
                                             <Button
                                                 key={v}
@@ -511,9 +513,9 @@ export default function ConductVisitFlow() {
                                         ))}
                                     </div>
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                     <Label className="text-[10px] text-muted-foreground">Priority</Label>
-                                    <div className="flex gap-1 mt-1">
+                                    <div className="flex flex-wrap gap-1 mt-1">
                                         {(['low', 'medium', 'high'] as const).map(p => (
                                             <Button
                                                 key={p}

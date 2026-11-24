@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccess } from "@/lib/accessControl";
+import { readStorage, saveLastRoute, STORAGE_KEYS, writeStorage } from "@/lib/persistence";
 
 interface NavItem {
     label: string;
@@ -138,13 +139,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const { setTheme, theme } = useTheme();
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState<boolean>(() =>
+        readStorage<boolean>(STORAGE_KEYS.SIDEBAR_COLLAPSED, false)
+    );
     const [mobileOpen, setMobileOpen] = useState(false);
-    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() =>
+        readStorage<Record<string, boolean>>(STORAGE_KEYS.SIDEBAR_SECTIONS, {})
+    );
     const [initialExpanded, setInitialExpanded] = useState(false);
 
     const toggleSection = (key: string) => {
-        setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+        setExpandedSections(prev => {
+            const next = { ...prev, [key]: !prev[key] };
+            writeStorage(STORAGE_KEYS.SIDEBAR_SECTIONS, next);
+            return next;
+        });
+    };
+
+    const toggleCollapsed = () => {
+        setCollapsed(prev => {
+            const next = !prev;
+            writeStorage(STORAGE_KEYS.SIDEBAR_COLLAPSED, next);
+            return next;
+        });
     };
 
     useEffect(() => {
@@ -153,9 +170,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }
     }, [loading, profile, router]);
 
-    // Close mobile sidebar on nav
+    // Close mobile sidebar and remember last route on nav
     useEffect(() => {
         setMobileOpen(false);
+        if (pathname) {
+            saveLastRoute(pathname);
+        }
     }, [pathname]);
 
     // Auto-expand section that contains the active page on first load
@@ -163,13 +183,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (initialExpanded) return;
         const activeSection = sections.find(s => s.show && s.items.some(item => pathname === item.href || pathname.startsWith(item.href + '/')));
         if (activeSection) {
-            setExpandedSections(prev => ({ ...prev, [activeSection.label]: true }));
+            setExpandedSections(prev => {
+                const next = { ...prev, [activeSection.label]: true };
+                writeStorage(STORAGE_KEYS.SIDEBAR_SECTIONS, next);
+                return next;
+            });
             setInitialExpanded(true);
         }
     }, [pathname, initialExpanded]);
 
     if (loading) {
-        return <div className="flex h-screen items-center justify-center">Loading...</div>;
+        return <div className="flex h-dvh items-center justify-center bg-background text-sm text-muted-foreground">Loading...</div>;
     }
 
     if (!profile) {
@@ -244,7 +268,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 { label: 'Monitoring', href: '/admin/monitoring', icon: <Monitor className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'User Manager', href: '/admin/users', icon: <Users className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'AI Agents', href: '/admin/agents', icon: <Bot className="w-4 h-4" />, subGroup: 'Settings' },
-                { label: 'Pricing', href: '/admin/pricing', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'Legal Templates', href: '/admin/legal', icon: <Scale className="w-4 h-4" />, subGroup: 'Communications' },
                 { label: 'Email Templates', href: '/admin/email-templates', icon: <Mail className="w-4 h-4" />, subGroup: 'Communications' },
                 { label: 'Reports', href: '/admin/reports', icon: <BarChart3 className="w-4 h-4" />, subGroup: 'Reporting' },
@@ -287,7 +310,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className={`border-t p-3 space-y-2 ${collapsed ? 'px-2' : ''}`}>
                 {/* Collapse Toggle (desktop only) */}
                 <button
-                    onClick={() => setCollapsed(prev => !prev)}
+                    onClick={toggleCollapsed}
                     className="hidden lg:flex w-full items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 >
                     {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
@@ -343,8 +366,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </>
     );
 
+    const activeNavItem = sections
+        .flatMap(s => s.items)
+        .find(item => pathname === item.href || pathname.startsWith(item.href + '/'));
+
     return (
-        <div className="flex h-screen bg-background overflow-hidden">
+        <div className="flex h-dvh bg-background overflow-hidden">
             {/* Desktop Sidebar */}
             <aside
                 className={`hidden lg:flex flex-col border-r bg-background transition-all duration-200 shrink-0
@@ -356,17 +383,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             {/* Mobile Overlay */}
             {mobileOpen && (
-                <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
+                <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[1px] lg:hidden" onClick={() => setMobileOpen(false)} />
             )}
 
             {/* Mobile Sidebar */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex flex-col w-[260px] border-r bg-background transition-transform duration-200 lg:hidden
+                className={`fixed inset-y-0 left-0 z-50 flex flex-col w-[280px] max-w-[85vw] border-r bg-background transition-transform duration-200 lg:hidden safe-area-top safe-area-bottom
                     ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
                 `}
             >
-                <div className="absolute top-3 right-3">
-                    <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)}>
+                <div className="absolute right-3" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}>
+                    <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Close navigation menu">
                         <X className="w-5 h-5" />
                     </Button>
                 </div>
@@ -376,17 +403,42 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Mobile Top Bar */}
-                <div className="lg:hidden flex items-center justify-between px-4 py-2.5 border-b">
-                    <span className="text-xl font-bold text-sky-700 dark:text-sky-400">XIRI</span>
-                    <NotificationBell />
-                </div>
+                <header className="lg:hidden shrink-0 border-b bg-background/95 backdrop-blur-md safe-area-top z-30">
+                    <div className="flex items-center justify-between gap-2 px-3 py-2.5 min-h-[48px]">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 -ml-1"
+                                onClick={() => setMobileOpen(true)}
+                                aria-label="Open navigation menu"
+                            >
+                                <Menu className="w-5 h-5" />
+                            </Button>
+                            <Link href="/" className="text-lg font-bold text-brand-logo tracking-tight shrink-0">
+                                XIRI
+                            </Link>
+                            {activeNavItem && (
+                                <>
+                                    <span className="text-muted-foreground/40 shrink-0">/</span>
+                                    <span className="text-sm font-medium text-foreground truncate">
+                                        {activeNavItem.label}
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                        <div className="shrink-0">
+                            <NotificationBell />
+                        </div>
+                    </div>
+                </header>
 
                 {/* Desktop Top Bar */}
-                <div className="hidden lg:flex items-center justify-end px-6 py-2 border-b bg-card/50">
+                <div className="hidden lg:flex items-center justify-end px-6 py-2 border-b bg-card/50 shrink-0">
                     <NotificationBell />
                 </div>
 
-                <main className="flex-1 overflow-y-auto px-4 py-4 lg:px-6 lg:py-6 pb-20 lg:pb-6">
+                <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6 pb-24 lg:pb-6">
                     <QueryProvider>
                         {children}
                     </QueryProvider>

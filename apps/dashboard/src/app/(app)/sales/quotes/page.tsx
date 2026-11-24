@@ -127,22 +127,22 @@ export default function QuotesPage() {
         <div className="space-y-6">
             {/* Tab Bar + Header */}
             <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
                     <h1 className="text-2xl font-bold">Quotes & Contracts</h1>
                     {activeTab === 'quotes' && (
-                        <div className="flex items-center gap-3">
-                            <div className="relative hidden sm:block">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                            <div className="relative flex-1 min-w-[180px] sm:flex-initial sm:w-64">
                                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     placeholder="Search client..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 w-[200px]"
+                                    className="pl-9 w-full"
                                 />
                             </div>
-                            <Button onClick={() => setShowBuilder(true)} className="gap-2">
+                            <Button onClick={() => setShowBuilder(true)} className="gap-2 shrink-0">
                                 <Plus className="w-4 h-4" />
-                                <span className="hidden sm:inline">New Quote</span>
+                                <span>New Quote</span>
                             </Button>
                         </div>
                     )}
@@ -261,17 +261,17 @@ export default function QuotesPage() {
                                     style={{ backgroundColor: color.bg }}
                                     onClick={() => router.push(`/sales/quotes/${group.latest.id}`)}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
                                             <span
                                                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
                                                 style={{ backgroundColor: color.border }}
                                             >
                                                 {clientIdx + 1}
                                             </span>
-                                            <div>
-                                                <p className="font-semibold">{group.leadBusinessName}</p>
-                                                <p className="text-xs text-muted-foreground">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-semibold truncate">{group.leadBusinessName}</p>
+                                                <p className="text-xs text-muted-foreground break-words">
                                                     {group.latest.lineItems?.length || 0} services • {(() => {
                                                         const monthlyRate = group.latest.totalMonthlyRate || 0;
                                                         const oneTimeTotal = (group.latest.lineItems || [])
@@ -286,10 +286,10 @@ export default function QuotesPage() {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                                             <Badge variant={badge.variant} className="text-xs">{badge.label}</Badge>
                                             <span className="text-xs text-muted-foreground">{created}</span>
-                                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                                         </div>
                                     </div>
 
@@ -347,15 +347,15 @@ export default function QuotesPage() {
                                                     return (
                                                         <div
                                                             key={olderQuote.id}
-                                                            className="px-4 py-3 border-b last:border-0 bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer flex items-center justify-between"
+                                                            className="px-4 py-3 border-b last:border-0 bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer flex flex-wrap items-center justify-between gap-2"
                                                             onClick={() => router.push(`/sales/quotes/${olderQuote.id}`)}
                                                         >
-                                                            <div className="pl-4">
-                                                                <p className="text-sm text-muted-foreground">
+                                                            <div className="pl-2 sm:pl-4 min-w-0 flex-1">
+                                                                <p className="text-sm text-muted-foreground break-words">
                                                                     v{olderQuote.version || 1} • {olderRateStr} • {olderQuote.lineItems?.length || 0} services
                                                                 </p>
                                                             </div>
-                                                            <div className="flex items-center gap-3">
+                                                            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                                                                 <Badge variant={olderBadge.variant} className="text-xs">{olderBadge.label}</Badge>
                                                                 <span className="text-xs text-muted-foreground">{olderCreated}</span>
                                                             </div>

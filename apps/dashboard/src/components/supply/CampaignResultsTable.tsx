@@ -87,7 +87,7 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
 
 
     return (
-        <div className="flex flex-col h-full bg-background border-l border-border overflow-hidden animate-in slide-in-from-right-5 duration-200">
+        <div className="flex flex-col h-full bg-background border-t lg:border-t-0 lg:border-l border-border overflow-hidden animate-in slide-in-from-right-5 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 flex-shrink-0">
                 <div className="min-w-0 flex-1">
@@ -307,7 +307,7 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
                     </Button>
                 ) : (
                     <>
-                        <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                             <Button onClick={() => onApprove(campaignId, vendor.id!, 'FAST_TRACK')}
                                 className="bg-orange-500 hover:bg-orange-600 text-white h-auto py-2 flex-col items-start gap-0.5 text-xs">
                                 <span className="flex items-center font-bold"><Zap className="w-3.5 h-3.5 mr-1 fill-current" /> Urgent Needs</span>
@@ -480,9 +480,9 @@ export default function CampaignResultsTable({
     };
 
     return (
-        <div className="h-full flex">
+        <div className="h-full flex flex-col lg:flex-row">
             {/* Left Panel: Tabs + Table */}
-            <Card className={`border border-border bg-card shadow-sm flex flex-col transition-all duration-200 ${selectedPreviewVendor ? 'w-[55%] min-w-[420px]' : 'w-full'}`}>
+            <Card className={`border border-border bg-card shadow-sm flex flex-col transition-all duration-200 ${selectedPreviewVendor ? 'w-full lg:w-[55%] lg:min-w-[420px]' : 'w-full'}`}>
                 {/* Tab Strip */}
                 <div className="flex items-center border-b border-border bg-muted/50 overflow-x-auto flex-shrink-0">
                     <div className="flex items-center gap-0.5 px-2 py-1.5 flex-1 min-w-0">
@@ -508,7 +508,7 @@ export default function CampaignResultsTable({
                                         <span className="truncate">{campaign.label}</span>
                                     )}
                                     {activeCount > 0 && <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 flex-shrink-0 mt-0.5">{activeCount}</Badge>}
-                                    <button className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0 ml-0.5 mt-0.5"
+                                    <button className="opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0 ml-0.5 mt-0.5"
                                         onClick={(e) => { e.stopPropagation(); setShowCloseTabDialog(campaign.id); }}>
                                         <X className="w-3 h-3" />
                                     </button>
@@ -534,7 +534,7 @@ export default function CampaignResultsTable({
                             {loading && (<div className="absolute top-0 left-0 w-full h-0.5 bg-muted overflow-hidden"><div className="h-full bg-blue-600 animate-progress-indeterminate"></div></div>)}
 
                             {/* Source Toggle */}
-                            <div className="flex items-center gap-1 mb-2">
+                            <div className="flex flex-wrap items-center gap-1 mb-2">
                                 <button
                                     onClick={() => setSearchSource('opendata')}
                                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${searchSource === 'opendata'
@@ -555,17 +555,17 @@ export default function CampaignResultsTable({
 
                             {/* Google Maps Search */}
                             {searchSource === 'google' && (
-                                <div className="flex gap-2 items-center">
-                                    <Input type="text" placeholder="Trade (e.g. cleaning)..." value={query} onChange={(e) => setQuery(e.target.value)} className="h-7 text-xs bg-white dark:bg-card flex-1 min-w-[150px]" disabled={loading} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
+                                <div className="flex flex-wrap gap-2 items-center">
+                                    <Input type="text" placeholder="Trade (e.g. cleaning)..." value={query} onChange={(e) => setQuery(e.target.value)} className="h-7 text-xs bg-white dark:bg-card w-full sm:w-auto flex-1 min-w-0 sm:min-w-[150px]" disabled={loading} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
                                     <ReactGoogleAutocomplete
                                         apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
                                         onPlaceSelected={(place) => { if (place && (place.formatted_address || place.name)) { setLocation(place.formatted_address || place.name || ''); } }}
                                         options={{ types: ['geocode'], componentRestrictions: { country: 'us' } }}
                                         placeholder="Location..."
-                                        className="flex h-7 w-full rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 flex-1 min-w-[150px]"
+                                        className="flex h-7 w-full sm:w-auto rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 flex-1 min-w-0 sm:min-w-[150px]"
                                         onChange={(e: any) => setLocation(e.target.value)} value={location} disabled={loading}
                                     />
-                                    <Button onClick={() => handleSearch()} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white">
+                                    <Button onClick={() => handleSearch()} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white shrink-0">
                                         {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Rocket className="mr-1 h-3 w-3" /> Search</>}
                                     </Button>
                                 </div>
@@ -644,14 +644,14 @@ export default function CampaignResultsTable({
 
                         {/* Bulk Bar */}
                         {vendors.length > 0 && (
-                            <div className="px-3 py-1.5 border-b border-border bg-muted/30 flex items-center justify-between flex-shrink-0">
+                            <div className="px-3 py-1.5 border-b border-border bg-muted/30 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
                                 <span className="text-[11px] text-muted-foreground">
                                     {selectedVendors.size > 0
                                         ? <span className="font-medium text-primary">{selectedVendors.size} selected</span>
                                         : <>{activeVendors.length} active{dismissedCount > 0 && ` · ${dismissedCount} dismissed`}</>
                                     }
                                 </span>
-                                <div className="flex items-center gap-1">
+                                <div className="flex flex-wrap items-center gap-1">
                                     {selectedVendors.size > 0 ? (
                                         <>
                                             <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white px-2" onClick={() => { setBulkTrack('STANDARD'); setShowBulkApproveDialog(true); }}>
@@ -763,7 +763,7 @@ export default function CampaignResultsTable({
 
             {/* Right Panel: Vendor Detail */}
             {selectedPreviewVendor && (
-                <div className="w-[45%] h-full">
+                <div className="w-full lg:w-[45%] lg:h-full">
                     <VendorDetailPanel
                         vendor={selectedPreviewVendor}
                         campaignId={activeCampaign.id}

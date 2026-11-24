@@ -92,7 +92,7 @@ export default function CommissionsSettingsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                         <DollarSign className="w-6 h-6" /> Commission Rates
@@ -102,7 +102,7 @@ export default function CommissionsSettingsPage() {
                         {lastUpdated && <span className="ml-2">Last updated: {lastUpdated}</span>}
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                     {hasChanges && (
                         <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5">
                             <RotateCcw className="w-3.5 h-3.5" /> Reset
@@ -127,7 +127,7 @@ export default function CommissionsSettingsPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label className="text-sm font-medium">Base Rate (Standard Tier)</Label>
                             <div className="flex items-center gap-2">
@@ -188,14 +188,14 @@ export default function CommissionsSettingsPage() {
                     {/* Visual Preview */}
                     <div className="bg-muted/50 rounded-lg p-4 mt-4">
                         <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Preview</p>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div className="flex justify-between">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span>$2,000/mo deal (12mo):</span>
-                                <Badge variant="outline">{pctDisplay(config.rateStandard)} → ${(2000 * 12 * config.rateStandard).toLocaleString()}</Badge>
+                                <Badge variant="outline" className="shrink-0">{pctDisplay(config.rateStandard)} → ${(2000 * 12 * config.rateStandard).toLocaleString()}</Badge>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span>$5,000/mo deal (12mo):</span>
-                                <Badge variant="outline">{pctDisplay(config.ratePremium)} → ${(5000 * 12 * config.ratePremium).toLocaleString()}</Badge>
+                                <Badge variant="outline" className="shrink-0">{pctDisplay(config.ratePremium)} → ${(5000 * 12 * config.ratePremium).toLocaleString()}</Badge>
                             </div>
                         </div>
                     </div>
@@ -236,10 +236,10 @@ export default function CommissionsSettingsPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label className="text-sm font-medium">Payout Split</Label>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 {config.payoutSplit.map((pct, i) => (
                                     <div key={i} className="flex items-center gap-1">
                                         <Input

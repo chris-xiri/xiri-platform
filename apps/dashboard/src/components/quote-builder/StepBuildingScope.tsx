@@ -468,7 +468,7 @@ export default function StepBuildingScope({
             {/* ═══ STEP 1: SERVICE CATEGORY SELECTOR ═══ */}
             <div className="space-y-2">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Service Type First</Label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
                         type="button"
                         className={`p-3.5 rounded-xl border text-left transition-all ${
@@ -527,7 +527,7 @@ export default function StepBuildingScope({
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <Label className="text-xs">Location Name</Label>
                             <Input
@@ -555,10 +555,10 @@ export default function StepBuildingScope({
                 <div className="space-y-4">
                     {/* Unit Quote Total Header */}
                     <Card className="border-primary/30 bg-card shadow-sm">
-                        <CardContent className="py-4 px-6 flex items-center justify-between">
+                        <CardContent className="py-4 px-4 sm:px-6 flex flex-wrap items-center justify-between gap-2">
                             <div>
                                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Unit-Based Estimate</p>
-                                <div className="flex items-center gap-1.5 mt-0.5">
+                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                                     <span className="text-2xl font-bold text-primary">{fmtCurrency(totalUnitRate)}</span>
                                     <span className="text-xs text-muted-foreground">({unitItems.length} line item{unitItems.length !== 1 ? 's' : ''})</span>
                                 </div>
@@ -577,7 +577,7 @@ export default function StepBuildingScope({
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <Label className="text-xs">Service Type</Label>
                                     <select
@@ -652,7 +652,7 @@ export default function StepBuildingScope({
 
                             {/* Unit Items Table */}
                             <div className="space-y-2 border rounded-lg overflow-hidden">
-                                <div className="grid grid-cols-12 gap-2 bg-muted/40 p-2.5 text-xs font-semibold text-muted-foreground border-b">
+                                <div className="hidden sm:grid sm:grid-cols-12 gap-2 bg-muted/40 p-2.5 text-xs font-semibold text-muted-foreground border-b">
                                     <div className="col-span-4">Item / Work Description</div>
                                     <div className="col-span-2">Qty</div>
                                     <div className="col-span-2">Unit</div>
@@ -661,13 +661,14 @@ export default function StepBuildingScope({
                                 </div>
 
                                 {unitItems.length === 0 ? (
-                                    <p className="text-xs text-muted-foreground text-center py-6">
+                                    <p className="text-xs text-muted-foreground text-center py-6 px-3">
                                         No unit items added yet. Click &quot;Add Unit Line Item&quot; or use quick presets above.
                                     </p>
                                 ) : (
                                     unitItems.map((u, uIdx) => (
-                                        <div key={u.id || uIdx} className="grid grid-cols-12 gap-2 p-2 items-center border-b last:border-b-0 text-xs">
-                                            <div className="col-span-4">
+                                        <div key={u.id || uIdx} className="grid grid-cols-2 sm:grid-cols-12 gap-2 p-2.5 sm:p-2 items-center border-b last:border-b-0 text-xs">
+                                            <div className="col-span-2 sm:col-span-4">
+                                                <span className="sm:hidden text-[10px] font-medium text-muted-foreground block mb-0.5">Item / Work Description</span>
                                                 <Input
                                                     className="h-8 text-xs"
                                                     placeholder="e.g. Install trim & baseboard"
@@ -678,7 +679,8 @@ export default function StepBuildingScope({
                                                     }}
                                                 />
                                             </div>
-                                            <div className="col-span-2">
+                                            <div className="col-span-1 sm:col-span-2">
+                                                <span className="sm:hidden text-[10px] font-medium text-muted-foreground block mb-0.5">Qty</span>
                                                 <Input
                                                     type="number"
                                                     step="any"
@@ -691,7 +693,8 @@ export default function StepBuildingScope({
                                                     }}
                                                 />
                                             </div>
-                                            <div className="col-span-2">
+                                            <div className="col-span-1 sm:col-span-2">
+                                                <span className="sm:hidden text-[10px] font-medium text-muted-foreground block mb-0.5">Unit</span>
                                                 <select
                                                     className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs"
                                                     value={u.unit}
@@ -708,22 +711,26 @@ export default function StepBuildingScope({
                                                     <option value="days">days</option>
                                                 </select>
                                             </div>
-                                            <div className="col-span-2 relative">
-                                                <span className="absolute left-2 top-2 text-muted-foreground text-xs">$</span>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
-                                                    className="h-8 text-xs pl-5"
-                                                    value={u.unitPrice}
-                                                    onChange={(e) => {
-                                                        const price = parseFloat(e.target.value) || 0;
-                                                        setUnitItems(prev => prev.map((item, i) => i === uIdx ? { ...item, unitPrice: price, subtotal: Math.round(item.quantity * price * 100) / 100 } : item));
-                                                    }}
-                                                />
+                                            <div className="col-span-1 sm:col-span-2">
+                                                <span className="sm:hidden text-[10px] font-medium text-muted-foreground block mb-0.5">Unit Rate ($)</span>
+                                                <div className="relative">
+                                                    <span className="absolute left-2 top-2 text-muted-foreground text-xs">$</span>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        className="h-8 text-xs pl-5"
+                                                        value={u.unitPrice}
+                                                        onChange={(e) => {
+                                                            const price = parseFloat(e.target.value) || 0;
+                                                            setUnitItems(prev => prev.map((item, i) => i === uIdx ? { ...item, unitPrice: price, subtotal: Math.round(item.quantity * price * 100) / 100 } : item));
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="col-span-2 flex items-center justify-end gap-2">
+                                            <div className="col-span-1 sm:col-span-2 flex items-center justify-end gap-2 self-end sm:self-center pb-1 sm:pb-0">
                                                 <div className="text-right">
+                                                    <span className="sm:hidden text-[10px] text-muted-foreground block">Subtotal</span>
                                                     <span className="font-semibold text-xs">{fmtCurrency(u.subtotal || 0)}</span>
                                                     {u.quantity === 0 && (
                                                         <span className="block text-[9px] text-amber-600 font-medium">Billed after completion</span>
@@ -731,7 +738,7 @@ export default function StepBuildingScope({
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    className="text-destructive/60 hover:text-destructive p-1 rounded hover:bg-destructive/10"
+                                                    className="text-destructive/60 hover:text-destructive p-1 rounded hover:bg-destructive/10 shrink-0"
                                                     onClick={() => setUnitItems(prev => prev.filter((_, i) => i !== uIdx))}
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
@@ -777,8 +784,8 @@ export default function StepBuildingScope({
                 return (
                     <Card className="border-primary/30 bg-card sticky top-0 z-10 shadow-sm">
                         <CardContent className="py-3 px-4 space-y-2">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-6">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                                     <div>
                                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Final Monthly Price</p>
                                         <div className="flex items-center gap-2">
@@ -827,7 +834,7 @@ export default function StepBuildingScope({
                                 </div>
                             </div>
                             {/* Full cost breakdown */}
-                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground border-t pt-2 border-dashed">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground border-t pt-2 border-dashed">
                                 <span>Labor: {fmtCurrency(results.laborCostPerMonth)}</span>
                                 <span>Payroll Tax: {fmtCurrency(results.payrollTaxCost)}</span>
                                 <span>Supplies: {fmtCurrency(results.supplyCostPerMonth)}</span>
@@ -848,7 +855,7 @@ export default function StepBuildingScope({
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <Label className="text-xs">Location Name</Label>
                             <Input
@@ -879,7 +886,7 @@ export default function StepBuildingScope({
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <Label className="text-xs">Building Type</Label>
                             <select
@@ -922,7 +929,7 @@ export default function StepBuildingScope({
                     </div>
 
                     {/* Frequency, wage, overhead, hours override */}
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div>
                             <Label className="text-xs">Cleaning Frequency</Label>
                             <select
@@ -993,7 +1000,7 @@ export default function StepBuildingScope({
             {/* ═══ ROOMS + TASKS ═══ */}
             <Card>
                 <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-1">
                         <CardTitle className="text-sm">Rooms & Task Scope</CardTitle>
                         <span className="text-xs text-muted-foreground">
                             {rooms.length} room{rooms.length !== 1 ? 's' : ''}
@@ -1031,10 +1038,10 @@ export default function StepBuildingScope({
                             <div key={room.id} className="border rounded-lg overflow-hidden">
                                 {/* Room header */}
                                 <button
-                                    className="w-full flex items-center justify-between px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+                                    className="w-full flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
                                     onClick={() => setExpandedRoom(isExpanded ? null : room.id)}
                                 >
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0 flex-1">
                                         {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                                         <span className="text-sm font-medium">
                                             {room.customName || roomType?.name || room.roomTypeId}
@@ -1069,7 +1076,7 @@ export default function StepBuildingScope({
                                         {/* ─── NAME + DIMENSIONS ─── */}
                                         <div>
                                             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">📐 Dimensions</p>
-                                            <div className="grid grid-cols-4 gap-2">
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                                 <div>
                                                     <Label className="text-[10px]">Name</Label>
                                                     <Input
@@ -1136,7 +1143,7 @@ export default function StepBuildingScope({
                                         {showFixtures ? (
                                             <div>
                                                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">🔧 Fixtures (Walkthrough Count)</p>
-                                                <div className="grid grid-cols-3 gap-2">
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                     {(fixtureMode !== 'sinks-only') && (
                                                         <>
                                                             <div>

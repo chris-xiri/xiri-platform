@@ -90,7 +90,7 @@ const InlineEditField = ({
                     </a>
                 ) : <span className="text-sm">{prefix}{value}</span>
             ) : <span className="text-sm text-muted-foreground italic">Add {field}...</span>}
-            <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Pencil className="w-3 h-3 text-muted-foreground opacity-60 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0" />
         </div>
     );
 };
@@ -450,7 +450,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                                     }}
                                                                 />
                                                             </div>
-                                                            <div className="grid grid-cols-3 gap-2">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                                 <div>
                                                                     <label className="text-[10px] uppercase text-muted-foreground font-medium">City</label>
                                                                     <Input className="h-7 text-sm" value={addressDraft.city} onChange={e => setAddressDraft({ ...addressDraft, city: e.target.value })} placeholder="City" />
@@ -480,7 +480,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                                 <span className={vendor.streetAddress || vendor.address ? '' : 'text-muted-foreground italic'}>
                                                                     {vendor.streetAddress || vendor.address || 'Add address...'}
                                                                 </span>
-                                                                <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                <Pencil className="w-3 h-3 text-muted-foreground opacity-60 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0" />
                                                             </div>
                                                             {(vendor.city || vendor.state || vendor.zip) && (
                                                                 <div className="text-sm text-muted-foreground pl-6">
@@ -497,7 +497,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                     {/* Insurance & COI Documents Quick Access Card */}
                                     <Card className="border-emerald-200/80 bg-emerald-50/20">
                                         <CardHeader className="py-3">
-                                            <CardTitle className="text-sm flex items-center justify-between">
+                                            <CardTitle className="text-sm flex flex-wrap items-center justify-between gap-2">
                                                 <span className="flex items-center gap-1.5 text-emerald-950 font-bold">
                                                     <FileText className="w-4 h-4 text-emerald-700" />
                                                     Insurance Policies &amp; COI Documents
@@ -525,7 +525,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                 return (
                                                     <div className="space-y-2">
                                                         <div className="p-2.5 rounded-lg border bg-background text-xs space-y-1.5 shadow-2xs">
-                                                            <div className="flex items-center justify-between font-semibold">
+                                                            <div className="flex flex-wrap items-center justify-between gap-2 font-semibold">
                                                                 <span className="text-foreground flex items-center gap-1">
                                                                     <span>🛡️</span> GL: {polSummary.glLimit} | WC: {polSummary.wcLimit}
                                                                 </span>
@@ -539,7 +539,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                         </div>
                                                         {docs.map((docItem, idx) => (
                                                             <div key={idx} className="flex items-center justify-between p-2 rounded-md border bg-background text-xs">
-                                                                <div className="flex items-center gap-2">
+                                                                <div className="flex items-center gap-2 min-w-0">
                                                                     <FileText className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                                                                     <span className="font-medium truncate">{docItem.title}</span>
                                                                 </div>
@@ -561,7 +561,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
 
                                     <Card>
                                         <CardHeader className="py-3">
-                                            <CardTitle className="text-sm flex items-center justify-between">
+                                            <CardTitle className="text-sm flex flex-wrap items-center justify-between gap-2">
                                                 Capabilities
                                                 <CapabilityPicker
                                                     selected={vendor.capabilities || []}
@@ -579,7 +579,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                         updateDoc(doc(db, 'vendors', vendor.id!), { capabilities: updated, updatedAt: new Date() });
                                                     }}>
                                                         {getCapabilityLabel(cap)}
-                                                        <X className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                                                        <X className="w-3 h-3 ml-1 opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground" />
                                                     </Badge>
                                                 ))}
                                                 {(!vendor.capabilities || vendor.capabilities.length === 0) && (
@@ -654,21 +654,21 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                             <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> Response Time</label>
                                                             <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.responseTime} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, responseTime: e.target.value })} placeholder="e.g. Same day" />
                                                         </div>
-                                                    <div className="col-span-2">
-                                                        <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><FileText className="w-3 h-3" /> Previous Experience</label>
-                                                        <Textarea
-                                                            className="min-h-[80px] text-sm resize-y mt-0.5"
-                                                            value={onboardingDraft.experienceRaw}
-                                                            onChange={(e) => setOnboardingDraft({ ...onboardingDraft, experienceRaw: e.target.value })}
-                                                            placeholder="Describe their experience, past clients, years in business, notable projects..."
-                                                        />
-                                                        {onboardingDraft.experienceSummary && (
-                                                            <div className="mt-1.5 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                                                                <p className="text-[10px] uppercase text-blue-600 font-semibold mb-0.5">AI Summary</p>
-                                                                <p className="text-xs text-blue-800 whitespace-pre-wrap">{onboardingDraft.experienceSummary}</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                        <div className="col-span-2">
+                                                            <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><FileText className="w-3 h-3" /> Previous Experience</label>
+                                                            <Textarea
+                                                                className="min-h-[80px] text-sm resize-y mt-0.5"
+                                                                value={onboardingDraft.experienceRaw}
+                                                                onChange={(e) => setOnboardingDraft({ ...onboardingDraft, experienceRaw: e.target.value })}
+                                                                placeholder="Describe their experience, past clients, years in business, notable projects..."
+                                                            />
+                                                            {onboardingDraft.experienceSummary && (
+                                                                <div className="mt-1.5 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                                                                    <p className="text-[10px] uppercase text-blue-600 font-semibold mb-0.5">AI Summary</p>
+                                                                    <p className="text-xs text-blue-800 whitespace-pre-wrap">{onboardingDraft.experienceSummary}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
 
                                                     </div>
                                                     <div>
@@ -689,7 +689,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                                 <PopoverTrigger asChild>
                                                                     <Button variant="outline" size="sm" className="h-7 text-xs gap-1 w-full"><Plus className="w-3 h-3" /> Add Counties</Button>
                                                                 </PopoverTrigger>
-                                                                <PopoverContent className="w-[280px] p-0" align="start">
+                                                                <PopoverContent className="w-[calc(100vw-3rem)] max-w-[280px] p-0" align="start">
                                                                     <div className="max-h-[280px] overflow-y-auto p-2 space-y-3" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
                                                                         {(['nyc', 'long_island', 'hudson_valley', 'nj'] as const).map(region => {
                                                                             const counties = SERVICE_COUNTIES.filter(c => c.region === region);
@@ -742,7 +742,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                                         <PopoverTrigger asChild>
                                                                             <Button variant="outline" size="sm" className="h-7 text-xs gap-1 w-full"><Plus className="w-3 h-3" /> Add Certifications</Button>
                                                                         </PopoverTrigger>
-                                                                        <PopoverContent className="w-[320px] p-0" align="start">
+                                                                        <PopoverContent className="w-[calc(100vw-3rem)] max-w-[320px] p-0" align="start">
                                                                             <div className="max-h-[280px] overflow-y-auto p-2 space-y-0.5" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
                                                                                 {relevantCerts.map(cert => {
                                                                                     const sel = (onboardingDraft.certifications || []).includes(cert.value);

@@ -87,10 +87,10 @@ export default function SiteVisitsPage() {
     return (
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
                     <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <MapPin className="w-6 h-6 text-primary" />
+                        <MapPin className="w-6 h-6 text-primary shrink-0" />
                         Site Visits
                     </h1>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -98,7 +98,7 @@ export default function SiteVisitsPage() {
                     </p>
                 </div>
                 <Button
-                    className="gap-2"
+                    className="gap-2 self-start sm:self-auto shrink-0"
                     onClick={() => router.push('/operations/site-visits/conduct')}
                 >
                     <Plus className="w-4 h-4" /> Conduct Visit
@@ -151,17 +151,17 @@ export default function SiteVisitsPage() {
                             {overdueWOs.map(wo => (
                                 <div
                                     key={wo.id}
-                                    className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-900/10 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+                                    className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/10 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
                                     onClick={() => router.push(`/operations/site-visits/conduct?workOrderId=${wo.id}`)}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <Building2 className="w-4 h-4 text-red-500" />
-                                        <div>
-                                            <p className="font-medium text-sm">{wo.locationName}</p>
-                                            <p className="text-xs text-muted-foreground">{wo.serviceType}</p>
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <Building2 className="w-4 h-4 text-red-500 shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-sm truncate">{wo.locationName}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{wo.serviceType}</p>
                                         </div>
                                     </div>
-                                    <Badge variant="destructive" className="text-[10px]">
+                                    <Badge variant="destructive" className="text-[10px] shrink-0">
                                         Overdue
                                     </Badge>
                                 </div>
@@ -191,17 +191,17 @@ export default function SiteVisitsPage() {
                                 return (
                                     <div
                                         key={wo.id}
-                                        className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30 cursor-pointer transition-colors"
+                                        className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border hover:bg-muted/30 cursor-pointer transition-colors"
                                         onClick={() => router.push(`/operations/site-visits/conduct?workOrderId=${wo.id}`)}
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <Building2 className="w-4 h-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="font-medium text-sm">{wo.locationName}</p>
-                                                <p className="text-xs text-muted-foreground">{wo.serviceType}</p>
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="font-medium text-sm truncate">{wo.locationName}</p>
+                                                <p className="text-xs text-muted-foreground truncate">{wo.serviceType}</p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-right shrink-0">
                                             {lastVisit ? (
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex items-center gap-0.5">
@@ -237,15 +237,15 @@ export default function SiteVisitsPage() {
                     <CardContent>
                         <div className="space-y-2">
                             {visits.slice(0, 10).map(v => (
-                                <div key={v.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20">
-                                    <div>
-                                        <p className="font-medium text-sm">{v.locationName}</p>
+                                <div key={v.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-muted/20">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-medium text-sm truncate">{v.locationName}</p>
                                         <p className="text-xs text-muted-foreground">
                                             {v.fsmName} • {v.visitDate}
                                             {v.isFirstVisit && <span className="ml-1 text-blue-500 font-medium">★ First Visit</span>}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
                                         {v.clientContactMade && (
                                             <Badge variant="outline" className="text-[10px] text-green-600 border-green-200">
                                                 Client Met

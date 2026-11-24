@@ -69,8 +69,8 @@ function LegalTemplateForm({
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                    <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="sm:col-span-2">
                         <label className="text-sm font-medium mb-1.5 block">Template Name</label>
                         <Input
                             value={name}
@@ -88,7 +88,7 @@ function LegalTemplateForm({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label className="text-sm font-medium mb-2 block">Category</label>
                         <div className="flex flex-wrap gap-2">
@@ -257,7 +257,7 @@ export default function LegalTemplatesPage() {
     return (
         <ProtectedRoute resource="admin/legal">
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         <h2 className="text-2xl font-bold mb-1">Legal Templates</h2>
                         <p className="text-muted-foreground">
@@ -265,7 +265,7 @@ export default function LegalTemplatesPage() {
                         </p>
                     </div>
                     {!showForm && (
-                        <Button onClick={() => setShowForm(true)} className="gap-2">
+                        <Button onClick={() => setShowForm(true)} className="gap-2 self-start sm:self-auto">
                             <Plus className="w-4 h-4" /> New Template
                         </Button>
                     )}
@@ -291,13 +291,13 @@ export default function LegalTemplatesPage() {
                         return (
                             <Card key={template.id} className={!template.isActive ? 'opacity-60' : ''}>
                                 <CardContent className="p-4">
-                                    <div className="flex items-start justify-between">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                         <div className="flex items-start gap-3 min-w-0 flex-1">
-                                            <div className="mt-0.5">
+                                            <div className="mt-0.5 shrink-0">
                                                 <FileText className="w-5 h-5 text-muted-foreground" />
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
+                                                <div className="flex flex-wrap items-center gap-2 mb-1">
                                                     <h3 className="font-semibold text-sm">{template.name}</h3>
                                                     <Badge variant="secondary" className={`text-[10px] ${CATEGORY_COLORS[template.category]}`}>
                                                         {template.category.toUpperCase()}
@@ -311,7 +311,7 @@ export default function LegalTemplatesPage() {
                                                 <p className="text-[10px] text-muted-foreground">{lines} lines · {words} words</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1 ml-4 flex-shrink-0">
+                                        <div className="flex items-center gap-1 flex-shrink-0">
                                             <Button
                                                 variant="ghost"
                                                 size="icon"

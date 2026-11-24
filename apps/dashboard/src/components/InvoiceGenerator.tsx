@@ -286,17 +286,17 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                                                 className="cursor-pointer hover:border-primary/50 transition-all"
                                                 onClick={() => setSelectedClient(cg)}
                                             >
-                                                <CardContent className="p-4 flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <Building2 className="w-5 h-5 text-muted-foreground" />
-                                                        <div>
-                                                            <p className="font-medium">{cg.businessName}</p>
+                                                <CardContent className="p-4 flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <Building2 className="w-5 h-5 text-muted-foreground shrink-0" />
+                                                        <div className="min-w-0">
+                                                            <p className="font-medium truncate">{cg.businessName}</p>
                                                             <p className="text-xs text-muted-foreground">
                                                                 {cg.workOrders.length} active work orders
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <span className="text-sm font-medium text-primary">
+                                                    <span className="text-sm font-medium text-primary shrink-0">
                                                         {formatCurrency(cg.workOrders.reduce((s, wo) => s + wo.clientRate, 0))}/mo
                                                     </span>
                                                 </CardContent>
@@ -307,18 +307,18 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                             ) : (
                                 <>
                                     {/* Selected Client */}
-                                    <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
-                                        <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="w-4 h-4 text-primary" />
-                                            <span className="text-sm font-medium">{selectedClient.businessName}</span>
+                                    <div className="flex items-center justify-between gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                                            <span className="text-sm font-medium truncate">{selectedClient.businessName}</span>
                                         </div>
-                                        <Button variant="ghost" size="sm" onClick={() => setSelectedClient(null)}>
+                                        <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setSelectedClient(null)}>
                                             Change
                                         </Button>
                                     </div>
 
                                     {/* Billing Period */}
-                                    <div className="grid grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div>
                                             <Label className="text-xs">Billing Start</Label>
                                             <Input
@@ -353,12 +353,12 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                                         <Label className="text-xs mb-2 block">Line Items ({lineItems.length})</Label>
                                         <div className="border rounded-lg divide-y text-sm">
                                             {lineItems.map((li, i) => (
-                                                <div key={i} className="px-3 py-2 flex items-center justify-between">
-                                                    <div>
+                                                <div key={i} className="px-3 py-2 flex items-center justify-between gap-2">
+                                                    <div className="min-w-0">
                                                         <span className="font-medium">{li.serviceType}</span>
                                                         <span className="text-muted-foreground ml-2 text-xs">{li.locationName}</span>
                                                     </div>
-                                                    <span className="font-medium">{formatCurrency(li.amount)}</span>
+                                                    <span className="font-medium shrink-0">{formatCurrency(li.amount)}</span>
                                                 </div>
                                             ))}
                                         </div>

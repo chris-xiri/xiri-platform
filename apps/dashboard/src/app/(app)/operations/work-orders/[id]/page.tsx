@@ -684,13 +684,13 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     return (
         <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Link href="/operations/work-orders" className="text-muted-foreground hover:text-foreground">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
+                    <Link href="/operations/work-orders" className="text-muted-foreground hover:text-foreground shrink-0 mt-1 sm:mt-0">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-3">
+                    <div className="min-w-0">
+                        <h1 className="text-xl sm:text-2xl font-bold flex flex-wrap items-center gap-2 sm:gap-3">
                             {wo.serviceType}
                             <Badge variant={config.variant}>{config.label}</Badge>
                             {(() => {
@@ -712,8 +712,8 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                             })()}
                         </h1>
                         <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {wo.locationName}
+                            <MapPin className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">{wo.locationName}</span>
                         </p>
                         {(wo.locationAddress || wo.locationCity) && (
                             <p className="text-xs text-muted-foreground ml-5">
@@ -732,7 +732,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                             if (daysUntil > 0) {
                                 return (
                                     <div className="mt-2 px-3 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
-                                        <Calendar className="w-3.5 h-3.5" />
+                                        <Calendar className="w-3.5 h-3.5 shrink-0" />
                                         <span><strong>{daysUntil} day{daysUntil !== 1 ? 's' : ''}</strong> to find a vendor before service starts on <strong>{startDate.toLocaleDateString()}</strong></span>
                                     </div>
                                 );
@@ -743,7 +743,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                 </div>
 
                 {/* Status Actions */}
-                <div className="flex gap-2 items-center">
+                <div className="flex flex-wrap gap-2 items-center">
                     {(wo.sowDocumentUrl || sowDoc?.url) && (
                         <a
                             href={wo.sowDocumentUrl || sowDoc?.url}
@@ -812,7 +812,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                 {/* Left: Details */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Financial Overview */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <Card>
                             <CardContent className="pt-6">
                                 <p className="text-xs text-muted-foreground uppercase">{isOneTime ? 'Client Rate (One-Time)' : 'Client Rate'}</p>
@@ -884,12 +884,12 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
 
                             {(wo.sowDocumentUrl || sowDoc?.url) ? (
                                 <div className="flex items-center justify-between p-3 rounded-lg border border-emerald-200 bg-emerald-50/50 flex-wrap gap-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
                                             <FileText className="w-5 h-5" />
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-emerald-950">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-emerald-950 truncate">
                                                 {wo.sowDocumentName || sowDoc?.name || 'Signed_Statement_of_Work.pdf'}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
@@ -897,7 +897,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         <Button
                                             size="sm"
                                             className="gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white"
@@ -1060,7 +1060,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                                     <div>
                                         <p className="text-xs text-muted-foreground uppercase mb-1">Frequency</p>
                                         <p className="font-medium">{formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)}</p>
@@ -1071,9 +1071,9 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                     </div>
                                     <div>
                                         <p className="text-xs text-muted-foreground uppercase mb-1">Days</p>
-                                        <div className="flex gap-1 mt-0.5">
+                                        <div className="flex flex-wrap gap-1 mt-0.5">
                                             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                                                <span key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${wo.schedule?.daysOfWeek?.[i] ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                                                <span key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium shrink-0 ${wo.schedule?.daysOfWeek?.[i] ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                                                     {d}
                                                 </span>
                                             ))}
@@ -1101,14 +1101,14 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                         return (
                             <Card>
                                 <CardHeader className="pb-3">
-                                    <div className="flex items-center justify-between">
-                                        <div>
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div className="min-w-0">
                                             <CardTitle className="text-base flex items-center gap-2">
-                                                <Shield className="w-4 h-4 text-muted-foreground" /> Task Checklist
+                                                <Shield className="w-4 h-4 text-muted-foreground shrink-0" /> Task Checklist
                                             </CardTitle>
                                             <CardDescription>{wo.tasks.length} tasks across {roomGroups.length} {roomGroups.length === 1 ? 'area' : 'areas'}</CardDescription>
                                         </div>
-                                        <Link href={`/operations/nfc-zones?woId=${params.id}`}>
+                                        <Link href={`/operations/nfc-zones?woId=${params.id}`} className="shrink-0">
                                             <Button variant="outline" size="sm" className="gap-1.5 text-xs">
                                                 <Package className="w-3.5 h-3.5" />
                                                 {wo.nfcZones && wo.nfcZones.length > 0 ? 'Edit NFC Zones' : 'Setup NFC Zones'}
@@ -1156,11 +1156,11 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {wo.vendorHistory.map((v, i) => (
-                                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border">
-                                        <div className="flex items-center gap-3">
-                                            <Truck className="w-4 h-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-sm font-medium">{v.vendorName}</p>
+                                    <div key={i} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-muted/20 border">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <Truck className="w-4 h-4 text-muted-foreground shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium truncate">{v.vendorName}</p>
                                                 <p className="text-xs text-muted-foreground">
                                                     {formatCurrency(v.vendorRate)}{isOneTime ? ' total' : '/mo'} •
                                                     Assigned {new Date(v.assignedAt).toLocaleDateString()}
@@ -1168,12 +1168,12 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                             </div>
                                         </div>
                                         {v.removedAt && (
-                                            <Badge variant="secondary" className="text-xs">
+                                            <Badge variant="secondary" className="text-xs shrink-0">
                                                 Removed: {v.removalReason || 'N/A'}
                                             </Badge>
                                         )}
                                         {!v.removedAt && i === wo.vendorHistory.length - 1 && (
-                                            <Badge variant="outline" className="text-xs text-green-600 border-green-600/30">Current</Badge>
+                                            <Badge variant="outline" className="text-xs text-green-600 border-green-600/30 shrink-0">Current</Badge>
                                         )}
                                     </div>
                                 ))}
@@ -1221,12 +1221,12 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
 
                                     {/* Contractor SOW / Subcontractor Rate Agreement */}
                                     <div className="pt-3 border-t space-y-2">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex flex-wrap items-center justify-between gap-1.5">
                                             <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                                                <FileCheck className="w-3.5 h-3.5 text-blue-600" /> Contractor SOW & Rate
+                                                <FileCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" /> Contractor SOW & Rate
                                             </p>
                                             {wo.contractorSowUrl && (
-                                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px] font-semibold">
+                                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px] font-semibold shrink-0">
                                                     Rate Confirmed
                                                 </Badge>
                                             )}
@@ -1260,7 +1260,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                                         {wo.contractorSowName || 'Contractor_Signed_SOW.pdf'}
                                                     </p>
                                                 </div>
-                                                <div className="flex items-center gap-1.5">
+                                                <div className="flex flex-wrap items-center gap-1.5">
                                                     <Button
                                                         size="sm"
                                                         className="h-7 text-xs gap-1 bg-emerald-700 hover:bg-emerald-800 text-white flex-1"
@@ -1406,14 +1406,14 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                             onClick={() => setSelectedVendor(v)}
                                         >
                                             <CardContent className="p-3 space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <p className="font-medium text-sm">{v.companyName}</p>
-                                                        <p className="text-xs text-muted-foreground">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-medium text-sm truncate">{v.companyName}</p>
+                                                        <p className="text-xs text-muted-foreground truncate">
                                                             {v.contactName}{v.city ? ` • ${v.city}${v.state ? `, ${v.state}` : ''}` : ''}{v.zipCode ? ` • ${v.zipCode}` : ''}
                                                         </p>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5">
+                                                    <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                                                         {v.capabilityMatch && (
                                                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">
                                                                 <CheckCircle2 className="w-3 h-3" /> Service

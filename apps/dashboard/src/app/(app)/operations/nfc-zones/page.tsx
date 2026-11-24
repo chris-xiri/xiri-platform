@@ -451,17 +451,17 @@ function NfcZoneSetup() {
                                 className="cursor-pointer hover:border-primary/50 transition-all"
                                 onClick={() => router.push(`/operations/nfc-zones?woId=${wo.id}`)}
                             >
-                                <CardContent className="p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <CardContent className="p-4 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                                             <MapPin className="w-5 h-5 text-primary" />
                                         </div>
-                                        <div>
-                                            <p className="font-medium text-sm">{wo.locationName}</p>
-                                            <p className="text-xs text-muted-foreground">{wo.serviceType}</p>
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-sm truncate">{wo.locationName}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{wo.serviceType}</p>
                                         </div>
                                     </div>
-                                    <Badge variant="outline" className="text-xs">
+                                    <Badge variant="outline" className="text-xs shrink-0">
                                         {(wo.tasks || []).length} tasks
                                     </Badge>
                                 </CardContent>
@@ -517,10 +517,10 @@ function NfcZoneSetup() {
                         {/* Site Key */}
                         <div className="space-y-2">
                             <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                                <KeyRound className="w-3 h-3" /> Site Key (share with {vendorName})
+                                <KeyRound className="w-3 h-3 shrink-0" /> Site Key (share with {vendorName})
                             </Label>
                             <div className="flex items-center gap-2">
-                                <div className="flex-1 bg-muted/50 rounded-lg px-4 py-3 font-mono text-xl font-bold tracking-[0.3em] text-center select-all">
+                                <div className="flex-1 min-w-0 bg-muted/50 rounded-lg px-3 sm:px-4 py-3 font-mono text-lg sm:text-xl font-bold tracking-[0.15em] sm:tracking-[0.3em] text-center select-all break-all">
                                     {siteKeyPlain}
                                 </div>
                                 <Button variant="outline" size="icon" className="shrink-0" onClick={copySiteKey}>
@@ -670,14 +670,14 @@ function NfcZoneSetup() {
                         {startTag.tagId ? (
                             <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 flex items-center gap-3">
                                 <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                                <div>
+                                <div className="min-w-0 flex-1">
                                     <p className="text-sm font-medium text-green-700 dark:text-green-400">Tag registered!</p>
-                                    <p className="text-[10px] font-mono text-muted-foreground">{startTag.tagId}</p>
+                                    <p className="text-[10px] font-mono text-muted-foreground break-all">{startTag.tagId}</p>
                                 </div>
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="ml-auto text-xs"
+                                    className="ml-auto text-xs shrink-0"
                                     onClick={() => setStartTag(prev => ({ ...prev, tagId: '' }))}
                                 >
                                     Change
@@ -873,14 +873,14 @@ function NfcZoneSetup() {
             {/* ─── Configuring Zone ─── */}
             {step === 'configuring' && activeZone && (
                 <Card className="border-purple-200 dark:border-purple-800 overflow-hidden">
-                    <div className="bg-purple-50 dark:bg-purple-950/20 px-4 py-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Tag className="w-4 h-4 text-purple-600" />
-                            <span className="text-xs font-mono font-medium text-purple-700 dark:text-purple-400">
+                    <div className="bg-purple-50 dark:bg-purple-950/20 px-4 py-3 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Tag className="w-4 h-4 text-purple-600 shrink-0" />
+                            <span className="text-xs font-mono font-medium text-purple-700 dark:text-purple-400 break-all">
                                 {activeZone.tagId}
                             </span>
                         </div>
-                        {editingZoneId && <Badge variant="secondary" className="text-[10px]">Editing</Badge>}
+                        {editingZoneId && <Badge variant="secondary" className="text-[10px] shrink-0">Editing</Badge>}
                     </div>
                     <CardContent className="p-4 space-y-4">
                         <div className="space-y-1">
@@ -1022,18 +1022,18 @@ function NfcZoneSetup() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium truncate">{zone.name}</p>
-                                    <p className="text-[10px] font-mono text-muted-foreground">{zone.tagId}</p>
+                                    <p className="text-[10px] font-mono text-muted-foreground truncate">{zone.tagId}</p>
                                     <div className="flex flex-wrap gap-1 mt-1">
                                         {zone.roomTypeNames.map(name => (
                                             <Badge key={name} variant="secondary" className="text-[9px] py-0 h-4">{name}</Badge>
                                         ))}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => editZone(zone)}>
+                                <div className="flex items-center gap-1 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => editZone(zone)}>
                                         <Pencil className="w-3.5 h-3.5" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => removeZone(zone.id)}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500" onClick={() => removeZone(zone.id)}>
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </Button>
                                 </div>

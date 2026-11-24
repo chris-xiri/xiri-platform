@@ -154,7 +154,7 @@ function EditableField({
             ) : (
                 <span className={`text-base ${value ? 'font-medium' : 'text-muted-foreground italic'}`}>{value || `Add ${label.toLowerCase()}`}</span>
             )}
-            <Pencil className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-opacity ml-auto flex-shrink-0" />
+            <Pencil className="w-3.5 h-3.5 text-muted-foreground/60 md:text-muted-foreground/0 md:group-hover:text-muted-foreground/70 transition-opacity ml-auto flex-shrink-0" />
         </div>
     );
 }
@@ -309,7 +309,7 @@ function EditableAddressField({
                         <label className="text-xs font-medium text-muted-foreground">Street Address</label>
                         <Input className="h-8 text-sm" value={draft.address} onChange={e => setDraft({ ...draft, address: e.target.value })} placeholder="123 Main St" />
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
                             <label className="text-xs font-medium text-muted-foreground">City</label>
                             <Input className="h-8 text-sm" value={draft.city} onChange={e => setDraft({ ...draft, city: e.target.value })} placeholder="City" />
@@ -351,7 +351,7 @@ function EditableAddressField({
                         </p>
                     )}
                 </div>
-                <Pencil className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-opacity flex-shrink-0 mt-1" />
+                <Pencil className="w-3.5 h-3.5 text-muted-foreground/60 md:text-muted-foreground/0 md:group-hover:text-muted-foreground/70 transition-opacity flex-shrink-0 mt-1" />
             </div>
         </div>
     );
@@ -538,35 +538,36 @@ export default function LeadDetailPage() {
 
     return (
         <ProtectedRoute resource="sales/crm">
-            <div className="h-full flex flex-col space-y-4">
+            <div className="flex flex-col space-y-4">
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-w-0">
                         <Button
                             variant="ghost"
                             size="sm"
+                            className="w-fit -ml-2 sm:ml-0 shrink-0"
                             onClick={() => router.push('/sales/crm')}
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Back to CRM
                         </Button>
-                        <div>
+                        <div className="min-w-0">
                             <EditableField
                                 label="Business name"
                                 value={lead.businessName || (lead as any).name || ''}
                                 icon={Building2}
                                 onSave={(v) => updateField('businessName', v)}
                                 renderDisplay={(val) => (
-                                    <h1 className="text-3xl font-bold">{val || 'Unnamed Business'}</h1>
+                                    <h1 className="text-xl sm:text-3xl font-bold break-words">{val || 'Unnamed Business'}</h1>
                                 )}
                             />
-                            <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
                                 <select
                                     value={lead.facilityType || 'other'}
                                     onChange={async (e) => {
                                         await updateField('facilityType', e.target.value);
                                     }}
-                                    className="text-sm text-muted-foreground bg-transparent border border-transparent hover:border-border focus:border-primary rounded px-1 py-0.5 cursor-pointer transition-colors outline-none focus:ring-1 focus:ring-primary/30"
+                                    className="text-sm text-muted-foreground bg-transparent border border-transparent hover:border-border focus:border-primary rounded px-1 py-0.5 cursor-pointer transition-colors outline-none focus:ring-1 focus:ring-primary/30 max-w-full"
                                 >
                                     {FACILITY_TYPE_OPTIONS.map(opt => (
                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -586,7 +587,7 @@ export default function LeadDetailPage() {
                     </div>
 
                     {/* Actions & Status Badge */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
                         <Button
                             size="sm"
                             className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-9 shadow-xs"
@@ -601,7 +602,7 @@ export default function LeadDetailPage() {
                 </div>
 
                 {/* ═══ Company Dashboard Hub ═══ */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 overflow-auto">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {/* Left Column — Hub: Contacts, Work Orders, Quotes, Contracts, Timeline */}
                     <div className="lg:col-span-2">
                         <CompanyHub companyId={leadId} activities={activities} />

@@ -376,18 +376,18 @@ export default function CommandCenterPage() {
         <ProtectedRoute resource="operations/work-orders">
             <div className="space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
                             <Monitor className="w-5 h-5 text-white" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <h1 className="text-2xl font-bold">Command Center</h1>
                             <p className="text-sm text-muted-foreground">Real-time cleaning operations monitoring</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                    <div className="flex items-center gap-1 bg-muted rounded-lg p-1 self-start sm:self-auto shrink-0">
                         <Button variant={ccTab === 'tonight' ? 'default' : 'ghost'} size="sm" className="gap-1.5 text-xs" onClick={() => setCcTab('tonight')}>
                             <Wifi className="w-3.5 h-3.5" /> Tonight
                         </Button>
@@ -659,7 +659,7 @@ export default function CommandCenterPage() {
                                     {cleanerRows.length === 0 ? (
                                         <div className="py-8 text-center text-muted-foreground text-sm">All sites have been cleaned and reviewed tonight.</div>
                                     ) : (
-                                        <div className="overflow-x-auto">
+                                        <div className="w-full overflow-x-auto">
                                             <table className="w-full text-sm">
                                                 <thead>
                                                     <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground uppercase tracking-wider">
@@ -685,7 +685,7 @@ export default function CommandCenterPage() {
                                                                 <React.Fragment key={`s-${row.wo.id}`}>
                                                                     {showSectionHeader && (
                                                                         <tr>
-                                                                            <td colSpan={6} className={`px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider ${SECTION_STYLE[section] || ''}`}>
+                                                                            <td colSpan={7} className={`px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider ${SECTION_STYLE[section] || ''}`}>
                                                                                 {section} <span className="font-normal opacity-70">({sectionCount})</span>
                                                                             </td>
                                                                         </tr>
@@ -714,7 +714,7 @@ export default function CommandCenterPage() {
                                     {managerRows.length === 0 ? (
                                         <div className="py-8 text-center text-muted-foreground text-sm">No sites have been reviewed by the night manager yet.</div>
                                     ) : (
-                                        <div className="overflow-x-auto">
+                                        <div className="w-full overflow-x-auto">
                                             <table className="w-full text-sm">
                                                 <thead>
                                                     <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground uppercase tracking-wider">
@@ -764,15 +764,15 @@ export default function CommandCenterPage() {
                 {ccTab === 'history' && (
                     <>
                         <div className="flex items-center gap-3 flex-wrap">
-                            <div className="flex items-center gap-2">
-                                <label className="text-xs text-muted-foreground">From</label>
-                                <Input type="date" value={historyDateFrom} onChange={e => setHistoryDateFrom(e.target.value)} className="h-8 w-[160px] text-sm" />
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <label className="text-xs text-muted-foreground shrink-0">From</label>
+                                <Input type="date" value={historyDateFrom} onChange={e => setHistoryDateFrom(e.target.value)} className="h-8 w-full sm:w-[160px] text-sm" />
                             </div>
-                            <div className="flex items-center gap-2">
-                                <label className="text-xs text-muted-foreground">To</label>
-                                <Input type="date" value={historyDateTo} onChange={e => setHistoryDateTo(e.target.value)} className="h-8 w-[160px] text-sm" />
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <label className="text-xs text-muted-foreground shrink-0">To</label>
+                                <Input type="date" value={historyDateTo} onChange={e => setHistoryDateTo(e.target.value)} className="h-8 w-full sm:w-[160px] text-sm" />
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex flex-wrap items-center gap-1">
                                 {['7d', '30d', '90d'].map(range => (
                                     <Button key={range} variant="outline" size="sm" className="text-xs h-8" onClick={() => {
                                         const days = parseInt(range);
@@ -787,7 +787,7 @@ export default function CommandCenterPage() {
                             </div>
 
                             {/* Tier Filter */}
-                            <div className="border-l border-border pl-3 ml-1 flex items-center gap-1">
+                            <div className="sm:border-l border-border sm:pl-3 sm:ml-1 flex flex-wrap items-center gap-1">
                                 {(['all', 'green', 'amber', 'red'] as const).map(tier => {
                                     const count = tier === 'all' ? morningReports.length : morningReports.filter(r => r.tier === tier).length;
                                     const isActive = tierFilter === tier;
@@ -824,7 +824,7 @@ export default function CommandCenterPage() {
                                         <p className="text-xs mt-1">Morning reports are generated daily at 5:30 AM ET.</p>
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto">
+                                    <div className="w-full overflow-x-auto">
                                         <table className="w-full text-sm">
                                             <thead>
                                                 <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground uppercase tracking-wider">
@@ -868,10 +868,10 @@ export default function CommandCenterPage() {
                                                                             {/* Left: Crew & Timing */}
                                                                             <div className="space-y-3">
                                                                                 <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Shift Details</h4>
-                                                                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                                                                                     <div>
                                                                                         <span className="text-xs text-muted-foreground">Crew</span>
-                                                                                        <p className="font-medium flex items-center gap-1"><User className="w-3.5 h-3.5" /> {r.crewName || '—'}</p>
+                                                                                        <p className="font-medium flex items-center gap-1"><User className="w-3.5 h-3.5 shrink-0" /> {r.crewName || '—'}</p>
                                                                                     </div>
                                                                                     <div>
                                                                                         <span className="text-xs text-muted-foreground">Clock In</span>
@@ -881,9 +881,9 @@ export default function CommandCenterPage() {
                                                                                         <span className="text-xs text-muted-foreground">Clock Out</span>
                                                                                         <p className="font-mono">{r.clockOut || '—'}</p>
                                                                                     </div>
-                                                                                    <div>
+                                                                                    <div className="min-w-0">
                                                                                         <span className="text-xs text-muted-foreground">Client Email</span>
-                                                                                        <p className="text-xs">{r.clientEmail}</p>
+                                                                                        <p className="text-xs break-all">{r.clientEmail}</p>
                                                                                     </div>
                                                                                 </div>
 

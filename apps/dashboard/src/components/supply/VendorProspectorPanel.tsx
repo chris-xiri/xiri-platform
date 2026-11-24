@@ -144,7 +144,7 @@ function ProspectDetailPanel({
     const hasContact = prospect.contactName || prospect.contactEmail;
 
     return (
-        <div className="flex flex-col h-full bg-background border-l border-border overflow-hidden animate-in slide-in-from-right-5 duration-200">
+        <div className="flex flex-col h-full bg-background border-t lg:border-t-0 lg:border-l border-border overflow-hidden animate-in slide-in-from-right-5 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 flex-shrink-0">
                 <div className="min-w-0 flex-1">
@@ -275,7 +275,7 @@ function ProspectDetailPanel({
 
             {/* Actions */}
             <div className="p-3 bg-muted/30 border-t border-border flex-shrink-0">
-                <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                     <Button onClick={() => onApprove('FAST_TRACK')}
                         className="bg-orange-500 hover:bg-orange-600 text-white h-auto py-2 flex-col items-start gap-0.5 text-xs">
                         <span className="flex items-center font-bold"><Zap className="w-3.5 h-3.5 mr-1 fill-current" /> Urgent Needs</span>
@@ -533,9 +533,9 @@ export default function VendorProspectorPanel({ onVendorAdded }: VendorProspecto
     // ── Render ──
 
     return (
-        <div className="h-full flex">
+        <div className="h-full flex flex-col lg:flex-row">
             {/* Left Panel: Tabs + Table */}
-            <Card className={`border border-border bg-card shadow-sm flex flex-col transition-all duration-200 ${selectedDetail ? 'w-[55%] min-w-[420px]' : 'w-full'}`}>
+            <Card className={`border border-border bg-card shadow-sm flex flex-col transition-all duration-200 ${selectedDetail ? 'w-full lg:w-[55%] lg:min-w-[420px]' : 'w-full'}`}>
                 {/* Tab Strip */}
                 <div className="flex items-center border-b border-border bg-muted/50 overflow-x-auto flex-shrink-0">
                     <div className="flex items-center gap-0.5 px-2 py-1.5 flex-1 min-w-0">
@@ -564,7 +564,7 @@ export default function VendorProspectorPanel({ onVendorAdded }: VendorProspecto
                                     )}
                                     {count > 0 && <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 flex-shrink-0 mt-0.5">{count}</Badge>}
                                     <button
-                                        className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0 ml-0.5 mt-0.5"
+                                        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0 ml-0.5 mt-0.5"
                                         onClick={(e) => { e.stopPropagation(); setShowCloseTabDialog(campaign.id); }}
                                     >
                                         <X className="w-3 h-3" />
@@ -594,9 +594,9 @@ export default function VendorProspectorPanel({ onVendorAdded }: VendorProspecto
                                 </div>
                             )}
 
-                            <div className="flex gap-2 items-end">
+                            <div className="flex flex-wrap gap-2 items-end">
                                 {/* Capability Selector */}
-                                <div className="flex-1 min-w-[180px]">
+                                <div className="w-full sm:w-auto flex-1 min-w-0 sm:min-w-[160px]">
                                     <label className="text-[10px] text-muted-foreground font-medium mb-0.5 block">Trade / Capability</label>
                                     <Select value={capability} onValueChange={setCapability}>
                                         <SelectTrigger className="h-7 text-xs bg-white dark:bg-card">
@@ -618,7 +618,7 @@ export default function VendorProspectorPanel({ onVendorAdded }: VendorProspecto
                                 </div>
 
                                 {/* Location */}
-                                <div className="flex-1 min-w-[180px]">
+                                <div className="w-full sm:w-auto flex-1 min-w-0 sm:min-w-[160px]">
                                     <label className="text-[10px] text-muted-foreground font-medium mb-0.5 block">Location</label>
                                     <ReactGoogleAutocomplete
                                         apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
@@ -668,13 +668,13 @@ export default function VendorProspectorPanel({ onVendorAdded }: VendorProspecto
                                         return (
                                             <div
                                                 key={`${prospect.businessName}-${idx}`}
-                                                className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors text-xs
+                                                className={`flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-1.5 px-3 py-2 cursor-pointer transition-colors text-xs
                                                     ${isSelected ? 'bg-primary/5 border-l-2 border-l-primary' : 'hover:bg-muted/50 border-l-2 border-l-transparent'}`}
                                                 onClick={() => setSelectedProspectIdx(isSelected ? null : idx)}
                                             >
                                                 {/* Business Info */}
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-1.5">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
                                                         <p className="font-medium truncate text-foreground">{prospect.businessName}</p>
                                                         {prospect.facebookUrl && !prospect.website && (
                                                             <Badge variant="secondary" className="text-[8px] px-1 h-3 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-none flex-shrink-0">
@@ -693,7 +693,7 @@ export default function VendorProspectorPanel({ onVendorAdded }: VendorProspecto
                                                 </div>
 
                                                 {/* Contact Preview */}
-                                                <div className="flex items-center gap-3 flex-shrink-0">
+                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
                                                     {prospect.phone && (
                                                         <span className="flex items-center gap-1 text-muted-foreground">
                                                             <Phone className="w-3 h-3" />
@@ -716,17 +716,17 @@ export default function VendorProspectorPanel({ onVendorAdded }: VendorProspecto
                                                 </div>
 
                                                 {/* Quick Actions */}
-                                                <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                                                <div className="flex items-center gap-1 flex-shrink-0 ml-auto sm:ml-0" onClick={e => e.stopPropagation()}>
                                                     <button
                                                         onClick={() => approveProspect(idx, 'STANDARD')}
-                                                        className="p-1 rounded hover:bg-green-100 dark:hover:bg-green-900/30 text-green-600 transition-colors"
+                                                        className="p-1.5 sm:p-1 rounded hover:bg-green-100 dark:hover:bg-green-900/30 text-green-600 transition-colors"
                                                         title="Approve"
                                                     >
                                                         <CheckCircle2 className="w-3.5 h-3.5" />
                                                     </button>
                                                     <button
                                                         onClick={() => dismissProspect(idx)}
-                                                        className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
+                                                        className="p-1.5 sm:p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
                                                         title="Dismiss"
                                                     >
                                                         <XCircle className="w-3.5 h-3.5" />
@@ -741,7 +741,7 @@ export default function VendorProspectorPanel({ onVendorAdded }: VendorProspecto
 
                         {/* Footer Stats */}
                         {activeProspects.length > 0 && (
-                            <div className="flex items-center justify-between px-3 py-1.5 border-t border-border bg-muted/30 text-[10px] text-muted-foreground flex-shrink-0">
+                            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 border-t border-border bg-muted/30 text-[10px] text-muted-foreground flex-shrink-0">
                                 <span>{activeProspects.length} prospects · {dismissedCount} dismissed</span>
                                 <span>
                                     {activeCampaign?.searches.length || 0} searches ·
@@ -755,7 +755,7 @@ export default function VendorProspectorPanel({ onVendorAdded }: VendorProspecto
 
             {/* Right Panel: Detail View */}
             {selectedDetail && (
-                <div className="w-[45%] min-w-[340px] max-w-[500px]">
+                <div className="w-full lg:w-[45%] lg:min-w-[340px] lg:max-w-[500px]">
                     <ProspectDetailPanel
                         prospect={selectedDetail}
                         onClose={() => setSelectedProspectIdx(null)}

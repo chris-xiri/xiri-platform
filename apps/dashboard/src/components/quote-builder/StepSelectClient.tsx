@@ -74,22 +74,22 @@ export default function StepSelectClient({
                                 }`}
                             onClick={() => onSelectLead(lead)}
                         >
-                            <CardContent className="p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Building2 className="w-5 h-5 text-muted-foreground" />
-                                    <div>
-                                        <p className="font-medium">{lead.businessName}</p>
-                                        <p className="text-xs text-muted-foreground">
+                            <CardContent className="p-3 sm:p-4 flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <Building2 className="w-5 h-5 text-muted-foreground shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-medium truncate">{lead.businessName}</p>
+                                        <p className="text-xs text-muted-foreground truncate">
                                             {[lead.contactName, lead.city || lead.address || lead.zipCode || lead.zip].filter(Boolean).join(' • ') || 'No details'}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 shrink-0">
                                     <Badge variant="outline" className="text-xs capitalize">
                                         {lead.facilityType?.replace(/_/g, ' ') || 'Unknown'}
                                     </Badge>
                                     {selectedLead?.id === lead.id && (
-                                        <Check className="w-5 h-5 text-primary" />
+                                        <Check className="w-5 h-5 text-primary shrink-0" />
                                     )}
                                 </div>
                             </CardContent>

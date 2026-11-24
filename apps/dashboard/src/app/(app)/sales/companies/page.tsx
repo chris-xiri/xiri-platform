@@ -219,52 +219,65 @@ function CompanyCard({ company, contactCount, facilityTypeLabels }: { company: C
     const location = [company.address, company.city, company.state].filter(Boolean).join(', ');
     const statusValue = company.companyStage || 'new';
     const statusClass = STATUS_COLORS[statusValue] || 'bg-gray-100 text-gray-600';
+    const websiteHref = company.website
+        ? (company.website.startsWith('http') ? company.website : `https://${company.website}`)
+        : '';
 
     return (
-        <div className="group flex items-center gap-4 p-4 rounded-xl border bg-card hover:bg-accent/30 hover:shadow-sm transition-all cursor-pointer">
-            <div className="shrink-0 w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-primary" />
-            </div>
-
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="font-semibold text-sm truncate">{company.businessName}</h3>
-                    <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${statusClass}`}>
-                        {statusValue}
-                    </Badge>
+        <div className="group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-xl border bg-card hover:bg-accent/30 hover:shadow-sm transition-all cursor-pointer">
+            <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                <div className="shrink-0 w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-primary" />
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    {location && (
-                        <span className="flex items-center gap-1 truncate">
-                            <MapPin className="w-3 h-3 shrink-0" /> {location}
-                        </span>
-                    )}
-                    {facilityLabel && (
-                        <span className="truncate">{facilityLabel}</span>
-                    )}
+                <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-0.5 min-w-0">
+                        <h3 className="font-semibold text-sm truncate min-w-0">{company.businessName}</h3>
+                        <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 shrink-0 ${statusClass}`}>
+                            {statusValue}
+                        </Badge>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground min-w-0">
+                        {location && (
+                            <span className="flex items-center gap-1 min-w-0 max-w-full">
+                                <MapPin className="w-3 h-3 shrink-0" />
+                                <span className="truncate">{location}</span>
+                            </span>
+                        )}
+                        {facilityLabel && (
+                            <span className="truncate max-w-full">{facilityLabel}</span>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <div className="shrink-0 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Users className="w-3.5 h-3.5" />
-                <span>{contactCount} {contactCount === 1 ? 'contact' : 'contacts'}</span>
+            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-14 sm:pl-0">
+                <div className="shrink-0 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Users className="w-3.5 h-3.5 shrink-0" />
+                    <span>{contactCount} {contactCount === 1 ? 'contact' : 'contacts'}</span>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                    {websiteHref && (
+                        <button
+                            type="button"
+                            className="shrink-0 p-1 rounded text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.open(websiteHref, '_blank', 'noopener,noreferrer');
+                            }}
+                            title={company.website}
+                            aria-label={`Open ${company.businessName} website`}
+                        >
+                            <Globe className="w-4 h-4" />
+                        </button>
+                    )}
+
+                    <ChevronRight className="w-4 h-4 text-muted-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0" />
+                </div>
             </div>
-
-            {company.website && (
-                <a
-                    href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                    title={company.website}
-                >
-                    <Globe className="w-4 h-4" />
-                </a>
-            )}
-
-            <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </div>
     );
 }

@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "XIRI Dashboard",
   "short_name": "XIRI",
   "description": "AI-powered facility operations & vendor management",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0284c7",
@@ -31,6 +33,32 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Contacts & CRM",
+      "short_name": "Contacts",
+      "url": "/sales/crm",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Work Orders",
+      "short_name": "Orders",
+      "url": "/operations/work-orders",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Quotes & Contracts",
+      "short_name": "Quotes",
+      "url": "/sales/quotes",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "NFC Zones",
+      "short_name": "NFC",
+      "url": "/operations/nfc-zones",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

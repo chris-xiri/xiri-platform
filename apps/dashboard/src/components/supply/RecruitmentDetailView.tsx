@@ -389,7 +389,7 @@ export default function RecruitmentDetailView({ vendorId, onClose }: Recruitment
                     )}
 
                     {/* Decision Buttons */}
-                    <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                         <Button
                             onClick={() => handleQualification('URGENT')}
                             className="bg-purple-600 hover:bg-purple-700 text-white h-auto py-2 flex-col items-start gap-1"

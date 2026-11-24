@@ -144,13 +144,13 @@ export default function WorkOrdersPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
                     <h1 className="text-2xl font-bold">Work Orders</h1>
                     <p className="text-sm text-muted-foreground">Manage vendor assignments and service fulfillment</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     {/* Filter Toggle */}
                     <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
                         <Button
@@ -271,27 +271,27 @@ export default function WorkOrdersPage() {
                                 <Card key={leadId} className={`overflow-hidden border-l-4`} style={{ borderLeftColor: color.border }}>
                                     {/* Client Header — clickable */}
                                     <div
-                                        className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors border-b"
+                                        className="flex items-center justify-between gap-2 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors border-b"
                                         style={{ backgroundColor: color.bg }}
                                         onClick={() => setExpandedClients(prev => ({ ...prev, [leadId]: !isExpanded }))}
                                     >
-                                        <div className="flex items-center gap-3">
-                                            {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                                            {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
                                             <span
                                                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
                                                 style={{ backgroundColor: color.border }}
                                             >
                                                 {clientIdx + 1}
                                             </span>
-                                            <div>
-                                                <p className="font-semibold text-sm">{group.clientName}</p>
-                                                <p className="text-xs text-muted-foreground">
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-sm truncate">{group.clientName}</p>
+                                                <p className="text-xs text-muted-foreground truncate">
                                                     {group.orders.length} work order{group.orders.length !== 1 ? 's' : ''}
                                                     {needsVendor > 0 && <span className="text-red-500 ml-2">• {needsVendor} needs vendor</span>}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-right shrink-0">
                                             <p className="font-semibold text-sm">{formatCurrency(clientRevenue)}<span className="text-xs text-muted-foreground font-normal">/mo</span></p>
                                         </div>
                                     </div>
@@ -299,29 +299,33 @@ export default function WorkOrdersPage() {
                                     {/* Collapsible Work Orders */}
                                     {isExpanded && (
                                         <CardContent className="p-0">
-                                            <table className="w-full">
-                                                <thead>
-                                                    <tr className="border-b text-left text-xs text-muted-foreground uppercase tracking-wider bg-muted/10">
-                                                        <th className="px-4 py-2 font-medium">Service</th>
-                                                        <th className="px-4 py-2 font-medium">Location</th>
-                                                        <th className="px-4 py-2 font-medium">Vendor</th>
-                                                        <th className="px-4 py-2 font-medium">Client Rate</th>
-                                                        <th className="px-4 py-2 font-medium">Vendor Rate</th>
-                                                        <th className="px-4 py-2 font-medium">Margin</th>
-                                                        <th className="px-4 py-2 font-medium">Status</th>
-                                                        <th className="px-4 py-2 font-medium"></th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {group.orders.map((wo) => {
-                                                        const config = STATUS_CONFIG[wo.status] || STATUS_CONFIG.pending_assignment;
-                                                        const isWoOneTime = wo.schedule?.frequency === 'one_time' || (wo as any).frequency === 'one_time';
-                                                        const margin = wo.vendorRate ? wo.clientRate - wo.vendorRate : null;
-                                                        return (
-                                                            <tr key={wo.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => window.location.href = `/operations/work-orders/${wo.id}`}>
-                                                                <td className="px-4 py-2.5">
+                                            {/* Mobile Card List */}
+                                            <div className="md:hidden divide-y">
+                                                {group.orders.map((wo) => {
+                                                    const config = STATUS_CONFIG[wo.status] || STATUS_CONFIG.pending_assignment;
+                                                    const isWoOneTime = wo.schedule?.frequency === 'one_time' || (wo as any).frequency === 'one_time';
+                                                    const margin = wo.vendorRate ? wo.clientRate - wo.vendorRate : null;
+                                                    const daysUntil = (() => {
+                                                        const start = (wo as any).serviceStartDate;
+                                                        if (!start) return null;
+                                                        const startDate = typeof start === 'string' ? new Date(start) : (start.toDate?.() || new Date(start));
+                                                        const today = new Date();
+                                                        today.setHours(0, 0, 0, 0);
+                                                        startDate.setHours(0, 0, 0, 0);
+                                                        const diff = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                                        return diff > 0 ? diff : null;
+                                                    })();
+
+                                                    return (
+                                                        <div
+                                                            key={wo.id}
+                                                            className="p-3.5 space-y-2.5 hover:bg-muted/20 transition-colors cursor-pointer"
+                                                            onClick={() => window.location.href = `/operations/work-orders/${wo.id}`}
+                                                        >
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <div className="min-w-0 flex-1">
                                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                                        <span className="font-medium text-sm">{wo.serviceType}</span>
+                                                                        <span className="font-semibold text-sm">{wo.serviceType}</span>
                                                                         {isWoOneTime && (
                                                                             <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700 border-purple-200 font-semibold px-1.5 py-0 h-4">
                                                                                 One-Time
@@ -333,7 +337,7 @@ export default function WorkOrdersPage() {
                                                                             </Badge>
                                                                         )}
                                                                     </div>
-                                                                    <p className="text-xs text-muted-foreground">
+                                                                    <p className="text-xs text-muted-foreground mt-0.5">
                                                                         {isWoOneTime ? (
                                                                             (wo as any).scheduledDate ? (
                                                                                 <span className="text-indigo-600 font-medium">
@@ -346,81 +350,192 @@ export default function WorkOrdersPage() {
                                                                             formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)
                                                                         )}
                                                                     </p>
-                                                                </td>
-                                                                <td className="px-4 py-2.5">
-                                                                    <div className="flex items-center gap-1.5 text-sm">
-                                                                        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                                                                        {wo.locationName}
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-4 py-2.5">
-                                                                    {wo.vendorId ? (
-                                                                        <span className="text-sm">{wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Assigned'}</span>
-                                                                    ) : (
-                                                                        <span className="text-sm text-red-500 font-medium">Unassigned</span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-4 py-2.5 font-medium text-sm">
-                                                                    {formatCurrency(wo.clientRate)}
-                                                                    {!isWoOneTime && <span className="text-[11px] text-muted-foreground font-normal ml-0.5">/mo</span>}
-                                                                </td>
-                                                                <td className="px-4 py-2.5 text-sm">
-                                                                    {wo.vendorRate ? (
-                                                                        <>
-                                                                            {formatCurrency(wo.vendorRate)}
-                                                                            {!isWoOneTime && <span className="text-[11px] text-muted-foreground font-normal ml-0.5">/mo</span>}
-                                                                        </>
-                                                                    ) : '—'}
-                                                                </td>
-                                                                <td className="px-4 py-2.5 text-sm">
-                                                                    {margin !== null ? (
-                                                                        <span className={margin > 0 ? 'text-green-600 font-medium' : 'text-red-600'}>
-                                                                            {formatCurrency(margin)}
-                                                                            {!isWoOneTime && <span className="text-[11px] font-normal ml-0.5 opacity-80">/mo</span>}
-                                                                        </span>
-                                                                    ) : '—'}
-                                                                </td>
-                                                                <td className="px-4 py-2.5">
+                                                                </div>
+                                                                <div className="flex flex-wrap items-center justify-end gap-1 shrink-0">
                                                                     <Badge variant={config.variant}>{config.label}</Badge>
-                                                                    {(() => {
-                                                                        const start = (wo as any).serviceStartDate;
-                                                                        if (!start) return null;
-                                                                        const startDate = typeof start === 'string' ? new Date(start) : (start.toDate?.() || new Date(start));
-                                                                        const today = new Date();
-                                                                        today.setHours(0, 0, 0, 0);
-                                                                        startDate.setHours(0, 0, 0, 0);
-                                                                        const daysUntil = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                                                                        if (daysUntil > 0) {
-                                                                            return (
-                                                                                <Badge variant="outline" className="ml-1.5 text-[10px] bg-amber-50 text-amber-700 border-amber-200">
-                                                                                    {daysUntil}d to start
+                                                                    {daysUntil !== null && (
+                                                                        <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">
+                                                                            {daysUntil}d to start
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                                                <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                                                                    <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                                                    <span className="truncate text-foreground">{wo.locationName}</span>
+                                                                </div>
+                                                                <div className="text-right truncate">
+                                                                    {wo.vendorId ? (
+                                                                        <span className="text-foreground">{wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Assigned'}</span>
+                                                                    ) : (
+                                                                        <span className="text-red-500 font-medium">Unassigned</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center justify-between gap-2 pt-2 border-t text-xs">
+                                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+                                                                    <span>
+                                                                        <span className="text-muted-foreground">Client: </span>
+                                                                        <span className="font-semibold">{formatCurrency(wo.clientRate)}{!isWoOneTime && '/mo'}</span>
+                                                                    </span>
+                                                                    <span>
+                                                                        <span className="text-muted-foreground">Vendor: </span>
+                                                                        <span>{wo.vendorRate ? `${formatCurrency(wo.vendorRate)}${!isWoOneTime ? '/mo' : ''}` : '—'}</span>
+                                                                    </span>
+                                                                    {margin !== null && (
+                                                                        <span className={margin > 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                                                                            {formatCurrency(margin)}{!isWoOneTime && '/mo'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                                    <Link href={`/operations/work-orders/${wo.id}`}>
+                                                                        <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs font-medium">View</Button>
+                                                                    </Link>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                                        title="Delete Work Order"
+                                                                        onClick={(e) => handleDeleteWo(e, wo)}
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Desktop Table */}
+                                            <div className="hidden md:block w-full overflow-x-auto">
+                                                <table className="w-full">
+                                                    <thead>
+                                                        <tr className="border-b text-left text-xs text-muted-foreground uppercase tracking-wider bg-muted/10">
+                                                            <th className="px-4 py-2 font-medium">Service</th>
+                                                            <th className="px-4 py-2 font-medium">Location</th>
+                                                            <th className="px-4 py-2 font-medium">Vendor</th>
+                                                            <th className="px-4 py-2 font-medium">Client Rate</th>
+                                                            <th className="px-4 py-2 font-medium">Vendor Rate</th>
+                                                            <th className="px-4 py-2 font-medium">Margin</th>
+                                                            <th className="px-4 py-2 font-medium">Status</th>
+                                                            <th className="px-4 py-2 font-medium"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {group.orders.map((wo) => {
+                                                            const config = STATUS_CONFIG[wo.status] || STATUS_CONFIG.pending_assignment;
+                                                            const isWoOneTime = wo.schedule?.frequency === 'one_time' || (wo as any).frequency === 'one_time';
+                                                            const margin = wo.vendorRate ? wo.clientRate - wo.vendorRate : null;
+                                                            return (
+                                                                <tr key={wo.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => window.location.href = `/operations/work-orders/${wo.id}`}>
+                                                                    <td className="px-4 py-2.5">
+                                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                                            <span className="font-medium text-sm">{wo.serviceType}</span>
+                                                                            {isWoOneTime && (
+                                                                                <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700 border-purple-200 font-semibold px-1.5 py-0 h-4">
+                                                                                    One-Time
                                                                                 </Badge>
-                                                                            );
-                                                                        }
-                                                                        return null;
-                                                                    })()}
-                                                                </td>
-                                                                <td className="px-4 py-2.5 text-right">
-                                                                    <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                                                                        <Link href={`/operations/work-orders/${wo.id}`}>
-                                                                            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs font-medium">View</Button>
-                                                                        </Link>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                                            title="Delete Work Order"
-                                                                            onClick={(e) => handleDeleteWo(e, wo)}
-                                                                        >
-                                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                                        </Button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
+                                                                            )}
+                                                                            {(wo as any).sowDocumentUrl && (
+                                                                                <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold px-1.5 py-0 h-4">
+                                                                                    📄 SOW
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            {isWoOneTime ? (
+                                                                                (wo as any).scheduledDate ? (
+                                                                                    <span className="text-indigo-600 font-medium">
+                                                                                        📅 {new Date((wo as any).scheduledDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    'One-Time Project (Date not set)'
+                                                                                )
+                                                                            ) : (
+                                                                                formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)
+                                                                            )}
+                                                                        </p>
+                                                                    </td>
+                                                                    <td className="px-4 py-2.5">
+                                                                        <div className="flex items-center gap-1.5 text-sm">
+                                                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                            {wo.locationName}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-4 py-2.5">
+                                                                        {wo.vendorId ? (
+                                                                            <span className="text-sm">{wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Assigned'}</span>
+                                                                        ) : (
+                                                                            <span className="text-sm text-red-500 font-medium">Unassigned</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-4 py-2.5 font-medium text-sm">
+                                                                        {formatCurrency(wo.clientRate)}
+                                                                        {!isWoOneTime && <span className="text-[11px] text-muted-foreground font-normal ml-0.5">/mo</span>}
+                                                                    </td>
+                                                                    <td className="px-4 py-2.5 text-sm">
+                                                                        {wo.vendorRate ? (
+                                                                            <>
+                                                                                {formatCurrency(wo.vendorRate)}
+                                                                                {!isWoOneTime && <span className="text-[11px] text-muted-foreground font-normal ml-0.5">/mo</span>}
+                                                                            </>
+                                                                        ) : '—'}
+                                                                    </td>
+                                                                    <td className="px-4 py-2.5 text-sm">
+                                                                        {margin !== null ? (
+                                                                            <span className={margin > 0 ? 'text-green-600 font-medium' : 'text-red-600'}>
+                                                                                {formatCurrency(margin)}
+                                                                                {!isWoOneTime && <span className="text-[11px] font-normal ml-0.5 opacity-80">/mo</span>}
+                                                                            </span>
+                                                                        ) : '—'}
+                                                                    </td>
+                                                                    <td className="px-4 py-2.5">
+                                                                        <Badge variant={config.variant}>{config.label}</Badge>
+                                                                        {(() => {
+                                                                            const start = (wo as any).serviceStartDate;
+                                                                            if (!start) return null;
+                                                                            const startDate = typeof start === 'string' ? new Date(start) : (start.toDate?.() || new Date(start));
+                                                                            const today = new Date();
+                                                                            today.setHours(0, 0, 0, 0);
+                                                                            startDate.setHours(0, 0, 0, 0);
+                                                                            const daysUntil = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                                                            if (daysUntil > 0) {
+                                                                                return (
+                                                                                    <Badge variant="outline" className="ml-1.5 text-[10px] bg-amber-50 text-amber-700 border-amber-200">
+                                                                                        {daysUntil}d to start
+                                                                                    </Badge>
+                                                                                );
+                                                                            }
+                                                                            return null;
+                                                                        })()}
+                                                                    </td>
+                                                                    <td className="px-4 py-2.5 text-right">
+                                                                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                                                            <Link href={`/operations/work-orders/${wo.id}`}>
+                                                                                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs font-medium">View</Button>
+                                                                            </Link>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                                                title="Delete Work Order"
+                                                                                onClick={(e) => handleDeleteWo(e, wo)}
+                                                                            >
+                                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                            </Button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </CardContent>
                                     )}
                                 </Card>

@@ -101,7 +101,7 @@ export default function VendorRemittancesPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
                 {['all', 'pending', 'sent', 'paid', 'void'].map(f => (
                     <Button
                         key={f}
@@ -155,19 +155,19 @@ export default function VendorRemittancesPage() {
                                 className="cursor-pointer hover:border-primary/50 transition-all"
                                 onClick={() => router.push(`/accounting/vendor-remittances/${rem.id}`)}
                             >
-                                <CardContent className="p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-2 rounded-lg bg-muted">
+                                <CardContent className="p-4 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                        <div className="p-2 rounded-lg bg-muted shrink-0">
                                             <DollarSign className="w-4 h-4 text-muted-foreground" />
                                         </div>
-                                        <div>
-                                            <p className="font-medium">{rem.vendorName}</p>
-                                            <p className="text-xs text-muted-foreground">
+                                        <div className="min-w-0">
+                                            <p className="font-medium truncate">{rem.vendorName}</p>
+                                            <p className="text-xs text-muted-foreground truncate">
                                                 {rem.lineItems?.length || 0} services • {rem.billingPeriod?.start || '—'}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                                         <span className="font-bold">{formatCurrency(rem.totalAmount)}</span>
                                         <Badge variant={config.variant} className="text-xs">{config.label}</Badge>
                                     </div>

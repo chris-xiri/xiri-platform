@@ -221,22 +221,22 @@ export default function ContractsPage() {
                                     style={{ backgroundColor: color.bg }}
                                     onClick={() => router.push(`/operations/contracts/${group.latest.id}`)}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                        <div className="flex items-center gap-3 min-w-0">
                                             <span
                                                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
                                                 style={{ backgroundColor: color.border }}
                                             >
                                                 {clientIdx + 1}
                                             </span>
-                                            <div>
-                                                <p className="font-semibold text-base">{group.clientBusinessName || (group.latest as any).clientName || '—'}</p>
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-base truncate">{group.clientBusinessName || (group.latest as any).clientName || '—'}</p>
                                                 <p className="text-xs text-muted-foreground">
                                                     {formatCurrency(group.latest.totalMonthlyRate || (group.latest as any).monthlyRate || 0)}/mo • {group.latest.contractTenure || (group.latest as any).tenure || '—'} months • {group.latest.paymentTerms || 'Net 30'}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3 flex-wrap justify-end">
+                                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:justify-end shrink-0">
                                             {(group.latest as any).referredBy?.name && (
                                                 <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-800 border-emerald-200 gap-1">
                                                     <Handshake className="w-3 h-3" />
@@ -293,15 +293,15 @@ export default function ContractsPage() {
                                                     return (
                                                         <div
                                                             key={olderContract.id}
-                                                            className="px-4 py-3 border-b last:border-0 bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer flex items-center justify-between"
+                                                            className="px-4 py-3 border-b last:border-0 bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer flex flex-wrap items-center justify-between gap-2"
                                                             onClick={() => router.push(`/operations/contracts/${olderContract.id}`)}
                                                         >
-                                                            <div className="pl-4">
+                                                            <div className="pl-2 sm:pl-4 min-w-0">
                                                                 <p className="text-sm text-muted-foreground">
                                                                     {formatCurrency(olderContract.totalMonthlyRate || (olderContract as any).monthlyRate || 0)}/mo • {olderContract.contractTenure || (olderContract as any).tenure || '—'} months
                                                                 </p>
                                                             </div>
-                                                            <div className="flex items-center gap-3">
+                                                            <div className="flex items-center gap-3 shrink-0">
                                                                 <Badge variant={olderBadge.variant} className="text-xs">{olderBadge.label}</Badge>
                                                                 <span className="text-xs text-muted-foreground">{olderCreated}</span>
                                                             </div>

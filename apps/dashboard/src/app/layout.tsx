@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import React, { Suspense } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PwaLifecycle } from "@/components/PwaLifecycle";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +29,6 @@ export const metadata: Metadata = {
     icon: "/icons/icon-192.png",
     apple: "/icons/apple-touch-icon.png",
   },
-  themeColor: "#0284c7",
   robots: {
     index: false,
     follow: false,
@@ -40,12 +40,14 @@ export const metadata: Metadata = {
 };
 
 export const runtime = 'nodejs';
-export const viewport = {
+export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: 'cover' as const,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+  ],
 };
 
 export default function RootLayout({
@@ -55,21 +57,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').catch(() => {});
-                });
-              }
-            `,
-          }}
-        />
-      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-clip`}
         suppressHydrationWarning
       >
         <ThemeProvider
@@ -78,11 +67,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <React.Suspense fallback={null}>
+          <Suspense fallback={null}>
             <AuthProvider>
               {children}
+              <PwaLifecycle />
             </AuthProvider>
-          </React.Suspense>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

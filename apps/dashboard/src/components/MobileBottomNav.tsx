@@ -61,35 +61,38 @@ export function MobileBottomNav({ onMorePress }: { onMorePress: () => void }) {
     };
 
     return (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border safe-area-bottom">
-            <div className="flex items-stretch justify-around">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border safe-area-bottom">
+            <div className="flex items-stretch justify-around px-1">
                 {tabs.map(tab => {
                     const active = isActive(tab);
                     return (
                         <Link
                             key={tab.label}
                             href={tab.href}
-                            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 pt-2.5 text-[10px] font-medium transition-colors
+                            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[54px] text-[11px] font-medium transition-colors
                                 ${active
                                     ? 'text-sky-600 dark:text-sky-400'
                                     : 'text-muted-foreground hover:text-foreground'
                                 }
                             `}
                         >
-                            <span className={active ? 'text-sky-600 dark:text-sky-400' : ''}>
+                            <span className={`flex items-center justify-center rounded-full px-3 py-0.5 transition-colors ${active ? 'bg-sky-500/12 text-sky-600 dark:text-sky-400' : ''}`}>
                                 {tab.icon}
                             </span>
-                            {tab.label}
+                            <span className="truncate">{tab.label}</span>
                         </Link>
                     );
                 })}
                 {/* More button opens sidebar drawer */}
                 <button
+                    type="button"
                     onClick={onMorePress}
-                    className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 pt-2.5 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[54px] text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                    <Menu className="w-5 h-5" />
-                    More
+                    <span className="flex items-center justify-center rounded-full px-3 py-0.5">
+                        <Menu className="w-5 h-5" />
+                    </span>
+                    <span>More</span>
                 </button>
             </div>
         </nav>

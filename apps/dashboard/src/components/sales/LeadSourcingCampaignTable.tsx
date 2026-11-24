@@ -93,7 +93,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
     }, [property.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
-        <div className="flex flex-col h-full bg-background border-l border-border overflow-hidden animate-in slide-in-from-right-5 duration-200">
+        <div className="flex flex-col h-full bg-background border-t lg:border-t-0 lg:border-l border-border overflow-hidden animate-in slide-in-from-right-5 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 flex-shrink-0">
                 <div className="min-w-0 flex-1">
@@ -697,9 +697,9 @@ export default function LeadSourcingCampaignTable({
     }
 
     return (
-        <div className="h-full flex">
+        <div className="h-full flex flex-col lg:flex-row gap-3 lg:gap-0">
             {/* Left Panel: Tabs + Table */}
-            <Card className={`border border-border bg-card shadow-sm flex flex-col transition-all duration-200 ${selectedPreviewProperty ? 'w-[55%] min-w-[420px]' : 'w-full'}`}>
+            <Card className={`border border-border bg-card shadow-sm flex flex-col transition-all duration-200 min-w-0 ${selectedPreviewProperty ? 'w-full lg:w-[55%] lg:min-w-[420px]' : 'w-full'}`}>
                 {/* Tab Strip */}
                 <div className="flex items-center border-b border-border bg-muted/50 overflow-x-auto flex-shrink-0">
                     <div className="flex items-center gap-0.5 px-2 py-1.5 flex-1 min-w-0">
@@ -725,7 +725,7 @@ export default function LeadSourcingCampaignTable({
                                         <span className="truncate">{campaign.label}</span>
                                     )}
                                     {activeCount > 0 && <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 flex-shrink-0 mt-0.5">{activeCount}</Badge>}
-                                    <button className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0 ml-0.5 mt-0.5"
+                                    <button className="opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0 ml-0.5 mt-0.5"
                                         onClick={(e) => { e.stopPropagation(); setShowCloseTabDialog(campaign.id); }}>
                                         <X className="w-3 h-3" />
                                     </button>
@@ -772,17 +772,17 @@ export default function LeadSourcingCampaignTable({
 
                             {/* Google Maps Search */}
                             {searchSource === 'google' && (
-                                <div className="flex gap-2 items-center">
-                                    <Input type="text" placeholder="Property type (e.g. urgent care)..." value={query} onChange={(e) => setQuery(e.target.value)} className="h-7 text-xs bg-white dark:bg-card flex-1" disabled={loading} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
+                                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                    <Input type="text" placeholder="Property type (e.g. urgent care)..." value={query} onChange={(e) => setQuery(e.target.value)} className="h-7 text-xs bg-white dark:bg-card w-full sm:flex-1" disabled={loading} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
                                     <ReactGoogleAutocomplete
                                         apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
                                         onPlaceSelected={(place) => { if (place && (place.formatted_address || place.name)) { setLocation(place.formatted_address || place.name || ''); } }}
                                         options={{ types: ['geocode'], componentRestrictions: { country: 'us' } }}
                                         placeholder="Location..."
-                                        className="flex h-7 w-full rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 flex-1"
+                                        className="flex h-7 w-full rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 sm:flex-1"
                                         onChange={(e: any) => setLocation(e.target.value)} value={location} disabled={loading}
                                     />
-                                    <Button onClick={handleSearch} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white">
+                                    <Button onClick={handleSearch} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto">
                                         {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Rocket className="mr-1 h-3 w-3" /> Search</>}
                                     </Button>
                                 </div>
@@ -842,22 +842,22 @@ export default function LeadSourcingCampaignTable({
                                     </div>
 
                                     {/* Row 3: Lot Size + Search */}
-                                    <div className="flex gap-2 items-center">
+                                    <div className="flex flex-wrap gap-2 items-center">
                                         <span className="text-[10px] text-muted-foreground font-medium w-12 flex-shrink-0">Lot ft²</span>
                                         <Input type="number" placeholder="Min" value={odMinSqFt} onChange={(e) => setOdMinSqFt(e.target.value)}
                                             className="h-6 text-[10px] bg-white dark:bg-card w-20" disabled={loading} />
                                         <span className="text-[10px] text-muted-foreground">–</span>
                                         <Input type="number" placeholder="Max" value={odMaxSqFt} onChange={(e) => setOdMaxSqFt(e.target.value)}
                                             className="h-6 text-[10px] bg-white dark:bg-card w-20" disabled={loading} />
-                                        <div className="flex-1" />
-                                        <Button onClick={handleSearch} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white">
+                                        <div className="hidden sm:block sm:flex-1" />
+                                        <Button onClick={handleSearch} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white ml-auto">
                                             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Database className="mr-1 h-3 w-3" /> Search Open Data</>}
                                         </Button>
                                     </div>
 
                                     {/* Pagination */}
                                     {odTotalCount !== null && (
-                                        <div className="flex items-center justify-between pt-1">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                                             <span className="text-[10px] text-muted-foreground">
                                                 {odTotalCount.toLocaleString()} properties · Showing {odOffset + 1}–{Math.min(odOffset + OD_PAGE_SIZE, odTotalCount)}
                                             </span>
@@ -881,9 +881,9 @@ export default function LeadSourcingCampaignTable({
 
                         {/* Bulk Bar */}
                         {rawProperties.length > 0 && (
-                            <div className="px-3 py-1.5 border-b border-border bg-muted/30 flex items-center justify-between flex-shrink-0">
+                            <div className="px-3 py-1.5 border-b border-border bg-muted/30 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
                                 {/* Filter buttons */}
-                                <div className="flex items-center gap-1">
+                                <div className="flex flex-wrap items-center gap-1">
                                     {[
                                         { key: 'all' as FilterMode, label: 'All', count: rawProperties.length },
                                         { key: 'enriched' as FilterMode, label: '📋 Enriched', count: scoredProperties.filter(s => s.enrichMatch).length },
@@ -900,7 +900,7 @@ export default function LeadSourcingCampaignTable({
                                     ))}
                                 </div>
                                 {/* Sort + bulk info */}
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                     <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortField)}
                                         className="text-[10px] h-5 border border-border rounded bg-transparent px-1 text-muted-foreground">
                                         <option value="score">★ Best Fit</option>
@@ -1078,7 +1078,7 @@ export default function LeadSourcingCampaignTable({
 
             {/* Right Panel: Property Detail */}
             {selectedPreviewProperty && (
-                <div className="w-[45%] h-full">
+                <div className="w-full lg:w-[45%] lg:h-full">
                     <PropertyDetailPanel
                         property={selectedPreviewProperty}
                         campaignId={activeCampaign.id}

@@ -81,20 +81,20 @@ const InlineEditField = ({
     }
 
     return (
-        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setEditing(true)}>
+        <div className="flex items-center gap-2 min-w-0 group cursor-pointer" onClick={() => setEditing(true)}>
             <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
             {value ? (
                 linkHref ? (
-                    <a href={linkHref} onClick={(e) => e.stopPropagation()} target={type === 'url' ? '_blank' : undefined} rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate max-w-[250px]">
+                    <a href={linkHref} onClick={(e) => e.stopPropagation()} target={type === 'url' ? '_blank' : undefined} rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate min-w-0 max-w-full sm:max-w-[250px]">
                         {prefix}{value}
                     </a>
                 ) : (
-                    <span className="text-sm">{prefix}{value}</span>
+                    <span className="text-sm break-words min-w-0">{prefix}{value}</span>
                 )
             ) : (
                 <span className="text-sm text-muted-foreground italic">Add {field}...</span>
             )}
-            <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Pencil className="w-3 h-3 text-muted-foreground shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
         </div>
     );
 };
@@ -160,19 +160,19 @@ export default function CRMDetailPage(props: PageProps) {
     const insuranceDocs = getVendorInsuranceDocs(vendor);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-background">
+        <div className="flex flex-col min-h-full lg:h-[calc(100dvh-64px)] lg:overflow-hidden bg-background">
             {/* Header */}
-            <div className="flex-shrink-0 px-6 py-4 border-b bg-card shadow-sm z-10">
+            <div className="flex-shrink-0 px-3 sm:px-6 py-4 border-b bg-card shadow-sm z-10">
                 {isDispatchBlocked && (
-                    <div className="mb-3 p-2.5 rounded-lg border border-red-300 bg-red-50 text-red-900 text-xs flex items-center justify-between shadow-xs">
-                        <div className="flex items-center gap-2">
-                            <span className="text-base">⛔</span>
-                            <div>
+                    <div className="mb-3 p-2.5 rounded-lg border border-red-300 bg-red-50 text-red-900 text-xs flex flex-wrap items-center justify-between gap-2 shadow-xs">
+                        <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
+                            <span className="text-base shrink-0">⛔</span>
+                            <div className="min-w-0">
                                 <p className="font-bold uppercase tracking-wider text-[11px] text-red-700">DISPATCH BLOCKED — Cannot be assigned to jobs</p>
-                                <p className="text-xs text-red-800">{blockReason || 'Insurance is missing, expired, or non-compliant.'}</p>
+                                <p className="text-xs text-red-800 break-words">{blockReason || 'Insurance is missing, expired, or non-compliant.'}</p>
                             </div>
                         </div>
-                        <Badge variant="destructive" className="text-[10px] px-2 py-0.5 font-bold">
+                        <Badge variant="destructive" className="text-[10px] px-2 py-0.5 font-bold shrink-0">
                             NON-COMPLIANT
                         </Badge>
                     </div>
@@ -183,29 +183,29 @@ export default function CRMDetailPage(props: PageProps) {
                     </Link>
                 </div>
                 <div className="flex justify-between items-start flex-wrap gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 rounded bg-primary/10 flex items-center justify-center text-xl font-bold text-primary">
+                    <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                        <div className="h-12 w-12 rounded bg-primary/10 flex items-center justify-center text-xl font-bold text-primary shrink-0">
                             {vendor.businessName?.charAt(0) || '?'}
                         </div>
-                        <div>
+                        <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h1 className="text-2xl font-bold tracking-tight">{vendor.businessName}</h1>
+                                <h1 className="text-xl sm:text-2xl font-bold tracking-tight break-words">{vendor.businessName}</h1>
                                 <LanguageBadge lang={vendor.preferredLanguage} />
                                 {insuranceInfo.isBlocked ? (
-                                    <Badge variant="destructive" className="gap-1 text-xs py-0.5 font-bold">
+                                    <Badge variant="destructive" className="gap-1 text-xs py-0.5 font-bold shrink-0">
                                         ⛔ Blocked
                                     </Badge>
                                 ) : insuranceInfo.isExpired ? (
-                                    <Badge variant="outline" className="bg-amber-100 text-amber-900 border-amber-300 gap-1 text-xs py-0.5 font-bold">
+                                    <Badge variant="outline" className="bg-amber-100 text-amber-900 border-amber-300 gap-1 text-xs py-0.5 font-bold shrink-0">
                                         ⚠️ Insurance Expired
                                     </Badge>
                                 ) : insuranceInfo.isFullyInsured ? (
-                                    <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 gap-1 text-xs py-0.5 font-bold">
+                                    <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 gap-1 text-xs py-0.5 font-bold shrink-0">
                                         🛡️ Fully Insured (Green)
                                     </Badge>
                                 ) : null}
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
                                 <select
                                     value={vendor.status}
                                     onChange={async (e) => {
@@ -250,7 +250,7 @@ export default function CRMDetailPage(props: PageProps) {
                                         {vendor.outreachStatus === 'PROFILE_INCOMPLETE' && <><AlertTriangle className="w-3 h-3 mr-1" /> Incomplete Profile</>}
                                     </Badge>
                                 )}
-                                <span className="text-sm text-muted-foreground border-l pl-2 ml-2 font-mono select-all">ID: {vendor.id}</span>
+                                <span className="text-xs sm:text-sm text-muted-foreground sm:border-l sm:pl-2 sm:ml-2 font-mono select-all break-all">ID: {vendor.id}</span>
                             </div>
                         </div>
                     </div>
@@ -438,10 +438,10 @@ export default function CRMDetailPage(props: PageProps) {
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-auto p-6">
+            <div className="flex-1 lg:overflow-auto p-4 sm:p-6">
                 <VendorStatusTimeline status={vendor.status} />
                 <Tabs value={activeDetailTab} onValueChange={handleDetailTabChange} className="space-y-4">
-                    <TabsList>
+                    <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1">
                         <TabsTrigger value="overview" className="gap-2"><LayoutDashboard className="w-4 h-4" /> Overview</TabsTrigger>
                         <TabsTrigger value="contacts" className="gap-2"><Users className="w-4 h-4" /> Contacts</TabsTrigger>
                         <TabsTrigger value="assignments" className="gap-2"><Briefcase className="w-4 h-4" /> Assignments</TabsTrigger>
@@ -460,7 +460,7 @@ export default function CRMDetailPage(props: PageProps) {
                                     <CardContent>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                             {/* Contact */}
-                                            <div className="space-y-3">
+                                            <div className="space-y-3 min-w-0">
                                                 <div className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">Contact</div>
                                                 <div className="space-y-3 pl-1">
                                                     <InlineEditField vendorId={vendor.id!} field="phone" value={vendor.phone} icon={Phone} type="tel" linkHref={vendor.phone ? `tel:${vendor.phone}` : undefined} />
@@ -470,11 +470,11 @@ export default function CRMDetailPage(props: PageProps) {
                                             </div>
 
                                             {/* Address — stacked like a mailing label */}
-                                            <div className="space-y-3">
+                                            <div className="space-y-3 min-w-0">
                                                 <div className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">Address</div>
                                                 <div className="space-y-2 pl-1">
                                                     <InlineEditField vendorId={vendor.id!} field="streetAddress" value={vendor.streetAddress || vendor.address} icon={MapPin} />
-                                                    <div className="flex items-center gap-1 pl-6">
+                                                    <div className="flex flex-wrap items-center gap-1 pl-6">
                                                         <InlineEditField vendorId={vendor.id!} field="city" value={vendor.city} icon={() => null} />
                                                         <span className="text-muted-foreground">,</span>
                                                         <InlineEditField vendorId={vendor.id!} field="state" value={vendor.state} icon={() => null} />
@@ -489,12 +489,12 @@ export default function CRMDetailPage(props: PageProps) {
                                 {/* Insurance Policies & COI Documents Quick Access Card */}
                                 <Card className="border-emerald-200/80 bg-emerald-50/20">
                                     <CardHeader className="py-3">
-                                        <CardTitle className="text-sm flex items-center justify-between">
-                                            <span className="flex items-center gap-1.5 text-emerald-950 font-bold">
-                                                <FileText className="w-4 h-4 text-emerald-700" />
-                                                Insurance Policies &amp; COI Documents
+                                        <CardTitle className="text-sm flex flex-wrap items-center justify-between gap-2">
+                                            <span className="flex items-center gap-1.5 text-emerald-950 font-bold min-w-0">
+                                                <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
+                                                <span className="truncate">Insurance Policies &amp; COI Documents</span>
                                             </span>
-                                            <button onClick={() => handleDetailTabChange('compliance')} className="text-xs text-primary font-semibold hover:underline">
+                                            <button onClick={() => handleDetailTabChange('compliance')} className="text-xs text-primary font-semibold hover:underline shrink-0">
                                                 Manage Compliance →
                                             </button>
                                         </CardTitle>
@@ -517,11 +517,11 @@ export default function CRMDetailPage(props: PageProps) {
                                             return (
                                                 <div className="space-y-2">
                                                     <div className="p-2.5 rounded-lg border bg-background text-xs space-y-1.5 shadow-2xs">
-                                                        <div className="flex items-center justify-between font-semibold">
-                                                            <span className="text-foreground flex items-center gap-1">
-                                                                <span>🛡️</span> GL: {polSummary.glLimit} | WC: {polSummary.wcLimit}
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 font-semibold">
+                                                            <span className="text-foreground flex items-center gap-1 min-w-0">
+                                                                <span className="shrink-0">🛡️</span> GL: {polSummary.glLimit} | WC: {polSummary.wcLimit}
                                                             </span>
-                                                            <Badge className={polSummary.statusBadgeClass}>
+                                                            <Badge className={`${polSummary.statusBadgeClass} shrink-0`}>
                                                                 {polSummary.statusLabel}
                                                             </Badge>
                                                         </div>
@@ -530,8 +530,8 @@ export default function CRMDetailPage(props: PageProps) {
                                                         </p>
                                                     </div>
                                                     {docs.map((docItem, idx) => (
-                                                        <div key={idx} className="flex items-center justify-between p-2 rounded-md border bg-background text-xs">
-                                                            <div className="flex items-center gap-2">
+                                                        <div key={idx} className="flex items-center justify-between gap-2 p-2 rounded-md border bg-background text-xs">
+                                                            <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                 <FileText className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                                                                 <span className="font-medium truncate">{docItem.title}</span>
                                                             </div>
@@ -553,7 +553,7 @@ export default function CRMDetailPage(props: PageProps) {
 
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle className="flex items-center justify-between">
+                                        <CardTitle className="flex flex-wrap items-center justify-between gap-2">
                                             Capabilities
                                             <CapabilityPicker
                                                 selected={vendor.capabilities || []}
@@ -571,7 +571,7 @@ export default function CRMDetailPage(props: PageProps) {
                                                     updateDoc(doc(db, 'vendors', vendor.id!), { capabilities: updated, updatedAt: new Date() });
                                                 }}>
                                                     {getCapabilityLabel(cap)}
-                                                    <X className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                                                    <X className="w-3 h-3 ml-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground" />
                                                 </Badge>
                                             ))}
                                             {(!vendor.capabilities || vendor.capabilities.length === 0) && (

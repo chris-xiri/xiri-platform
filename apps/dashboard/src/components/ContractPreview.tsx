@@ -66,27 +66,27 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
     return (
         <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
             {/* Print-friendly container */}
-            <div className="max-w-[800px] mx-auto py-10 px-12 text-sm leading-relaxed text-gray-800 print:py-0 print:px-0 print:shadow-none" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
+            <div className="max-w-[800px] mx-auto py-6 px-4 sm:py-10 sm:px-12 text-sm leading-relaxed text-gray-800 print:py-0 print:px-0 print:shadow-none" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
 
                 {/* Header / Letterhead */}
                 <div className="text-center border-b-2 border-gray-800 pb-6 mb-8">
-                    <h1 className="text-2xl font-bold tracking-wide uppercase text-gray-900" style={{ letterSpacing: '0.15em' }}>
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-wide uppercase text-gray-900" style={{ letterSpacing: '0.15em' }}>
                         XIRI FACILITY SOLUTIONS
                     </h1>
                     <p className="text-xs text-gray-500 mt-1 tracking-wider uppercase">
                         Professional Facility Management Services
                     </p>
-                    <div className="mt-4 text-xs text-gray-500">
+                    <div className="mt-4 text-xs text-gray-500 break-words">
                         <p>www.xirifacilitysolutions.com • info@xirifacilitysolutions.com</p>
                     </div>
                 </div>
 
                 {/* Title */}
                 <div className="text-center mb-8">
-                    <h2 className="text-xl font-bold text-gray-900 uppercase tracking-wide">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 uppercase tracking-wide">
                         Facility Services Agreement
                     </h2>
-                    <p className="text-xs text-gray-500 mt-1">Contract ID: {contract.id}</p>
+                    <p className="text-xs text-gray-500 mt-1 break-all">Contract ID: {contract.id}</p>
                     {contract.status === 'amended' && (
                         <p className="text-xs text-blue-600 font-medium mt-1">— AMENDED —</p>
                     )}
@@ -100,7 +100,7 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
                         <span className="border-b border-gray-400 px-1 font-medium">{startDate}</span>{' '}
                         by and between:
                     </p>
-                    <div className="grid grid-cols-2 gap-6 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-4">
                         <div className="border rounded-lg p-4 bg-gray-50">
                             <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Service Provider</p>
                             <p className="font-bold">XIRI Facility Solutions, LLC</p>
@@ -148,36 +148,38 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
                                             <p className="text-xs text-gray-500">{items[0].locationAddress}</p>
                                         )}
                                     </div>
-                                    <table className="w-full border border-t-0 text-xs">
-                                        <thead>
-                                            <tr className="bg-gray-50 border-b">
-                                                <th className="text-left py-2 px-3 font-semibold text-gray-600">Service</th>
-                                                <th className="text-left py-2 px-3 font-semibold text-gray-600">Frequency</th>
-                                                <th className="text-right py-2 px-3 font-semibold text-gray-600">Monthly Rate</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {items.map((item, idx) => (
-                                                <tr key={item.id || idx} className="border-b last:border-0">
-                                                    <td className="py-2 px-3">
-                                                        {item.serviceType}
-                                                        {item.description && (
-                                                            <span className="text-gray-500 block text-[10px]">{item.description}</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-2 px-3 text-gray-600">
-                                                        {formatFrequency(item.frequency, item.daysOfWeek)}
-                                                    </td>
-                                                    <td className="py-2 px-3 text-right font-medium">
-                                                        {formatCurrency(item.clientRate)}
-                                                    </td>
+                                    <div className="w-full overflow-x-auto">
+                                        <table className="w-full border border-t-0 text-xs">
+                                            <thead>
+                                                <tr className="bg-gray-50 border-b">
+                                                    <th className="text-left py-2 px-3 font-semibold text-gray-600">Service</th>
+                                                    <th className="text-left py-2 px-3 font-semibold text-gray-600">Frequency</th>
+                                                    <th className="text-right py-2 px-3 font-semibold text-gray-600">Monthly Rate</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {items.map((item, idx) => (
+                                                    <tr key={item.id || idx} className="border-b last:border-0">
+                                                        <td className="py-2 px-3">
+                                                            {item.serviceType}
+                                                            {item.description && (
+                                                                <span className="text-gray-500 block text-[10px]">{item.description}</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-2 px-3 text-gray-600">
+                                                            {formatFrequency(item.frequency, item.daysOfWeek)}
+                                                        </td>
+                                                        <td className="py-2 px-3 text-right font-medium whitespace-nowrap">
+                                                            {formatCurrency(item.clientRate)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             ))}
-                            <div className="border-2 border-gray-800 rounded-lg p-4 flex justify-between items-center mb-6">
+                            <div className="border-2 border-gray-800 rounded-lg p-4 flex flex-wrap justify-between items-center gap-2 mb-6">
                                 <span className="font-bold text-gray-900">TOTAL MONTHLY RECURRING</span>
                                 <span className="text-xl font-bold text-gray-900">{formatCurrency(recurringTotal || monthlyRate)}/mo</span>
                             </div>
@@ -202,32 +204,34 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
                                             📍 {locName}
                                         </p>
                                     </div>
-                                    <table className="w-full border border-t-0 text-xs">
-                                        <thead>
-                                            <tr className="bg-gray-50 border-b">
-                                                <th className="text-left py-2 px-3 font-semibold text-gray-600">Service</th>
-                                                <th className="text-right py-2 px-3 font-semibold text-gray-600">Flat Fee</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {items.map((item, idx) => (
-                                                <tr key={item.id || idx} className="border-b last:border-0">
-                                                    <td className="py-2 px-3">
-                                                        {item.serviceType}
-                                                        {item.description && (
-                                                            <span className="text-gray-500 block text-[10px]">{item.description}</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-2 px-3 text-right font-medium">
-                                                        {formatCurrency(item.clientRate)}
-                                                    </td>
+                                    <div className="w-full overflow-x-auto">
+                                        <table className="w-full border border-t-0 text-xs">
+                                            <thead>
+                                                <tr className="bg-gray-50 border-b">
+                                                    <th className="text-left py-2 px-3 font-semibold text-gray-600">Service</th>
+                                                    <th className="text-right py-2 px-3 font-semibold text-gray-600">Flat Fee</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {items.map((item, idx) => (
+                                                    <tr key={item.id || idx} className="border-b last:border-0">
+                                                        <td className="py-2 px-3">
+                                                            {item.serviceType}
+                                                            {item.description && (
+                                                                <span className="text-gray-500 block text-[10px]">{item.description}</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-2 px-3 text-right font-medium whitespace-nowrap">
+                                                            {formatCurrency(item.clientRate)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             ))}
-                            <div className="border-2 border-amber-600 rounded-lg p-4 flex justify-between items-center mb-6">
+                            <div className="border-2 border-amber-600 rounded-lg p-4 flex flex-wrap justify-between items-center gap-2 mb-6">
                                 <span className="font-bold text-gray-900">TOTAL ONE-TIME CHARGES</span>
                                 <span className="text-xl font-bold text-amber-700">{formatCurrency(oneTimeTotal || oneTimeCharges)}</span>
                             </div>
@@ -307,7 +311,7 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
                     <p className="text-xs text-gray-500 mb-6">
                         IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.
                     </p>
-                    <div className="grid grid-cols-2 gap-12">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12">
                         <div className="space-y-6">
                             <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">XIRI Facility Solutions, LLC</p>
                             <div>

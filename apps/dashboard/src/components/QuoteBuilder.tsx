@@ -687,25 +687,25 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
 
     // ─── Render ────────────────────────────────────────────────────────
     return (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-            <div className="bg-background rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
+            <div className="bg-background rounded-xl shadow-2xl w-full max-w-4xl max-h-[94dvh] sm:max-h-[90vh] flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b">
-                    <div>
-                        <h2 className="text-lg font-semibold">
+                <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b">
+                    <div className="min-w-0">
+                        <h2 className="text-base sm:text-lg font-semibold truncate">
                             {isEditing ? `Edit Quote v${(existingQuote?.version || 1) + 1}` : 'Create New Quote'}
                         </h2>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                             Step {step + 1} of {STEPS.length} — {STEPS[step]}
                         </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onClose}>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0">
                         <span className="w-5 h-5">✕</span>
                     </Button>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="px-6 pt-4">
+                <div className="px-4 sm:px-6 pt-3 sm:pt-4">
                     <div className="flex gap-1">
                         {STEPS.map((s, i) => (
                             <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= step ? 'bg-primary' : 'bg-muted'}`} />
@@ -714,7 +714,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                 </div>
 
                 {/* Content — delegate to step components */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                     {step === 0 && (
                         <StepSelectClient
                             leads={leads}
@@ -772,7 +772,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between p-6 border-t bg-muted/10">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-4 sm:p-6 border-t bg-muted/10">
                     <Button
                         variant="outline"
                         onClick={() => step > 0 ? handleStepChange(step - 1) : onClose()}

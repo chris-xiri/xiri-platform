@@ -14,27 +14,37 @@ interface VendorCardProps {
     isRecruitmentMode?: boolean;
     isSelected?: boolean;
     onSelectChange?: (checked: boolean) => void;
+    onSelect?: (vendorId: string) => void;
 }
 
-export function VendorCard({ vendor, index, isRecruitmentMode = false, isSelected, onSelectChange }: VendorCardProps) {
+export function VendorCard({ vendor, index, isRecruitmentMode = false, isSelected, onSelectChange, onSelect }: VendorCardProps) {
     const insuranceInfo = getInsuranceStatusInfo(vendor);
     const insuranceDocs = getVendorInsuranceDocs(vendor);
 
+    const handleOpen = () => {
+        if (onSelect && vendor.id) {
+            onSelect(vendor.id);
+        }
+    };
+
     return (
-        <div className="border border-border rounded-lg p-3 space-y-3 bg-card shadow-sm">
-            <div className="flex items-start justify-between">
-                <div className="flex-1 flex gap-2">
+        <div
+            className={`border border-border rounded-lg p-3 space-y-3 bg-card shadow-sm ${onSelect ? 'cursor-pointer hover:border-primary/40 transition-colors' : ''}`}
+            onClick={onSelect ? handleOpen : undefined}
+        >
+            <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0 flex gap-2">
                     {onSelectChange && (
                         <Checkbox
                             checked={isSelected}
                             onCheckedChange={onSelectChange}
                             aria-label="Select vendor"
                             onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                            className="mt-1"
+                            className="mt-1 shrink-0"
                         />
                     )}
-                    <span className="text-muted-foreground font-medium text-xs mt-0.5">#{index + 1}</span>
-                    <div>
+                    <span className="text-muted-foreground font-medium text-xs mt-0.5 shrink-0">#{index + 1}</span>
+                    <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap mb-1">
                             {insuranceInfo.isBlocked ? (
                                 <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 px-1 py-0 h-4 text-[9px] font-bold">
@@ -55,7 +65,7 @@ export function VendorCard({ vendor, index, isRecruitmentMode = false, isSelecte
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 h-4 rounded text-[9px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs"
+                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 h-5 rounded text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs"
                                     title={`View ${insuranceDocs[0].title}`}
                                 >
                                     <FileText className="w-2.5 h-2.5" />
@@ -64,14 +74,18 @@ export function VendorCard({ vendor, index, isRecruitmentMode = false, isSelecte
                                 </a>
                             )}
                         </div>
-                        <Link href={isRecruitmentMode ? `/supply/recruitment/${vendor.id}` : `/supply/crm/${vendor.id}`} className="hover:opacity-80 transition-opacity">
-                            <h3 className="font-medium text-foreground hover:text-primary transition-colors">{vendor.businessName}</h3>
-                        </Link>
-                        <p className="text-xs text-muted-foreground mt-0.5">{vendor.address}</p>
-                        <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono select-all">ID: {vendor.id}</p>
+                        {onSelect ? (
+                            <h3 className="font-medium text-foreground hover:text-primary transition-colors truncate">{vendor.businessName}</h3>
+                        ) : (
+                            <Link href={isRecruitmentMode ? `/supply/recruitment/${vendor.id}` : `/supply/crm/${vendor.id}`} className="hover:opacity-80 transition-opacity block">
+                                <h3 className="font-medium text-foreground hover:text-primary transition-colors truncate">{vendor.businessName}</h3>
+                            </Link>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{vendor.address}</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono truncate select-all">ID: {vendor.id}</p>
                     </div>
                 </div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="shrink-0">
                     <Badge className={getStatusColor(vendor.status, vendor.outreachStatus)}>
                         {vendor.status === 'pending_review' ? 'Review Needed' :
                             vendor.status === 'compliance_review' ? 'Compliance' :

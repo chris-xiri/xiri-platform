@@ -92,15 +92,15 @@ export default function StepTermsAndSubmit({
                     <CardTitle className="text-sm">Quote Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Client</span>
-                        <span className="font-medium">{selectedLead?.businessName}</span>
+                    <div className="flex justify-between gap-2 text-sm">
+                        <span className="text-muted-foreground shrink-0">Client</span>
+                        <span className="font-medium text-right break-words min-w-0">{selectedLead?.businessName}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between gap-2 text-sm">
                         <span className="text-muted-foreground">Locations</span>
                         <span className="font-medium">{locations.length}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between gap-2 text-sm">
                         <span className="text-muted-foreground">Services</span>
                         <span className="font-medium">{lineItems.length}</span>
                     </div>
@@ -110,9 +110,9 @@ export default function StepTermsAndSubmit({
                         <>
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recurring Services</p>
                             {totals.recurringItems.map(li => (
-                                <div key={li.id} className="flex justify-between text-xs text-muted-foreground">
-                                    <span>{li.serviceType} — {li.locationName} ({FrequencyDisplay(li)})</span>
-                                    <span className="font-medium text-foreground">{formatCurrency(li.clientRate)}/mo</span>
+                                <div key={li.id} className="flex justify-between gap-2 text-xs text-muted-foreground">
+                                    <span className="min-w-0 break-words">{li.serviceType} — {li.locationName} ({FrequencyDisplay(li)})</span>
+                                    <span className="font-medium text-foreground shrink-0">{formatCurrency(li.clientRate)}/mo</span>
                                 </div>
                             ))}
                         </>
@@ -123,9 +123,9 @@ export default function StepTermsAndSubmit({
                         <>
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">One-Time Services</p>
                             {totals.oneTimeItems.map(li => (
-                                <div key={li.id} className="flex justify-between text-xs text-muted-foreground">
-                                    <span>{li.serviceType} — {li.locationName}</span>
-                                    <span className="font-medium text-foreground">{formatCurrency(li.clientRate)}</span>
+                                <div key={li.id} className="flex justify-between gap-2 text-xs text-muted-foreground">
+                                    <span className="min-w-0 break-words">{li.serviceType} — {li.locationName}</span>
+                                    <span className="font-medium text-foreground shrink-0">{formatCurrency(li.clientRate)}</span>
                                 </div>
                             ))}
                         </>
@@ -134,33 +134,33 @@ export default function StepTermsAndSubmit({
                     <Separator />
 
                     <div className="space-y-1 pt-1 text-xs">
-                        <div className="flex justify-between text-muted-foreground">
+                        <div className="flex justify-between gap-2 text-muted-foreground">
                             <span>Subtotal</span>
-                            <span>{formatCurrency(totals.subtotalBeforeTax)}</span>
+                            <span className="shrink-0">{formatCurrency(totals.subtotalBeforeTax)}</span>
                         </div>
-                        <div className="flex justify-between text-muted-foreground">
+                        <div className="flex justify-between gap-2 text-muted-foreground">
                             <span>Nassau County Sales Tax (8.625%)</span>
-                            <span>{formatCurrency(totals.totalTax > 0 ? totals.totalTax : Math.round(totals.subtotalBeforeTax * 0.08625 * 100) / 100)}</span>
+                            <span className="shrink-0">{formatCurrency(totals.totalTax > 0 ? totals.totalTax : Math.round(totals.subtotalBeforeTax * 0.08625 * 100) / 100)}</span>
                         </div>
                     </div>
 
                     <Separator />
 
                     {totals.recurringItems.length > 0 && (
-                        <div className="flex justify-between">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
                             <span className="font-medium">Monthly Recurring Total (incl. tax)</span>
-                            <span className="text-xl font-bold text-primary">{formatCurrency(totals.totalMonthly > 0 ? totals.totalMonthly : totals.recurringSubtotal * 1.08625)}/mo</span>
+                            <span className="text-xl font-bold text-primary shrink-0">{formatCurrency(totals.totalMonthly > 0 ? totals.totalMonthly : totals.recurringSubtotal * 1.08625)}/mo</span>
                         </div>
                     )}
                     {totals.oneTimeItems.length > 0 && (
-                        <div className="flex justify-between">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
                             <span className="font-medium font-semibold">Total Invoice Amount (incl. tax)</span>
-                            <span className="text-xl font-bold text-amber-600">{formatCurrency(totals.totalOneTime > 0 ? totals.totalOneTime : totals.oneTimeSubtotal * 1.08625)}</span>
+                            <span className="text-xl font-bold text-amber-600 shrink-0">{formatCurrency(totals.totalOneTime > 0 ? totals.totalOneTime : totals.oneTimeSubtotal * 1.08625)}</span>
                         </div>
                     )}
 
                     {/* Dual Pricing Preview */}
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t">
                         <div className="p-2.5 rounded-lg border border-sky-200 bg-sky-50/60 text-xs">
                             <p className="font-bold text-sky-900 uppercase text-[10px] tracking-wider">Method 1: ACH / Check (Cash)</p>
                             <p className="text-sm font-bold text-sky-800 font-mono mt-0.5">
@@ -178,7 +178,7 @@ export default function StepTermsAndSubmit({
             </Card>
 
             {/* Contract Terms */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <Label>Contract Tenure</Label>
                     <select
@@ -291,7 +291,7 @@ export default function StepTermsAndSubmit({
                         })}
 
                         {/* Boolean fields: bonded & uniformed */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label className="flex items-center gap-2 rounded-lg border p-3 cursor-pointer hover:bg-muted/30 transition-colors">
                                 <input
                                     type="checkbox"

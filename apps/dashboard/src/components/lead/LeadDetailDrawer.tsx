@@ -29,11 +29,21 @@ import {
     getCapabilityLabel,
 } from '@/lib/vendor-capabilities';
 
+import { isAuthRelatedError, reportAuthRequired } from '@/lib/authRecovery';
+
 function toDate(value: any): Date | null {
     if (!value) return null;
-    if (value instanceof Date) return value;
-    if (value.toDate && typeof value.toDate === 'function') return value.toDate();
-    try { return new Date(value); } catch { return null; }
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+    if (value.toDate && typeof value.toDate === 'function') {
+        const d = value.toDate();
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+    try {
+        const d = new Date(value);
+        return Number.isNaN(d.getTime()) ? null : d;
+    } catch {
+        return null;
+    }
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -229,14 +239,14 @@ function EditableField({
     }
 
     return (
-        <div className="flex items-center gap-2 text-sm group cursor-pointer" onClick={() => setEditing(true)}>
+        <div className="flex items-center gap-2 text-sm group cursor-pointer min-w-0" onClick={() => setEditing(true)}>
             <Icon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
             {renderDisplay ? renderDisplay(value) : linkPrefix && value ? (
-                <a href={`${linkPrefix}${value}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{value}</a>
+                <a href={`${linkPrefix}${value}`} className="text-primary hover:underline break-all min-w-0" onClick={(e) => e.stopPropagation()}>{value}</a>
             ) : (
-                <span className={value ? '' : 'text-muted-foreground italic'}>{value || `Add ${label.toLowerCase()}`}</span>
+                <span className={`min-w-0 break-words ${value ? '' : 'text-muted-foreground italic'}`}>{value || `Add ${label.toLowerCase()}`}</span>
             )}
-            <Pencil className="w-3 h-3 text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-opacity ml-auto flex-shrink-0" />
+            <Pencil className="w-3 h-3 text-muted-foreground/60 md:text-muted-foreground/0 md:group-hover:text-muted-foreground/70 transition-opacity ml-auto flex-shrink-0" />
         </div>
     );
 }
@@ -419,7 +429,7 @@ function EditableAddressField({
                         <label className="text-[10px] uppercase text-muted-foreground font-medium">Street Address</label>
                         <Input className="h-7 text-sm" value={draft.address} onChange={e => setDraft({ ...draft, address: e.target.value })} placeholder="123 Main St" />
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
                             <label className="text-[10px] uppercase text-muted-foreground font-medium">City</label>
                             <Input className="h-7 text-sm" value={draft.city} onChange={e => setDraft({ ...draft, city: e.target.value })} placeholder="City" />
@@ -450,7 +460,7 @@ function EditableAddressField({
             <div className="flex items-center gap-2 text-sm group cursor-pointer" onClick={startEditing}>
                 <MapPin className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 <span className={address ? '' : 'text-muted-foreground italic'}>{address || 'Add address'}</span>
-                <Pencil className="w-3 h-3 text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-opacity ml-auto flex-shrink-0" />
+                <Pencil className="w-3 h-3 text-muted-foreground/60 md:text-muted-foreground/0 md:group-hover:text-muted-foreground/70 transition-opacity ml-auto flex-shrink-0" />
             </div>
             {(city || state || zip) && (
                 <div className="flex items-center gap-2 text-sm pl-[22px] text-muted-foreground cursor-pointer" onClick={startEditing}>
@@ -471,6 +481,8 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
     // Company data (the "lead" / company record)
     const [company, setCompany] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [retryNonce, setRetryNonce] = useState(0);
     const [statusUpdating, setStatusUpdating] = useState(false);
     const [notesEditing, setNotesEditing] = useState(false);
     const [notesDraft, setNotesDraft] = useState('');
@@ -486,14 +498,17 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
             setContact(null);
             setCompany(null);
             setLoading(true);
+            setLoadError(null);
             setActiveTab('overview');
             setBookCallOpen(false);
             return;
         }
         setLoading(true);
+        setLoadError(null);
 
         // Listen to the contact document
         const unsubContact = onSnapshot(doc(db, 'contacts', contactId), async (snap) => {
+            setLoadError(null);
             if (snap.exists()) {
                 const data = snap.data();
                 const contactData: Contact = {
@@ -508,7 +523,7 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                     isPrimary: data.isPrimary ?? false,
                     unsubscribed: data.unsubscribed || false,
                     notes: data.notes || '',
-                    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+                    createdAt: toDate(data.createdAt) || new Date(),
                     createdBy: data.createdBy,
                     emailEngagement: data.emailEngagement,
                 };
@@ -523,10 +538,10 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                             setCompany({
                                 id: compSnap.id,
                                 ...compData,
-                                createdAt: compData.createdAt?.toDate ? compData.createdAt.toDate() : new Date(compData.createdAt || Date.now()),
-                                preferredAuditTimes: compData.preferredAuditTimes?.map((t: any) =>
-                                    t?.toDate ? t.toDate() : new Date(t)
-                                ),
+                                createdAt: toDate(compData.createdAt) || new Date(),
+                                preferredAuditTimes: compData.preferredAuditTimes
+                                    ?.map((t: any) => toDate(t))
+                                    .filter((d: Date | null): d is Date => d !== null),
                             } as Lead);
                         } else {
                             setCompany(null);
@@ -543,10 +558,17 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                 setCompany(null);
             }
             setLoading(false);
-        }, () => setLoading(false));
+        }, (err) => {
+            console.error('[LeadDetailDrawer] Failed to load contact:', err);
+            if (isAuthRelatedError(err)) {
+                reportAuthRequired('Your session expired while opening this contact.');
+            }
+            setLoadError(err?.message || 'Unable to load contact details.');
+            setLoading(false);
+        });
 
         return () => unsubContact();
-    }, [contactId, open]);
+    }, [contactId, open, retryNonce]);
 
     // Fetch quotes for the company (using companyId, or fallback to contactId for legacy leadId)
     useEffect(() => {
@@ -670,6 +692,19 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                             <Skeleton className="h-10 w-2/3" />
                             <Skeleton className="h-[200px] w-full" />
                         </div>
+                    ) : loadError ? (
+                        <div className="p-6 space-y-3">
+                            <SheetTitle className="text-base">Unable to load contact</SheetTitle>
+                            <p className="text-sm text-muted-foreground">{loadError}</p>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1.5"
+                                onClick={() => setRetryNonce((n) => n + 1)}
+                            >
+                                <RefreshCcw className="w-3.5 h-3.5" /> Retry
+                            </Button>
+                        </div>
                     ) : !contact ? (
                         <div className="p-6 text-muted-foreground">
                             <SheetTitle className="sr-only">Lead not found</SheetTitle>
@@ -678,7 +713,7 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                     ) : (
                         <>
                             {/* ─── Header (Contact-focused) ──── */}
-                            <div className="sticky top-0 bg-card border-b px-5 py-4 z-10">
+                            <div className="sticky top-0 bg-card border-b pl-4 sm:pl-5 pr-11 py-4 z-10">
                                 <div className="flex items-center gap-3 mb-2">
                                     {/* Avatar — contact initials */}
                                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
@@ -690,7 +725,7 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                             {displayName || 'Unnamed Contact'}
                                         </SheetTitle>
                                         {/* Company — secondary subtitle */}
-                                        <div className="flex items-center gap-1.5 mt-0.5 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-1.5 mt-0.5 text-sm text-muted-foreground min-w-0">
                                             <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
                                             <EditableField
                                                 label="Business name"
@@ -706,15 +741,15 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-7 text-xs gap-1 text-muted-foreground"
+                                        className="h-7 text-xs gap-1 text-muted-foreground shrink-0 px-2"
                                         onClick={() => router.push(`/sales/crm/${company?.id || contact?.companyId || contactId}`)}
                                     >
                                         <ExternalLink className="w-3 h-3" />
-                                        Full Page
+                                        <span className="hidden sm:inline">Full Page</span>
                                     </Button>
                                 </div>
                                 {/* Company selectors — compact row */}
-                                <div className="flex items-center gap-2 pl-[52px]">
+                                <div className="flex flex-wrap items-center gap-2 pl-0 sm:pl-[52px]">
                                     <select
                                         value={company?.status || 'new'}
                                         onChange={(e) => handleStatusChange(e.target.value)}

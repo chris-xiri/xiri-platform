@@ -155,25 +155,27 @@ export default function ContractDetailPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => router.push('/operations/contracts')}>
-                    <ArrowLeft className="w-5 h-5" />
-                </Button>
-                <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-bold">
-                            {contract.formalEntityName || contract.clientBusinessName || contract.clientName || 'Contract'}
-                        </h1>
-                        <Badge variant={badge.variant}>{badge.label}</Badge>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                    <Button variant="ghost" size="icon" className="shrink-0" onClick={() => router.push('/operations/contracts')}>
+                        <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                            <h1 className="text-xl sm:text-2xl font-bold break-words">
+                                {contract.formalEntityName || contract.clientBusinessName || contract.clientName || 'Contract'}
+                            </h1>
+                            <Badge variant={badge.variant} className="shrink-0">{badge.label}</Badge>
+                        </div>
+                        <p className="text-xs sm:text-sm text-muted-foreground break-all mt-0.5">
+                            {contract.formalEntityName && contract.clientBusinessName && (
+                                <span className="mr-2 break-normal">DBA: {contract.clientBusinessName}</span>
+                            )}
+                            Contract ID: {contract.id}
+                        </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                        {contract.formalEntityName && contract.clientBusinessName && (
-                            <span className="mr-2">DBA: {contract.clientBusinessName}</span>
-                        )}
-                        Contract ID: {contract.id}
-                    </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowPreview(!showPreview)}>
                         {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         {showPreview ? 'Hide Contract' : 'View Contract'}
@@ -204,9 +206,9 @@ export default function ContractDetailPage() {
                                         </Badge>
                                     )}
                                 </div>
-                                <p className="text-sm font-semibold text-foreground">
+                                <p className="text-sm font-semibold text-foreground break-words">
                                     {ref?.name || 'Referral Partner'}
-                                    {ref?.email && <span className="font-normal text-muted-foreground"> · {ref.email}</span>}
+                                    {ref?.email && <span className="font-normal text-muted-foreground break-all"> · {ref.email}</span>}
                                     {ref?.phone && <span className="font-normal text-muted-foreground"> · {ref.phone}</span>}
                                 </p>
                                 <p className="text-xs text-emerald-800 dark:text-emerald-300">
@@ -332,25 +334,25 @@ export default function ContractDetailPage() {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
+                        <div className="flex flex-wrap items-start sm:items-center justify-between gap-3">
+                            <div className="space-y-1 min-w-0 flex-1">
                                 <p className="text-xs font-medium text-amber-800 uppercase tracking-wider">Contract Party</p>
                                 {contract.formalEntityName ? (
-                                    <p className="font-semibold text-sm">{contract.formalEntityName}</p>
+                                    <p className="font-semibold text-sm break-words">{contract.formalEntityName}</p>
                                 ) : (
                                     <p className="text-sm text-amber-700">⚠ Set the legal entity name before sending</p>
                                 )}
-                                {contract.formalEntityAddress && <p className="text-xs text-muted-foreground">{contract.formalEntityAddress}</p>}
-                                <p className="text-xs text-muted-foreground">
+                                {contract.formalEntityAddress && <p className="text-xs text-muted-foreground break-words">{contract.formalEntityAddress}</p>}
+                                <p className="text-xs text-muted-foreground break-words">
                                     Signer: {contract.signerName || '—'} • {contract.signerTitle || '—'}
-                                    {contract.signerEmail && <span> • {contract.signerEmail}</span>}
+                                    {contract.signerEmail && <span className="break-all"> • {contract.signerEmail}</span>}
                                     {contract.signerPhone && <span> • {contract.signerPhone}</span>}
                                 </p>
                             </div>
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50"
+                                className="gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 shrink-0"
                                 onClick={() => {
                                     setEntityName(contract.formalEntityName || contract.clientBusinessName || '');
                                     setEntityAddress(contract.formalEntityAddress || contract.clientAddress || '');
@@ -456,27 +458,27 @@ export default function ContractDetailPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Business Name</span>
-                            <span className="font-medium">{contract.clientBusinessName || contract.clientName || '—'}</span>
+                        <div className="flex justify-between gap-3 text-sm">
+                            <span className="text-muted-foreground shrink-0">Business Name</span>
+                            <span className="font-medium text-right min-w-0 break-words">{contract.clientBusinessName || contract.clientName || '—'}</span>
                         </div>
                         {lead && (
                             <>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Contact</span>
-                                    <span className="font-medium">{lead.contactName || lead.name || '—'}</span>
+                                <div className="flex justify-between gap-3 text-sm">
+                                    <span className="text-muted-foreground shrink-0">Contact</span>
+                                    <span className="font-medium text-right min-w-0 break-words">{lead.contactName || lead.name || '—'}</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Email</span>
-                                    <span className="font-medium">{lead.email || lead.contactEmail || '—'}</span>
+                                <div className="flex justify-between gap-3 text-sm">
+                                    <span className="text-muted-foreground shrink-0">Email</span>
+                                    <span className="font-medium text-right min-w-0 break-all">{lead.email || lead.contactEmail || '—'}</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Phone</span>
-                                    <span className="font-medium">{lead.phone || lead.contactPhone || '—'}</span>
+                                <div className="flex justify-between gap-3 text-sm">
+                                    <span className="text-muted-foreground shrink-0">Phone</span>
+                                    <span className="font-medium text-right min-w-0">{lead.phone || lead.contactPhone || '—'}</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Address</span>
-                                    <span className="font-medium text-right max-w-[60%]">{lead.address || '—'}</span>
+                                <div className="flex justify-between gap-3 text-sm">
+                                    <span className="text-muted-foreground shrink-0">Address</span>
+                                    <span className="font-medium text-right max-w-[65%] break-words">{lead.address || '—'}</span>
                                 </div>
                             </>
                         )}
@@ -578,16 +580,16 @@ export default function ContractDetailPage() {
                                     return (
                                         <div
                                             key={q.id}
-                                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
+                                            className="flex flex-wrap items-center justify-between gap-2 p-3 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
                                             onClick={() => router.push(`/sales/quotes/${q.id}`)}
                                         >
-                                            <div>
+                                            <div className="min-w-0">
                                                 <p className="text-sm font-medium">Version {q.version || 1}</p>
                                                 <p className="text-xs text-muted-foreground">
                                                     {q.lineItems?.length || 0} services — {formatCurrency(q.totalMonthlyRate)}/mo
                                                 </p>
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 shrink-0">
                                                 <Badge variant={qBadge.variant} className="text-xs">{qBadge.label}</Badge>
                                                 <span className="text-xs text-muted-foreground">{formatDate(q.createdAt)}</span>
                                                 <ChevronRight className="w-4 h-4 text-muted-foreground" />

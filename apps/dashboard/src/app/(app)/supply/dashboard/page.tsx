@@ -279,15 +279,15 @@ export default function SupplyDashboardPage() {
 
     return (
         <ProtectedRoute resource="supply/recruitment">
-            <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+            <div className="flex flex-col min-h-full lg:h-[calc(100dvh-64px)] lg:overflow-hidden">
                 {/* ─── Header ────────────────────────────────────────────── */}
                 <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b bg-card">
-                    <div className="flex items-center justify-between">
-                        <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="min-w-0">
                             <h1 className="text-2xl font-bold">Supply Pipeline</h1>
                             <p className="text-sm text-muted-foreground">{pipelineVendors.length} contractors • Outreach funnel + CRM</p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <Button variant={recruitExpanded ? 'default' : 'outline'} size="sm" className="h-8 text-xs gap-1"
                                 onClick={() => setRecruitExpanded(prev => !prev)}>
                                 <Search className="w-3 h-3" />
@@ -366,7 +366,7 @@ export default function SupplyDashboardPage() {
                         </div>
 
                         {/* Funnel Mini Bar */}
-                        <div className="flex items-center gap-2 text-xs">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs">
                             {[
                                 { label: 'Sent', count: funnel.sent, color: 'bg-sky-500' },
                                 { label: 'Delivered', count: funnel.delivered, color: 'bg-green-500' },
@@ -426,7 +426,7 @@ export default function SupplyDashboardPage() {
                 </div>
 
                 {/* ─── CRM Table ──────────────────────────────────────────── */}
-                <div className="flex-1 overflow-hidden px-4 sm:px-6 py-2">
+                <div className="flex-1 min-h-0 lg:overflow-hidden px-4 sm:px-6 py-2">
                     <VendorList
                         title={activeTab === 'abandoned' ? 'Abandoned Sessions' : 'Vendor Pipeline'}
                         statusFilters={statusFilters}

@@ -81,10 +81,10 @@ export default function CRMPage() {
 
     return (
         <ProtectedRoute resource="supply/crm">
-            <main className="w-full px-4 sm:px-6 lg:px-8 py-4 flex flex-col h-[calc(100vh-64px)]">
-                <div className="flex items-center justify-between mb-3 flex-shrink-0">
+            <main className="w-full px-4 sm:px-6 lg:px-8 py-4 flex flex-col min-h-full lg:h-[calc(100dvh-64px)]">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 flex-shrink-0">
                     <h1 className="text-2xl font-bold text-foreground">Vendor CRM</h1>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <span className="text-sm text-muted-foreground">{vendors.length} vendors</span>
                         <Button onClick={() => setShowAddContractor(true)} className="gap-2" size="sm">
                             <Plus className="w-4 h-4" />
@@ -129,7 +129,7 @@ export default function CRMPage() {
                 </div>
 
                 {/* Vendor List */}
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 min-h-0 lg:overflow-hidden">
                     <VendorList
                         title="Vendor CRM"
                         statusFilters={statusFilters}

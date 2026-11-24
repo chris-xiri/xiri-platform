@@ -745,14 +745,29 @@ export default function ProspectsPage() {
             const data = result.data as any;
             const seqFn = httpsCallable(functions, 'startLeadSequence');
 
-            // Fire all sequence enrollments concurrently instead of serially
-            const seqResults = await Promise.allSettled(
-                ids.map((_, i) => {
-                    const imported = data.results?.[i];
-                    if (!imported?.companyId || !imported?.contactId) return Promise.resolve(null);
-                    return seqFn({ leadId: imported.companyId, contactId: imported.contactId, sequenceId });
-                })
-            );
+            // Enroll top 1–3 verified decision-makers per practice (staggered by +0 / +1 / +2 business days)
+            const enrollmentCalls: Promise<any>[] = [];
+            for (let i = 0; i < ids.length; i++) {
+                const imported = data.results?.[i];
+                if (!imported?.companyId) continue;
+                const targetContactIds: string[] = Array.isArray(imported.contactIds) && imported.contactIds.length > 0
+                    ? imported.contactIds.slice(0, 3)
+                    : (imported.contactId ? [imported.contactId] : []);
+
+                targetContactIds.forEach((cid, cIdx) => {
+                    enrollmentCalls.push(
+                        seqFn({
+                            leadId: imported.companyId,
+                            contactId: cid,
+                            sequenceId,
+                            initialDelayDays: cIdx,
+                            isSecondaryContact: cIdx > 0,
+                        })
+                    );
+                });
+            }
+
+            const seqResults = await Promise.allSettled(enrollmentCalls);
             const started = seqResults.filter(r => r.status === 'fulfilled' && (r as PromiseFulfilledResult<unknown>).value !== null).length;
 
             const batch = writeBatch(db);
@@ -762,6 +777,7 @@ export default function ProspectsPage() {
                     status: 'sequenced',
                     companyId: imported?.companyId || null,
                     contactId: imported?.contactId || null,
+                    contactIds: imported?.contactIds || [],
                     actionedAt: new Date(),
                 });
             }
@@ -772,7 +788,7 @@ export default function ProspectsPage() {
                 ids.forEach(id => next.delete(id));
                 return next;
             });
-            toast({ title: `Imported ${ids.length} · Started ${started} sequences` });
+            toast({ title: `Imported ${ids.length} practice(s) · Enrolled ${started} contact(s)` });
         } catch (err) {
             toast({ title: 'Error', description: String(err) });
         }
@@ -1133,17 +1149,17 @@ export default function ProspectsPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
                     <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <Target className="w-6 h-6 text-primary" />
+                        <Target className="w-6 h-6 text-primary shrink-0" />
                         Prospect Queue
                     </h1>
                     <p className="text-sm text-muted-foreground mt-1">
                         Auto-discovered prospects ready for your review. Take action or skip.
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <Button
                         variant={configOpen ? 'secondary' : 'outline'}
                         size="sm"
@@ -1232,14 +1248,14 @@ export default function ProspectsPage() {
             {/* Progress banner */}
             {(polling || (runStatus && runStatus.running)) && runStatus && (
                 <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900 p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
                             <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
                                 {runStatus.stopRequested ? 'Stopping after current town batch...' : 'Pipeline Running...'}
                             </span>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                             <span className="text-xs text-blue-600 dark:text-blue-400">
                                 {runStatus.qualified} / {runStatus.target} qualified
                             </span>
@@ -1261,14 +1277,14 @@ export default function ProspectsPage() {
                             style={{ width: `${Math.min(100, (runStatus.qualified / runStatus.target) * 100)}%` }}
                         />
                     </div>
-                    <div className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
-                        <div className="flex gap-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-blue-600 dark:text-blue-400">
+                        <div className="flex flex-wrap gap-x-4 gap-y-1">
                             <span>Discovered: {runStatus.discovered}</span>
                             <span>Qualified: {runStatus.qualified}</span>
                             <span>Dupes Skipped: {runStatus.duplicatesSkipped}</span>
                         </div>
                         {runStatus.currentQuery && (
-                            <span className="italic truncate max-w-xs">Searching: {runStatus.currentQuery}</span>
+                            <span className="italic truncate max-w-full sm:max-w-xs">Searching: {runStatus.currentQuery}</span>
                         )}
                     </div>
                 </div>
@@ -1276,14 +1292,14 @@ export default function ProspectsPage() {
 
             {/* Completed banner */}
             {runStatus && !runStatus.running && !polling && runStatus.completedAt && (
-                <div className="rounded-lg border bg-emerald-600 dark:bg-emerald-700 border-emerald-700 dark:border-emerald-800 p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-white" />
+                <div className="rounded-lg border bg-emerald-600 dark:bg-emerald-700 border-emerald-700 dark:border-emerald-800 p-3 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
                         <span className="text-sm text-white font-medium">
                             Last run: Added {runStatus.qualified} prospects ({runStatus.discovered} found, {runStatus.duplicatesSkipped} dupes skipped)
                         </span>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setRunStatus(null)} className="text-white hover:text-emerald-100 h-6 px-2">
+                    <Button variant="ghost" size="sm" onClick={() => setRunStatus(null)} className="text-white hover:text-emerald-100 h-6 px-2 shrink-0">
                         <X className="w-3 h-3" />
                     </Button>
                 </div>
@@ -1542,17 +1558,17 @@ export default function ProspectsPage() {
                     {uncategorizedClusters.map(cluster => (
                         <div
                             key={cluster.term}
-                            className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-amber-400 bg-amber-100 text-amber-950 shadow-sm"
+                            className="flex flex-wrap items-center gap-2 sm:gap-3 px-4 py-2.5 rounded-lg border border-amber-400 bg-amber-100 text-amber-950 shadow-sm"
                         >
                             <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
-                            <span className="text-sm flex-1 font-medium">
+                            <span className="text-sm flex-1 min-w-0 font-medium">
                                 <span className="font-semibold">{cluster.count}</span> uncategorized prospects match
                                 &ldquo;<span className="font-bold text-amber-800">{cluster.term}</span>&rdquo;
                             </span>
                             <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-xs border-amber-700 bg-white text-amber-950 hover:bg-amber-50"
+                                className="h-7 text-xs border-amber-700 bg-white text-amber-950 hover:bg-amber-50 shrink-0"
                                 onClick={() => handleCreateTypeFromCluster(cluster.term, cluster.prospectIds)}
                             >
                                 <Plus className="w-3 h-3 mr-1" />
@@ -1565,15 +1581,15 @@ export default function ProspectsPage() {
 
             {/* Auto-categorize banner — independent of cluster detection threshold */}
             {prospects.some(p => getEffectiveFacilityType(p) === 'unknown') && (
-                <div className="flex items-center gap-3 px-4 py-2 mb-3 rounded-lg border border-blue-500 bg-blue-100 text-blue-950 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-4 py-2 mb-3 rounded-lg border border-blue-500 bg-blue-100 text-blue-950 shadow-sm">
                     <RefreshCw className="w-4 h-4 text-blue-700 shrink-0" />
-                    <span className="text-sm flex-1 font-medium text-blue-900">
+                    <span className="text-sm flex-1 min-w-0 font-medium text-blue-900">
                         {prospects.filter(p => getEffectiveFacilityType(p) === 'unknown').length} uncategorized — auto-match against known patterns{Object.keys(customFacilityTypes).length > 0 ? ` + ${Object.keys(customFacilityTypes).length} custom type${Object.keys(customFacilityTypes).length !== 1 ? 's' : ''}` : ''}
                     </span>
                     <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs border-blue-700 bg-white text-blue-950 hover:bg-blue-50"
+                        className="h-7 text-xs border-blue-700 bg-white text-blue-950 hover:bg-blue-50 shrink-0"
                         onClick={handleAutoRecategorize}
                     >
                         <RefreshCw className="w-3 h-3 mr-1" />
@@ -1616,7 +1632,7 @@ export default function ProspectsPage() {
                     <div className="w-px h-3 bg-border shrink-0" />
                     <div className="w-[120px] shrink-0 text-right">Actions</div>
                 </div>
-                <div className="divide-y max-h-[calc(100vh-380px)] overflow-y-auto">
+                <div className="divide-y lg:max-h-[calc(100vh-380px)] lg:overflow-y-auto">
                     {filtered.map(prospect => {
                         const effectiveFt = getEffectiveFacilityType(prospect);
                         const isUnknown = effectiveFt === 'unknown';
@@ -1671,9 +1687,9 @@ export default function ProspectsPage() {
                                         </div>
                                         <div className="flex items-center gap-4 flex-wrap">
                                             {(prospect.address || prospect.searchLocation) && (
-                                                <span className="text-xs text-muted-foreground flex items-center gap-1 min-w-0 max-w-full">
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1 min-w-0 flex-1 max-w-full">
                                                     <MapPin className="w-3 h-3 shrink-0" />
-                                                    <span className="truncate max-w-[320px] xl:max-w-[280px]">{prospect.address || prospect.searchLocation}</span>
+                                                    <span className="truncate min-w-0 flex-1 xl:max-w-[280px]">{prospect.address || prospect.searchLocation}</span>
                                                 </span>
                                             )}
                                             {prospect.phone && (
@@ -1817,17 +1833,17 @@ export default function ProspectsPage() {
                                                         </button>
                                                     )}
                                                     {prospect.status === 'pending_review' && (
-                                                        <button onClick={e => { e.stopPropagation(); handleStartEditContact(prospect); }} className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 text-[10px] px-1 h-4 text-muted-foreground hover:text-primary transition-all rounded" title="Edit contact">
-                                                            <Pencil className="w-2.5 h-2.5" />
+                                                        <button onClick={e => { e.stopPropagation(); handleStartEditContact(prospect); }} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 flex items-center justify-center gap-0.5 text-[10px] px-1.5 h-6 min-w-[24px] text-muted-foreground hover:text-primary transition-all rounded" title="Edit contact">
+                                                            <Pencil className="w-3 h-3" />
                                                         </button>
                                                     )}
                                                 </div>
                                                 {expandedContacts.has(prospect.id) && prospect.allContacts && prospect.allContacts.length > 1 && (
                                                     <div className="mt-1 space-y-1 pl-2 border-l-2 border-blue-200 dark:border-blue-800">
                                                         {prospect.allContacts.map((c, idx) => (
-                                                            <div key={idx} className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
+                                                            <div key={idx} className="text-[11px] flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-muted-foreground min-w-0">
                                                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.type === 'personal' ? 'bg-green-500' : 'bg-gray-400'}`} />
-                                                                <span className="truncate">{c.email}</span>
+                                                                <span className="truncate min-w-0">{c.email}</span>
                                                                 {c.firstName && <span className="text-[10px] text-muted-foreground/50 shrink-0">({c.firstName}{c.lastName ? ` ${c.lastName}` : ''}{c.position ? `, ${c.position}` : ''})</span>}
                                                                 {c.confidence && <span className="text-[10px] text-muted-foreground/40 shrink-0">{Math.round(c.confidence * 100)}%</span>}
                                                             </div>

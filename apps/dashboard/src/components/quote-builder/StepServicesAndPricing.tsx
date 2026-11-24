@@ -121,21 +121,21 @@ export default function StepServicesAndPricing({
                 return (
                     <Card key={loc.id}>
                         <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                                    <CardTitle className="text-base">{loc.name}</CardTitle>
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                                    <CardTitle className="text-base truncate">{loc.name}</CardTitle>
                                 </div>
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="gap-1 text-xs"
+                                    className="gap-1 text-xs shrink-0"
                                     onClick={() => onAddLineItem(loc)}
                                 >
                                     <Plus className="w-3 h-3" /> Add Service
                                 </Button>
                             </div>
-                            <CardDescription className="text-xs">{loc.address}</CardDescription>
+                            <CardDescription className="text-xs break-words">{loc.address}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {locItems.length === 0 ? (
@@ -146,18 +146,18 @@ export default function StepServicesAndPricing({
                                 locItems.map((item, itemIdx) => (
                                     item.lineItemStatus === 'cancelled' ? (
                                         /* ─── CANCELLED: Strikethrough display ─── */
-                                        <div key={item.id} className="border rounded-lg p-4 bg-red-50/50 border-red-200 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <span className="inline-flex items-center gap-1 text-red-700 bg-red-100 px-2 py-0.5 rounded text-xs font-medium">🚫 Cancelled</span>
-                                                <span className="font-medium text-sm line-through text-muted-foreground">{item.serviceType}</span>
-                                                <span className="text-xs text-muted-foreground line-through">
+                                        <div key={item.id} className="border rounded-lg p-3 sm:p-4 bg-red-50/50 border-red-200 flex flex-wrap items-center justify-between gap-2">
+                                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                                                <span className="inline-flex items-center gap-1 text-red-700 bg-red-100 px-2 py-0.5 rounded text-xs font-medium shrink-0">🚫 Cancelled</span>
+                                                <span className="font-medium text-sm line-through text-muted-foreground break-words">{item.serviceType}</span>
+                                                <span className="text-xs text-muted-foreground line-through shrink-0">
                                                     {formatCurrency(item.clientRate)}/mo
                                                 </span>
                                             </div>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="text-xs text-muted-foreground"
+                                                className="text-xs text-muted-foreground shrink-0"
                                                 onClick={() => onUpdateLineItem(item.id, {
                                                     lineItemStatus: 'accepted',
                                                     cancelledInVersion: undefined,
@@ -168,18 +168,18 @@ export default function StepServicesAndPricing({
                                         </div>
                                     ) : item.lineItemStatus === 'accepted' ? (
                                         /* ─── ACCEPTED: Locked with Cancel/Edit actions ─── */
-                                        <div key={item.id} className="border rounded-lg p-4 bg-green-50/50 border-green-200">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="inline-flex items-center gap-1 text-green-700 bg-green-100 px-2 py-0.5 rounded text-xs font-medium">✅ Accepted</span>
-                                                    <span className="font-medium text-sm">{item.serviceType}</span>
+                                        <div key={item.id} className="border rounded-lg p-3 sm:p-4 bg-green-50/50 border-green-200">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                                                    <span className="inline-flex items-center gap-1 text-green-700 bg-green-100 px-2 py-0.5 rounded text-xs font-medium shrink-0">✅ Accepted</span>
+                                                    <span className="font-medium text-sm break-words">{item.serviceType}</span>
                                                     <span className="text-xs text-muted-foreground">
                                                         {item.frequency === 'custom_days' && item.daysOfWeek
                                                             ? item.daysOfWeek.map((d, i) => d ? DAY_LABELS[i] : null).filter(Boolean).join(', ')
                                                             : item.frequency?.replace(/_/g, ' ')}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center gap-2 shrink-0">
                                                     <span className="font-medium text-sm">{formatCurrency(item.clientRate)}/mo</span>
                                                     {isEditing && (
                                                         <>
@@ -233,8 +233,8 @@ export default function StepServicesAndPricing({
                                                 </button>
                                             </div>
                                             {/* Row 1: Service Type + Rate */}
-                                            <div className="grid grid-cols-12 gap-3 items-end">
-                                                <div className="col-span-6 space-y-1">
+                                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                                                <div className="sm:col-span-6 space-y-1">
                                                     <Label className="text-xs text-muted-foreground">Service Type</Label>
                                                     <select
                                                         className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
@@ -268,7 +268,7 @@ export default function StepServicesAndPricing({
                                                         />
                                                     )}
                                                 </div>
-                                                <div className="col-span-4">
+                                                <div className="sm:col-span-4">
                                                     <Label className="text-xs text-muted-foreground">
                                                         {item.frequency === 'one_time' ? 'Flat Fee' : item.isConsumable ? 'Est. Monthly Cost' : 'Monthly Rate'}
                                                     </Label>
@@ -288,13 +288,13 @@ export default function StepServicesAndPricing({
                                                 </div>
                                                 {/* Unit Pricing Breakdown (for items generated from Trades / Unit-Based step) */}
                                                 {item.unitItems && item.unitItems.length > 0 && (
-                                                    <div className="col-span-12">
+                                                    <div className="sm:col-span-12">
                                                         <div className="rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-900/80 p-3 space-y-2">
-                                                            <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
+                                                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
                                                                 <span className="flex items-center gap-1.5 text-slate-900 dark:text-slate-100 font-bold">
                                                                     📐 Unit-Based Item Breakdown ({item.unitItems.length} item{item.unitItems.length !== 1 ? 's' : ''})
                                                                 </span>
-                                                                <div className="flex items-center gap-2">
+                                                                <div className="flex flex-wrap items-center gap-2">
                                                                     <span className="font-mono text-slate-900 dark:text-slate-100 font-bold">
                                                                         Total: ${item.clientRate?.toFixed(2) || '0.00'}
                                                                     </span>
@@ -311,7 +311,7 @@ export default function StepServicesAndPricing({
                                                             </div>
                                                             <div className="space-y-1 pt-1 border-t border-slate-200 dark:border-slate-800">
                                                                 {item.unitItems.map((u: any, uIdx: number) => (
-                                                                    <div key={u.id || uIdx} className="flex items-center justify-between text-xs text-slate-800 dark:text-slate-200">
+                                                                    <div key={u.id || uIdx} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs text-slate-800 dark:text-slate-200">
                                                                         <span className="font-medium">• {u.description}</span>
                                                                         {u.quantity === 0 ? (
                                                                             <span className="font-mono text-amber-800 dark:text-amber-300 font-semibold">
@@ -330,16 +330,16 @@ export default function StepServicesAndPricing({
                                                 )}
                                                 {/* Calculator Scope Summary (for items generated from Building Scope step) */}
                                                 {item.rooms && item.rooms.length > 0 && (
-                                                    <div className="col-span-12">
+                                                    <div className="sm:col-span-12">
                                                         <div className="rounded-lg border bg-primary/5 p-3 space-y-2">
-                                                            <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                                                            <p className="text-xs font-semibold text-primary flex flex-wrap items-center gap-1.5">
                                                                 🏢 ISSA Calculator Scope
                                                                 <span className="text-[10px] font-normal text-muted-foreground">
                                                                     {item.rooms.length} room{item.rooms.length !== 1 ? 's' : ''}
                                                                     {item.calculatorResults && ` · ${item.calculatorResults.hoursPerVisit.toFixed(1)} hrs/visit`}
                                                                 </span>
                                                             </p>
-                                                            <div className="grid grid-cols-2 gap-1">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                                                                 {item.rooms.map(room => {
                                                                     const rt = ROOM_TYPES.find(r => r.id === room.roomTypeId);
                                                                     return (
@@ -354,7 +354,7 @@ export default function StepServicesAndPricing({
                                                                 })}
                                                             </div>
                                                             {item.calculatorResults && (
-                                                                <div className="flex gap-4 text-[10px] text-muted-foreground pt-1 border-t border-dashed">
+                                                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground pt-1 border-t border-dashed">
                                                                     <span>Labor: {formatCurrency(item.calculatorResults.laborCostPerMonth)}/mo</span>
                                                                     <span>Overhead: {formatCurrency(item.calculatorResults.overheadCost)}/mo</span>
                                                                     <span>Profit: {formatCurrency(item.calculatorResults.profitAmount)}/mo</span>
@@ -365,11 +365,11 @@ export default function StepServicesAndPricing({
                                                     </div>
                                                 )}
                                                 {/* Sales Tax Selection & Calculation */}
-                                                <div className="col-span-12 flex items-center justify-between text-xs bg-muted/20 p-2 rounded-md border mt-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <Label className="text-xs text-muted-foreground">Sales Tax Jurisdiction:</Label>
+                                                <div className="sm:col-span-12 flex flex-wrap items-center justify-between gap-2 text-xs bg-muted/20 p-2 rounded-md border mt-1">
+                                                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                                                        <Label className="text-xs text-muted-foreground shrink-0">Sales Tax Jurisdiction:</Label>
                                                         <select
-                                                            className="h-7 text-xs rounded border border-input bg-background px-2"
+                                                            className="h-7 text-xs rounded border border-input bg-background px-2 max-w-full"
                                                             value={item.taxExempt ? '0' : (item.taxRate?.toString() || '0.08625')}
                                                             onChange={(e) => {
                                                                 const val = parseFloat(e.target.value);
@@ -387,7 +387,7 @@ export default function StepServicesAndPricing({
                                                             <option value="0">Tax Exempt / Resale (0%)</option>
                                                         </select>
                                                     </div>
-                                                    <div className="text-right">
+                                                    <div className="text-right shrink-0">
                                                         {item.taxExempt ? (
                                                             <span className="text-green-600 font-medium">✓ Tax Exempt ($0.00)</span>
                                                         ) : (
@@ -398,7 +398,7 @@ export default function StepServicesAndPricing({
                                                     </div>
                                                 </div>
 
-                                                <div className="col-span-2 flex justify-end">
+                                                <div className="sm:col-span-2 flex justify-end">
                                                     <Button variant="ghost" size="icon" onClick={() => {
                                                         onRemoveLineItem(item.id);
                                                         quoteLogger.lineItemRemoved(item.id);
@@ -409,8 +409,8 @@ export default function StepServicesAndPricing({
 
                                                 {/* ±20% Price Band (internal only) */}
                                                 {item.clientRate > 0 && !item.isConsumable && item.frequency !== 'one_time' && (
-                                                    <div className="col-span-12">
-                                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                                    <div className="sm:col-span-12">
+                                                        <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                                                             <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">📊 Internal Range:</span>
                                                             <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                                                                 {formatCurrency(Math.round(item.clientRate * 0.8))} – {formatCurrency(Math.round(item.clientRate * 1.2))}/mo
@@ -463,7 +463,7 @@ export default function StepServicesAndPricing({
                                                             <Label className="text-xs text-muted-foreground">
                                                                 Select days — {item.daysOfWeek.filter(Boolean).length}x/week
                                                             </Label>
-                                                            <div className="flex gap-1 mt-1">
+                                                            <div className="flex flex-wrap gap-1 mt-1">
                                                                 {DAY_LABELS.map((day, i) => (
                                                                     <button
                                                                         key={day}
@@ -486,9 +486,9 @@ export default function StepServicesAndPricing({
 
                                                 {/* Monthly/Quarterly pattern picker */}
                                                 {(item.frequency === 'monthly' || item.frequency === 'quarterly') && (
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex flex-wrap items-center gap-2">
                                                         <select
-                                                            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                                                            className="h-8 rounded-md border border-input bg-background px-2 text-xs max-w-full"
                                                             value={item.monthlyPattern?.type || 'none'}
                                                             onChange={(e) => {
                                                                 const patternType = e.target.value;
@@ -507,7 +507,7 @@ export default function StepServicesAndPricing({
                                                         </select>
 
                                                         {item.monthlyPattern?.type === 'day_of_month' && (
-                                                            <div className="flex items-center gap-1.5">
+                                                            <div className="flex flex-wrap items-center gap-1.5">
                                                                 <span className="text-xs text-muted-foreground">Day</span>
                                                                 <select
                                                                     className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs"
@@ -525,7 +525,7 @@ export default function StepServicesAndPricing({
                                                         )}
 
                                                         {item.monthlyPattern?.type === 'nth_weekday' && (
-                                                            <div className="flex items-center gap-1.5">
+                                                            <div className="flex flex-wrap items-center gap-1.5">
                                                                 <select
                                                                     className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs"
                                                                     value={item.monthlyPattern.week}
@@ -635,10 +635,10 @@ export default function StepServicesAndPricing({
                                                                     </div>
                                                                     <button
                                                                         type="button"
-                                                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1 shrink-0"
                                                                         onClick={() => removeScopeTask(item.id, tIdx)}
                                                                     >
-                                                                        <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                                                                        <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
                                                                     </button>
                                                                 </div>
                                                             ))}

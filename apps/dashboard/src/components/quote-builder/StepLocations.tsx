@@ -85,20 +85,20 @@ export default function StepLocations({
             {/* Existing Locations */}
             {locations.map((loc) => (
                 <Card key={loc.id}>
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <MapPin className="w-5 h-5 text-muted-foreground" />
-                            <div>
-                                <p className="font-medium">{loc.name}</p>
-                                <p className="text-xs text-muted-foreground">
+                    <CardContent className="p-4 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <MapPin className="w-5 h-5 text-muted-foreground shrink-0" />
+                            <div className="min-w-0 flex-1">
+                                <p className="font-medium truncate">{loc.name}</p>
+                                <p className="text-xs text-muted-foreground break-words">
                                     {loc.address}{loc.city ? `, ${loc.city}` : ''}{loc.state ? `, ${loc.state}` : ''} {loc.zip}
                                 </p>
                                 {loc.id.startsWith('loc_') && parseInt(loc.id.split('_')[1]) < 100 && (
-                                    <p className="text-[10px] text-primary/70">📍 Pre-filled from {selectedLeadName}</p>
+                                    <p className="text-[10px] text-primary/70 truncate">📍 Pre-filled from {selectedLeadName}</p>
                                 )}
                             </div>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => {
+                        <Button variant="ghost" size="icon" className="shrink-0" onClick={() => {
                             onRemoveLocation(loc.id);
                             quoteLogger.locationRemoved(loc.id);
                         }}>
@@ -140,7 +140,7 @@ export default function StepLocations({
                             }}
                         />
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <Label className="text-xs">City</Label>
                             <Input placeholder="City" value={newLocationCity} onChange={(e) => setNewLocationCity(e.target.value)} />

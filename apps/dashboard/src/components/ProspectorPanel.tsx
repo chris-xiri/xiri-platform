@@ -335,17 +335,17 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
     return (
         <div className="border rounded-xl bg-card shadow-lg overflow-hidden animate-in slide-in-from-top-2 duration-300">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border-b">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border-b">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
                         <Radar className="w-4 h-4 text-amber-600" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h3 className="text-sm font-semibold">Lead Prospector</h3>
                         <p className="text-xs text-muted-foreground">Discover businesses &amp; find decision-maker emails</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {selected.size > 0 && (
                         <DropdownMenu onOpenChange={(open: boolean) => { if (open) loadOptions(); }}>
                             <DropdownMenuTrigger asChild>
@@ -522,7 +522,7 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
 
             {/* Stats Bar */}
             {stats && (
-                <div className="flex gap-3 px-4 py-2 border-b bg-muted/20">
+                <div className="flex flex-wrap gap-2 sm:gap-3 px-4 py-2 border-b bg-muted/20">
                     <StatBadge icon={<Building2 className="w-3 h-3" />} label="Discovered" value={stats.discovered} />
                     <StatBadge icon={<CheckCircle2 className="w-3 h-3 text-emerald-500" />} label="Personal" value={stats.withPersonalEmail} />
                     <StatBadge icon={<AlertCircle className="w-3 h-3 text-amber-500" />} label="Generic" value={stats.withGenericEmail} />
@@ -559,7 +559,7 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
             {/* Results */}
             {!loading && prospects.length > 0 && (
                 <div className="max-h-[50vh] overflow-auto">
-                    <table className="w-full text-xs">
+                    <table className="w-full min-w-[640px] text-xs">
                         <thead className="bg-muted/50 sticky top-0 z-10">
                             <tr className="border-b">
                                 <th className="p-2.5 text-left w-8">
