@@ -2,7 +2,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from 'firebase-admin';
 import * as logger from "firebase-functions/logger";
 import { fetchPendingTasks, updateTaskStatus, enqueueTask, claimTask, QueueItem } from "../utils/queueUtils";
-import { skipToWeekday, DEFAULT_SEND_HOUR_UTC, buildScheduledDate } from "../utils/scheduleUtils";
+import { skipToWeekday, DEFAULT_SEND_HOUR_UTC, buildScheduledDate, isUsBusinessHoliday } from "../utils/scheduleUtils";
 import { sendEmail, parseAddress } from "../utils/emailUtils";
 import { getFacilityPhrases, cleanBusinessName, isOrthodonticPractice } from '@xiri/shared';
 import { extractContactFirstName } from "../utils/leadSequenceEngine";
@@ -128,6 +128,12 @@ export const processOutreachQueue = onSchedule({
 
     if (etWeekday === 'Sat' || etWeekday === 'Sun') {
         logger.info(`Weekend in ET (${etWeekday}) — skipping outreach queue processing.`);
+        return;
+    }
+
+    const holidayName = isUsBusinessHoliday(now);
+    if (holidayName) {
+        logger.info(`US Holiday in ET (${holidayName}) — skipping outreach queue processing until next business day.`);
         return;
     }
 
@@ -928,14 +934,20 @@ async function handleLeadSend(task: QueueItem): Promise<boolean> {
         await db.collection('contacts').doc(contactId).set(contactUpdates, { merge: true });
     }
 
-    // ── Increment daily outreach counter ──
+    // ── Increment daily outreach counter atomically (resets cleanly when ET date rolls over) ──
     try {
         const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-        await db.collection("prospecting_config").doc("outreach_daily_stats").set({
-            date: todayStr,
-            sentCount: admin.firestore.FieldValue.increment(1),
-            lastSentAt: now,
-        }, { merge: true });
+        const statsRef = db.collection("prospecting_config").doc("outreach_daily_stats");
+        await db.runTransaction(async (txn) => {
+            const snap = await txn.get(statsRef);
+            const data = snap.exists ? snap.data()! : {};
+            const currentCount = data.date === todayStr ? (data.sentCount || 0) : 0;
+            txn.set(statsRef, {
+                date: todayStr,
+                sentCount: currentCount + 1,
+                lastSentAt: now,
+            }, { merge: true });
+        });
     } catch (counterErr) {
         logger.warn('Daily outreach counter update failed:', counterErr);
     }

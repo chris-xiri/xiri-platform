@@ -38,10 +38,20 @@ export async function fetchPendingTasks(db: admin.firestore.Firestore) {
     const snapshot = await db.collection(COLLECTION)
         .where('status', 'in', ['PENDING', 'RETRY'])
         .where('scheduledAt', '<=', now)
-        .limit(10) // Process in batches
+        .limit(30) // Fetch wider window so Touch 2+ follow-ups can be prioritized ahead of fresh Touch 1 sends
         .get();
 
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QueueItem));
+    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QueueItem));
+    items.sort((a, b) => {
+        const stepA = typeof a.metadata?.stepIndex === 'number' ? a.metadata.stepIndex : ((a.metadata?.sequence || 1) - 1);
+        const stepB = typeof b.metadata?.stepIndex === 'number' ? b.metadata.stepIndex : ((b.metadata?.sequence || 1) - 1);
+        if (stepB !== stepA) return stepB - stepA; // Prioritize Touch 2+ follow-ups first
+        const timeA = a.scheduledAt?.toMillis ? a.scheduledAt.toMillis() : 0;
+        const timeB = b.scheduledAt?.toMillis ? b.scheduledAt.toMillis() : 0;
+        return timeA - timeB;
+    });
+
+    return items.slice(0, 10);
 }
 
 /**

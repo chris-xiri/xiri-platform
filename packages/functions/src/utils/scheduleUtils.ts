@@ -16,20 +16,59 @@
 export const DEFAULT_SEND_HOUR_UTC = 14;
 
 /**
- * Advance a date by `businessDays`, skipping Saturdays (6) and Sundays (0).
- *
- * If the resulting date still falls on a weekend (e.g. dayOffset === 0 and
- * today is Saturday), roll forward to Monday.
- *
- * @param start  - The reference start date (typically "now")
- * @param businessDays - Number of business days to add (0 = today or next weekday)
- * @returns A new Date advanced by the requested business days
+ * Compute nth weekday of a month (e.g., 4th Thursday of November = Thanksgiving).
+ * weekday: 0=Sun, 1=Mon, ..., 4=Thu, 5=Fri, 6=Sat. month: 1-12.
+ */
+function nthWeekdayOfMonth(year: number, month: number, weekday: number, n: number): number {
+    const firstDow = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+    const offset = (weekday - firstDow + 7) % 7;
+    return 1 + offset + (n - 1) * 7;
+}
+
+/**
+ * Compute last weekday of a month (e.g., last Monday of May = Memorial Day).
+ */
+function lastWeekdayOfMonth(year: number, month: number, weekday: number): number {
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const lastDow = new Date(Date.UTC(year, month - 1, lastDay)).getUTCDay();
+    const offset = (lastDow - weekday + 7) % 7;
+    return lastDay - offset;
+}
+
+/**
+ * Returns the US holiday name if `date` falls on a major US holiday when NY
+ * dental/orthodontic practices are closed (evaluated in America/New_York),
+ * otherwise `null`.
+ */
+export function isUsBusinessHoliday(date: Date): string | null {
+    const etStr = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); // YYYY-MM-DD
+    const [year, month, day] = etStr.split('-').map(Number);
+
+    // Fixed-date holidays
+    if (month === 1 && day === 1) return "New Year's Day";
+    if (month === 7 && day === 4) return 'Independence Day';
+    if (month === 12 && day === 24) return 'Christmas Eve';
+    if (month === 12 && day === 25) return 'Christmas Day';
+
+    // Floating Monday holidays
+    if (month === 5 && day === lastWeekdayOfMonth(year, 5, 1)) return 'Memorial Day';
+    if (month === 9 && day === nthWeekdayOfMonth(year, 9, 1, 1)) return 'Labor Day';
+
+    // Thanksgiving (4th Thursday of Nov) + Black Friday (day after Thanksgiving)
+    const thanksgivingDay = nthWeekdayOfMonth(year, 11, 4, 4);
+    if (month === 11 && day === thanksgivingDay) return 'Thanksgiving Day';
+    if (month === 11 && day === thanksgivingDay + 1) return 'Day After Thanksgiving';
+
+    return null;
+}
+
+/**
+ * Advance a date by `businessDays`, skipping weekends and US business holidays.
  */
 export function addBusinessDays(start: Date, businessDays: number): Date {
     const result = new Date(start);
 
     if (businessDays === 0) {
-        // If today is a weekend, roll forward to Monday
         return skipToWeekday(result);
     }
 
@@ -37,7 +76,7 @@ export function addBusinessDays(start: Date, businessDays: number): Date {
     while (remaining > 0) {
         result.setDate(result.getDate() + 1);
         const day = result.getDay(); // 0=Sun, 6=Sat
-        if (day !== 0 && day !== 6) {
+        if (day !== 0 && day !== 6 && !isUsBusinessHoliday(result)) {
             remaining--;
         }
     }
@@ -46,18 +85,22 @@ export function addBusinessDays(start: Date, businessDays: number): Date {
 }
 
 /**
- * If the given date falls on Saturday or Sunday, roll forward to Monday.
- * Otherwise return the date unchanged (returns a new Date instance).
+ * If the given date falls on Saturday, Sunday, or a major US holiday,
+ * roll forward to the next open weekday.
  */
 export function skipToWeekday(date: Date): Date {
     const result = new Date(date);
-    const day = result.getDay();
-    if (day === 6) {
-        // Saturday → Monday (+2)
-        result.setDate(result.getDate() + 2);
-    } else if (day === 0) {
-        // Sunday → Monday (+1)
-        result.setDate(result.getDate() + 1);
+    for (let guard = 0; guard < 10; guard++) {
+        const day = result.getDay();
+        if (day === 6) {
+            result.setDate(result.getDate() + 2);
+        } else if (day === 0) {
+            result.setDate(result.getDate() + 1);
+        } else if (isUsBusinessHoliday(result)) {
+            result.setDate(result.getDate() + 1);
+        } else {
+            break;
+        }
     }
     return result;
 }
